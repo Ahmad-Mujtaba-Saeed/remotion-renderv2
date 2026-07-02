@@ -1,0 +1,29 @@
+{
+  "name": "remotion-render",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone Remotion render service for the AI Explainer Video template. Laravel POSTs a validated shot list; this renders the MP4.",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
+    "studio": "remotion studio src/remotion/index.ts",
+    "render:sample": "tsx src/render.ts sample.json out/sample.mp4"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.286",
+    "@remotion/renderer": "^4.0.286",
+    "@remotion/transitions": "^4.0.286",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.286"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/react": "^18.3.12",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

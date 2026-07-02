@@ -1,0 +1,69 @@
+{
+  "project_id": "sample",
+  "aspect_ratio": "16:9",
+  "theme": {
+    "name": "indigo", "label": "Indigo Pop",
+    "bg_from": "#0b1026", "bg_to": "#171f4a",
+    "accent": "#6366f1", "accent2": "#22d3ee",
+    "text": "#eef2ff", "muted": "#a6acd6", "panel": "rgba(11,16,38,0.62)"
+  },
+  "scenes": [
+    {
+      "scene_id": "scene_1",
+      "order": 1,
+      "duration_seconds": 4,
+      "narration": { "text": "Let's compare GTA V and GTA VI." },
+      "layout_template": "single_focus",
+      "transition": "fade",
+      "slots": {
+        "slot_main": {
+          "content_type": "text_block",
+          "heading": "GTA V vs GTA VI",
+          "bullets": ["Map size", "Setting", "Scale"]
+        }
+      }
+    },
+    {
+      "scene_id": "scene_2",
+      "order": 2,
+      "duration_seconds": 6,
+      "narration": { "text": "GTA V is a single city, while GTA VI is a whole state." },
+      "layout_template": "split_top_bottom",
+      "transition": "push_up",
+      "slots": {
+        "slot_top": { "content_type": "text_block", "heading": "GTA V", "bullets": ["~49 sq miles", "Los Santos"] },
+        "slot_bottom": { "content_type": "text_block", "heading": "GTA VI", "bullets": ["State of Leonida", "Vice City + more"] }
+      }
+    },
+    {
+      "scene_id": "scene_3",
+      "order": 3,
+      "duration_seconds": 6,
+      "narration": { "text": "Here's the key detail about the new map." },
+      "layout_template": "full_bleed_with_side_panel",
+      "transition": "wipe",
+      "slots": {
+        "slot_background": { "content_type": "image", "camera_move": "ken_burns", "asset_request": { "description": "GTA VI map screenshot" } },
+        "slot_panel": {
+          "content_type": "explanation_box",
+          "dock": "right",
+          "width_pct": 38,
+          "heading": "Bigger World",
+          "body": "The map is several times larger and spans an entire fictional state."
+        }
+      }
+    },
+    {
+      "scene_id": "scene_4",
+      "order": 4,
+      "duration_seconds": 5,
+      "narration": { "text": "A new era for open-world games." },
+      "layout_template": "full_bleed_with_banner",
+      "transition": "fade",
+      "slots": {
+        "slot_background": { "content_type": "image", "camera_move": "slow_zoom_in", "asset_request": { "description": "GTA VI hero key art" } },
+        "slot_banner": { "content_type": "text_block", "dock": "bottom", "heading": "A New Era", "bullets": ["Releasing 2025"] }
+      }
+    }
+  ]
+}

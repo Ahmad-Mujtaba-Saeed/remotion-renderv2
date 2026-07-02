@@ -1,0 +1,89 @@
+import express from 'express';
+import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { renderExplainer } from './render';
+import type { ShotList } from './types';
+
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+
+const PORT = Number(process.env.PORT || 3020);
+
+// The Laravel worker runs in Docker and sends a CONTAINER-absolute output_path
+// (e.g. /var/www/storage/...). This Node service runs on the HOST, where that
+// path is meaningless. Storage is bind-mounted (host ./viralforgebackend/storage
+// <-> container /var/www/storage), so translate the prefix to its host location.
+// remotion-render/ is a sibling of viralforgebackend/, hence ../viralforgebackend.
+const CONTAINER_STORAGE_PREFIX = (process.env.CONTAINER_STORAGE_PREFIX || '/var/www/storage').replace(/\/+$/, '');
+const HOST_STORAGE_PREFIX =
+  process.env.HOST_STORAGE_PREFIX || path.resolve(process.cwd(), '../viralforgebackend/storage');
+
+function toHostPath(p: string): string {
+  const normalized = String(p).replace(/\\/g, '/');
+  if (normalized === CONTAINER_STORAGE_PREFIX || normalized.startsWith(CONTAINER_STORAGE_PREFIX + '/')) {
+    const rest = normalized.slice(CONTAINER_STORAGE_PREFIX.length).replace(/^\/+/, '');
+    return path.resolve(HOST_STORAGE_PREFIX, rest);
+  }
+  return p;
+}
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', service: 'remotion-render' });
+});
+
+/**
+ * POST /render
+ * Body: { project_id, output_path, fps, width, height, shot_list }
+ * Renders synchronously and returns when the MP4 is written to output_path.
+ * (Laravel calls this from a queued job, so a blocking request is fine.)
+ */
+app.post('/render', async (req, res) => {
+  const { output_path, fps, width, height, shot_list, project_id } = req.body || {};
+
+  if (!output_path || !shot_list) {
+    return res.status(400).json({ success: false, error: 'output_path and shot_list are required' });
+  }
+
+  const shotList = shot_list as ShotList;
+  if (!Array.isArray(shotList.scenes) || shotList.scenes.length === 0) {
+    return res.status(400).json({ success: false, error: 'shot_list.scenes is empty' });
+  }
+
+  // Translate the container path to its host equivalent before writing.
+  const hostOutputPath = toHostPath(output_path);
+
+  try {
+    // Ensure the output directory exists.
+    fs.mkdirSync(path.dirname(hostOutputPath), { recursive: true });
+
+    console.log(`[render] project=${project_id} scenes=${shotList.scenes.length} -> ${hostOutputPath}`);
+    const start = Date.now();
+
+    await renderExplainer({
+      shotList,
+      outputPath: hostOutputPath,
+      fps: Number(fps) || 30,
+      width: Number(width) || 1920,
+      height: Number(height) || 1080,
+      onProgress: (p) => {
+        if (Math.round(p * 100) % 20 === 0) {
+          console.log(`[render] project=${project_id} ${Math.round(p * 100)}%`);
+        }
+      },
+    });
+
+    const seconds = ((Date.now() - start) / 1000).toFixed(1);
+    console.log(`[render] project=${project_id} done in ${seconds}s`);
+
+    return res.json({ success: true, output_path, render_seconds: Number(seconds) });
+  } catch (err: any) {
+    console.error('[render] failed:', err);
+    return res.status(500).json({ success: false, error: err?.message || 'Render failed' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`remotion-render listening on http://localhost:${PORT}`);
+});
