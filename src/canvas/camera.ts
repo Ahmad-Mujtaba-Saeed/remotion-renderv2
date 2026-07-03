@@ -98,10 +98,16 @@ export const buildCamera = (
   let cursor = 0;
   scenes.forEach((scene, i) => {
     const frames = sceneFrames(scene, fps);
+    // Wide pull-reveals breathe longer; everything else keeps a snappy hop.
+    const isPull = (plan.items.find((it) => it.scene_id === scene.scene_id)?.treatment ?? '') === 'pull_reveal';
     const travel =
       i === 0
         ? Math.min(Math.round(fps * 1.0), Math.round(frames * 0.4))
-        : clamp(Math.round(frames * 0.24), Math.round(fps * 0.8), Math.round(fps * 1.7));
+        : clamp(
+            Math.round(frames * (isPull ? 0.32 : 0.24)),
+            Math.round(fps * 0.8),
+            Math.round(fps * (isPull ? 2.2 : 1.7))
+          );
     windows.push({ start: cursor, frames, travel: Math.min(travel, Math.round(frames * 0.45)) });
     cursor += frames;
   });
@@ -176,13 +182,27 @@ export const buildCamera = (
       const fromState = sceneEndState(i - 1);
       const from: [number, number] = [fromState.x, fromState.y];
       const to: [number, number] = [item.x, item.y];
-      const control = travelControl(from, to, i - 1);
       const e = easeInOutCubic(t);
+      const treatment = item.treatment ?? 'canvas_hop';
+
+      if (treatment === 'zoom_nest') {
+        // DIVE: the next scene lives inside the previous visual, so the
+        // camera pushes straight in — pure log zoom, no swoop, no dip.
+        return {
+          x: lerp(from[0], to[0], e),
+          y: lerp(from[1], to[1], e),
+          scale: Math.exp(lerp(Math.log(fromState.scale), Math.log(fits[i]), e)),
+        };
+      }
+
+      const control = travelControl(from, to, i - 1);
       const [x, y] = qBezier(from, control, to, e);
 
-      // Zoom dips through a scale that frames BOTH stations mid-flight —
-      // the pull-back-reveal-then-push-in arc, in log space so it feels linear.
+      // Zoom dips through a scale that frames BOTH regions mid-flight —
+      // the pull-back-reveal-then-push-in arc, in log space so it feels
+      // linear. pull_reveal dips noticeably wider for the big-picture beat.
       const prev = items[i - 1];
+      const dipMargin = treatment === 'pull_reveal' ? 1.75 : 1.28;
       const bothScale = fitRect(
         Math.min(prev.x - prev.w / 2, item.x - item.w / 2),
         Math.min(prev.y - prev.h / 2, item.y - item.h / 2),
@@ -190,7 +210,7 @@ export const buildCamera = (
         Math.max(prev.y + prev.h / 2, item.y + item.h / 2),
         vw,
         vh,
-        1.28
+        dipMargin
       );
       const straightMid = Math.exp(lerp(Math.log(fromState.scale), Math.log(fits[i]), 0.5));
       const dip = Math.log(Math.min(bothScale, straightMid) / straightMid);

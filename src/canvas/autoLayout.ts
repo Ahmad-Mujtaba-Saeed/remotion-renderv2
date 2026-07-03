@@ -1,4 +1,4 @@
-import { CanvasItem, CanvasPlan, Scene } from '../types';
+import { CanvasConnector, CanvasItem, CanvasPlan, Scene } from '../types';
 
 /**
  * Deterministic fallback layout — a TS mirror of PHP CanvasPlanValidator's
@@ -29,13 +29,17 @@ const autoItem = (sceneId: string, i: number, placed: CanvasItem[], base: { w: n
 
   const item: CanvasItem = {
     scene_id: sceneId,
+    treatment: i === 0 ? 'hero_open' : 'canvas_hop',
     x: i * w * 1.45 + jx * w,
     y: swing * h + jy * h,
     w,
     h,
-    rotation: (seeded(i, 3) * 2 - 1) * 2.5,
+    rotation: 0,
     emphasis: i === 0 ? 'hero' : 'normal',
     hold_move: (['breathe', 'push_in', 'drift'] as const)[i % 3],
+    props: [],
+    depth: 0,
+    parent_id: null,
   };
 
   for (const other of placed) {
@@ -66,9 +70,17 @@ const fitWorld = (items: CanvasItem[]): CanvasPlan['world'] => {
   return { width: Math.ceil(maxX - minX + 2 * margin), height: Math.ceil(maxY - minY + 2 * margin) };
 };
 
+/** v1 plans used curve/straight arrows; map them onto the v2 styles. */
+const normalizeConnectorStyle = (style?: string): 'dotted' | 'arrow' | 'none' => {
+  if (style === 'arrow' || style === 'curve' || style === 'straight') return 'arrow';
+  if (style === 'none') return 'none';
+  return 'dotted';
+};
+
 /**
  * Produce a plan that covers EVERY scene, in order. A valid incoming plan is
- * used as-is; a missing/partial one is (re)built deterministically.
+ * used as-is (rotation stripped — the tilted-card look is retired); a
+ * missing/partial one is (re)built deterministically.
  */
 export const normalizePlan = (
   plan: CanvasPlan | null | undefined,
@@ -79,7 +91,7 @@ export const normalizePlan = (
   const byScene = new Map<string, CanvasItem>();
   for (const item of plan?.items ?? []) {
     if (item && item.scene_id && !byScene.has(item.scene_id)) {
-      byScene.set(item.scene_id, { ...item });
+      byScene.set(item.scene_id, { ...item, rotation: 0 });
     }
   }
 
@@ -89,29 +101,37 @@ export const normalizePlan = (
   const items: CanvasItem[] = [];
   scenes.forEach((scene, i) => {
     const existing = usePlan ? byScene.get(scene.scene_id) : undefined;
-    items.push(existing ?? autoItem(scene.scene_id, i, items, base));
+    if (existing) {
+      existing.treatment = i === 0 ? 'hero_open' : (existing.treatment ?? 'canvas_hop');
+      existing.depth = existing.depth ?? 0;
+      existing.props = existing.props ?? [];
+      items.push(existing);
+    } else {
+      items.push(autoItem(scene.scene_id, i, items, base));
+    }
   });
 
   const world = usePlan && plan?.world?.width ? plan.world : fitWorld(items);
 
   // The journey is a chain in scene order; keep any director labels/styles.
-  const labelByPair = new Map<string, { style?: 'curve' | 'straight'; label?: string }>();
+  const labelByPair = new Map<string, CanvasConnector>();
   for (const conn of plan?.connectors ?? []) {
-    labelByPair.set(`${conn.from}->${conn.to}`, { style: conn.style, label: conn.label });
+    labelByPair.set(`${conn.from}->${conn.to}`, conn);
   }
 
-  const connectors = scenes.slice(0, -1).map((scene, i) => {
+  const connectors: CanvasConnector[] = scenes.slice(0, -1).map((scene, i) => {
+    const toItem = items[i + 1];
     const meta = labelByPair.get(`${scene.scene_id}->${scenes[i + 1].scene_id}`);
-    return {
-      from: scene.scene_id,
-      to: scenes[i + 1].scene_id,
-      style: meta?.style ?? ('curve' as const),
-      label: meta?.label ?? '',
-    };
+    // Dives and wide pulls draw no line — the camera move IS the connection.
+    const style =
+      toItem.treatment === 'zoom_nest' || toItem.treatment === 'pull_reveal'
+        ? ('none' as const)
+        : normalizeConnectorStyle(meta?.style);
+    return { from: scene.scene_id, to: scenes[i + 1].scene_id, style, label: meta?.label ?? '' };
   });
 
   return {
-    version: plan?.version ?? 1,
+    version: plan?.version ?? 2,
     journey_pattern: plan?.journey_pattern ?? 'zigzag',
     world,
     items,

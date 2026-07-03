@@ -5,6 +5,7 @@ import { useTheme } from '../theme';
 import { KineticText } from './KineticText';
 import { useScaleUnit } from '../responsive';
 import { useSceneClock } from '../canvas/SceneClock';
+import { useRegionStyle } from '../canvas/RegionStyle';
 
 /**
  * Heading + bullet list rendered on a semi-transparent themed panel (so the
@@ -17,8 +18,11 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean }> = ({ slo
   const { fps } = useVideoConfig();
   const { frame, durationInFrames } = useSceneClock();
   const u = useScaleUnit();
+  const region = useRegionStyle();
   const bullets = slot.bullets ?? [];
   const sequential = (slot.reveal ?? 'sequential') === 'sequential';
+  // Frameless canvas regions: copy floats directly on the world — no panel.
+  const bare = transparent || region.frameless;
 
   const headingIn = spring({ frame, fps, config: { damping: 200 }, durationInFrames: Math.round(fps * 0.6) });
 
@@ -36,8 +40,8 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean }> = ({ slo
         justifyContent: 'center',
         padding: '8%',
         boxSizing: 'border-box',
-        background: transparent ? 'transparent' : theme.panel,
-        backdropFilter: transparent ? undefined : 'blur(6px)',
+        background: bare ? 'transparent' : theme.panel,
+        backdropFilter: bare ? undefined : 'blur(6px)',
         fontFamily: 'Inter, system-ui, sans-serif',
         color: theme.text,
       }}

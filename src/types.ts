@@ -31,6 +31,8 @@ export interface AssetRef {
   url?: string;
   path?: string;
   type?: string;
+  /** Real media duration (ffprobe, backend) so videos can loop safely. */
+  duration_seconds?: number | null;
 }
 
 export interface Callout {
@@ -102,22 +104,58 @@ export type CompositionMode = 'canvas_journey' | 'slides';
 
 export type HoldMove = 'breathe' | 'push_in' | 'drift';
 
-/** A scene's framed "station" card pinned on the world canvas (x/y = center). */
+/** How the camera reaches (and treats) a scene — the motion language. */
+export type Treatment =
+  | 'hero_open'
+  | 'canvas_hop'
+  | 'zoom_nest'
+  | 'overlay_focus'
+  | 'kinetic_break'
+  | 'pull_reveal';
+
+export type PropAnimation = 'float' | 'pulse' | 'orbit' | 'pop_spring' | 'drift' | 'draw_in';
+
+/**
+ * A small AI-generated decoration floating around a scene region. Generated
+ * on a pure black background and drawn with mix-blend-mode: screen so black
+ * disappears on the dark canvas themes.
+ */
+export interface CanvasProp {
+  prompt?: string;
+  url?: string;
+  path?: string;
+  animation?: PropAnimation;
+  /** Position in region space; slightly outside 0..1 scatters beside it. */
+  x?: number;
+  y?: number;
+  /** Fraction of the region's short side. */
+  size?: number;
+}
+
+/** A scene's frameless composition region on the world canvas (x/y = center). */
 export interface CanvasItem {
   scene_id: string;
+  treatment?: Treatment;
   x: number;
   y: number;
   w: number;
   h: number;
+  /** Deprecated (v1 tilted-card look); always 0 in v2 plans. */
   rotation?: number;
   emphasis?: 'hero' | 'normal';
   hold_move?: HoldMove;
+  props?: CanvasProp[];
+  /** 0 = on the canvas, 1+ = physically nested inside the previous scene. */
+  depth?: number;
+  parent_id?: string | null;
 }
+
+export type ConnectorStyle = 'dotted' | 'arrow' | 'none' | 'curve' | 'straight';
 
 export interface CanvasConnector {
   from: string;
   to: string;
-  style?: 'curve' | 'straight';
+  style?: ConnectorStyle;
   label?: string;
 }
 

@@ -6,14 +6,18 @@ import { AmbientBackground } from '../components/AmbientBackground';
 import { normalizePlan } from './autoLayout';
 import { buildCamera } from './camera';
 import { Connector } from './Connector';
-import { StationCard } from './StationCard';
+import { SceneRegion } from './SceneRegion';
+import { PropSprite } from './PropSprite';
 
 /**
- * The cinematic canvas journey: every scene is a framed station card on ONE
- * huge world canvas; a virtual camera opens tight on station 1, pulls back to
- * reveal the canvas, then flies hop by hop along self-drawing arrows — pushing
- * into each station while its narration plays — and closes on a pull-back
- * overview of the entire journey.
+ * The cinematic canvas journey, v2 "frameless soft collage": every scene is a
+ * borderless composition region on ONE huge world canvas — media with big
+ * soft-rounded masks, text floating straight on the background, AI-generated
+ * props drifting around. The camera opens tight on scene 1, then hops, dives
+ * (zoom_nest — the next scene physically lives inside the previous visual)
+ * and pulls wide (pull_reveal) between regions, closing on an overview of the
+ * whole journey. Guide lines are subtle dotted breadcrumbs by default; bold
+ * arrows only where the director asked for one.
  */
 export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) => {
   const theme = useTheme();
@@ -36,6 +40,20 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
 
   const cam = camera.at(frame);
   const itemByScene = new Map(plan.items.map((item) => [item.scene_id, item]));
+
+  // Level of detail: how large a region currently appears on screen (as a
+  // fraction of the viewport width). Deeply nested scenes stay hidden until
+  // the camera is close enough for them to read as a picture-in-picture.
+  const lodFor = (w: number): number => {
+    const frac = (w * cam.scale) / vw;
+    return Math.max(0, Math.min(1, (frac - 0.03) / 0.05));
+  };
+
+  // Parents render beneath their nested children.
+  const renderOrder = scenes
+    .map((scene, i) => ({ scene, i, item: itemByScene.get(scene.scene_id) }))
+    .filter((e) => e.item)
+    .sort((a, b) => (a.item!.depth ?? 0) - (b.item!.depth ?? 0) || a.i - b.i);
 
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
@@ -75,7 +93,7 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
           }}
         />
 
-        {/* Journey arrows, drawn beneath the cards. */}
+        {/* Guide lines, drawn beneath the regions. */}
         <svg
           width={plan.world.width}
           height={plan.world.height}
@@ -83,6 +101,7 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
           style={{ position: 'absolute', inset: 0 }}
         >
           {plan.connectors.map((conn, i) => {
+            if (conn.style === 'none') return null;
             const from = itemByScene.get(conn.from);
             const to = itemByScene.get(conn.to);
             if (!from || !to) return null;
@@ -94,26 +113,24 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
                 hopIndex={i}
                 progress={camera.travelProgress(i + 1, frame)}
                 label={conn.label}
-                straight={conn.style === 'straight'}
+                style={conn.style === 'arrow' || conn.style === 'curve' || conn.style === 'straight' ? 'arrow' : 'dotted'}
               />
             );
           })}
         </svg>
 
-        {/* Station cards. */}
-        {scenes.map((scene, i) => {
-          const item = itemByScene.get(scene.scene_id);
-          if (!item) return null;
+        {/* Scene regions (parents first, nested children above them). */}
+        {renderOrder.map(({ scene, i, item }) => {
           const w = camera.windows[i];
           return (
-            <StationCard
+            <SceneRegion
               key={scene.scene_id}
-              item={item}
+              item={item!}
               scene={scene}
-              index={i}
               focus={camera.focus(i, frame)}
+              lod={lodFor(item!.w)}
               clock={{
-                // Content starts revealing just before touchdown so the card
+                // Content starts revealing just before touchdown so the region
                 // is alive the moment the camera lands.
                 start: w.start + Math.round(w.travel * 0.55),
                 end: w.start + w.frames,
@@ -121,9 +138,22 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
             />
           );
         })}
+
+        {/* AI props scatter above the regions (screen-blended cut-outs). */}
+        {renderOrder.flatMap(({ i, item }) =>
+          (item!.props ?? []).map((prop, p) => (
+            <PropSprite
+              key={`${item!.scene_id}-prop-${p}`}
+              prop={prop}
+              item={item!}
+              appearFrame={camera.windows[i].start + Math.round(camera.windows[i].travel * 0.7)}
+              seed={i * 7 + p + 1}
+            />
+          ))
+        )}
       </div>
 
-      {/* Per-scene narration, timed to each station's window. */}
+      {/* Per-scene narration, timed to each region's window. */}
       {scenes.map((scene, i) =>
         scene.narration_audio_url ? (
           <Sequence

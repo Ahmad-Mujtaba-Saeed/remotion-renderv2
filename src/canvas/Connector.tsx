@@ -4,10 +4,12 @@ import { useTheme } from '../theme';
 import { travelControl } from './camera';
 
 /**
- * The journey line between two station cards: a curved arrow that draws
- * itself toward the next station in sync with the camera's flight (the arrow
- * "drags" the camera), tipped with a glowing head and an optional tiny label.
- * Rendered in world coordinates inside the world <svg>.
+ * The guide line between two scene regions, drawn in sync with the camera's
+ * flight. Two styles:
+ *  - "dotted": a subtle breadcrumb path — the default; decoration, not chrome.
+ *  - "arrow":  a bold accent arrow for hops where direction/causality matters.
+ * Draw-on works by emitting only the sampled sub-path up to the current
+ * progress, so dash patterns and heads stay correct for both styles.
  */
 
 type Pt = [number, number];
@@ -36,91 +38,70 @@ export const Connector: React.FC<{
   /** 0..1 draw-on progress (the camera's travel into `to`). */
   progress: number;
   label?: string;
-  straight?: boolean;
-}> = ({ from, to, hopIndex, progress, label, straight }) => {
+  style?: 'dotted' | 'arrow';
+}> = ({ from, to, hopIndex, progress, label, style = 'dotted' }) => {
   const theme = useTheme();
 
-  const geo = useMemo(() => {
-    const p0 = edgePoint(from, [to.x, to.y], 46);
-    const p1 = edgePoint(to, [from.x, from.y], 64);
-    const c: Pt = straight
-      ? [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2]
-      : travelControl(p0, p1, hopIndex);
-
-    // Sample the curve once: cumulative arc lengths let us convert an
-    // arc-length fraction (what dashoffset uses) back to a curve parameter.
+  const pts = useMemo(() => {
+    const p0 = edgePoint(from, [to.x, to.y], 60);
+    const p1 = edgePoint(to, [from.x, from.y], 80);
+    const c = travelControl(p0, p1, hopIndex);
+    const sampled: Pt[] = [];
     const N = 48;
-    const pts: Pt[] = [];
-    const cum: number[] = [0];
     for (let k = 0; k <= N; k++) {
-      pts.push(qPoint(p0, c, p1, k / N));
-      if (k > 0) {
-        cum.push(cum[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));
-      }
+      sampled.push(qPoint(p0, c, p1, k / N));
     }
-    const length = cum[N];
-
-    const atLength = (s: number): { p: Pt; angle: number } => {
-      const target = Math.max(0, Math.min(length, s));
-      let k = 1;
-      while (k < N && cum[k] < target) k++;
-      const seg = Math.max(1e-6, cum[k] - cum[k - 1]);
-      const f = (target - cum[k - 1]) / seg;
-      const p: Pt = [
-        pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * f,
-        pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * f,
-      ];
-      return { p, angle: Math.atan2(pts[k][1] - pts[k - 1][1], pts[k][0] - pts[k - 1][0]) };
-    };
-
-    return { p0, p1, c, length, atLength, mid: qPoint(p0, c, p1, 0.5) };
-  }, [from, to, hopIndex, straight]);
+    return sampled;
+  }, [from, to, hopIndex]);
 
   if (progress <= 0.001) return null;
 
-  // The arrow tip leads the camera slightly — it finishes just before landing.
+  // The tip leads the camera slightly — the line lands just before we do.
   const drawn = Math.min(1, progress * 1.12);
-  const tip = geo.atLength(geo.length * drawn);
-  const headSize = 34;
+  const upto = Math.max(2, Math.ceil(drawn * (pts.length - 1)) + 1);
+  const visible = pts.slice(0, upto);
+  const tip = visible[visible.length - 1];
+  const prevPt = visible[visible.length - 2];
+  const angle = Math.atan2(tip[1] - prevPt[1], tip[0] - prevPt[0]);
 
-  const pathD = `M ${geo.p0[0]} ${geo.p0[1]} Q ${geo.c[0]} ${geo.c[1]} ${geo.p1[0]} ${geo.p1[1]}`;
+  const d = `M ${visible.map((p) => `${p[0]} ${p[1]}`).join(' L ')}`;
+  const mid = pts[Math.floor(pts.length / 2)];
+  const isArrow = style === 'arrow';
+  const headSize = 34;
 
   return (
     <g>
-      {/* Soft under-glow of the line. */}
-      <path
-        d={pathD}
-        fill="none"
-        stroke={theme.accent}
-        strokeWidth={18}
-        strokeLinecap="round"
-        opacity={0.16}
-        strokeDasharray={geo.length}
-        strokeDashoffset={geo.length * (1 - drawn)}
-      />
-      {/* The line itself. */}
-      <path
-        d={pathD}
-        fill="none"
-        stroke={theme.accent}
-        strokeWidth={7}
-        strokeLinecap="round"
-        strokeDasharray={geo.length}
-        strokeDashoffset={geo.length * (1 - drawn)}
-        opacity={0.95}
-      />
-      {/* Arrowhead riding the tip while drawing, resting at the end after. */}
-      <g transform={`translate(${tip.p[0]}, ${tip.p[1]}) rotate(${(tip.angle * 180) / Math.PI})`}>
-        <path
-          d={`M 0 0 L ${-headSize} ${headSize * 0.55} L ${-headSize * 0.72} 0 L ${-headSize} ${-headSize * 0.55} Z`}
-          fill={theme.accent}
-        />
-        {/* Glowing guide dot that visibly "drags" the camera. */}
-        {drawn < 1 ? <circle r={13} fill={theme.accent2} opacity={0.9} /> : null}
-      </g>
-      {/* Optional tiny label at the midpoint. */}
+      {isArrow ? (
+        <>
+          {/* Soft under-glow, then the bold line. */}
+          <path d={d} fill="none" stroke={theme.accent} strokeWidth={18} strokeLinecap="round" opacity={0.16} />
+          <path d={d} fill="none" stroke={theme.accent} strokeWidth={7} strokeLinecap="round" opacity={0.95} />
+          <g transform={`translate(${tip[0]}, ${tip[1]}) rotate(${(angle * 180) / Math.PI})`}>
+            <path
+              d={`M 0 0 L ${-headSize} ${headSize * 0.55} L ${-headSize * 0.72} 0 L ${-headSize} ${-headSize * 0.55} Z`}
+              fill={theme.accent}
+            />
+            {drawn < 1 ? <circle r={13} fill={theme.accent2} opacity={0.9} /> : null}
+          </g>
+        </>
+      ) : (
+        <>
+          {/* Subtle dotted breadcrumb with a small glowing scout at the tip. */}
+          <path
+            d={d}
+            fill="none"
+            stroke={theme.accent}
+            strokeWidth={6}
+            strokeLinecap="round"
+            strokeDasharray="1 30"
+            opacity={0.55}
+          />
+          {drawn < 1 ? <circle cx={tip[0]} cy={tip[1]} r={11} fill={theme.accent2} opacity={0.8} /> : null}
+        </>
+      )}
+
       {label && drawn > 0.45 ? (
-        <g transform={`translate(${geo.mid[0]}, ${geo.mid[1]})`} opacity={Math.min(1, (drawn - 0.45) / 0.3)}>
+        <g transform={`translate(${mid[0]}, ${mid[1]})`} opacity={Math.min(1, (drawn - 0.45) / 0.3)}>
           <rect
             x={-label.length * 11 - 18}
             y={-30}
