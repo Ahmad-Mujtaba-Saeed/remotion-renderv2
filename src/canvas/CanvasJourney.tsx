@@ -38,23 +38,6 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
 
   const itemByScene = useMemo(() => new Map(plan.items.map((item) => [item.scene_id, item])), [plan.items]);
 
-  // Ancestor chains (zoom_nest parents), as scene indices.
-  const ancestors = useMemo(() => {
-    const indexById = new Map(scenes.map((s, i) => [s.scene_id, i]));
-    return scenes.map((scene) => {
-      const chain: number[] = [];
-      let cur = itemByScene.get(scene.scene_id)?.parent_id ?? null;
-      let guard = 0;
-      while (cur && guard++ < 12) {
-        const idx = indexById.get(cur);
-        if (idx === undefined) break;
-        chain.push(idx);
-        cur = itemByScene.get(cur)?.parent_id ?? null;
-      }
-      return chain;
-    });
-  }, [scenes, itemByScene]);
-
   if (!scenes.length) return null;
 
   const cam = camera.at(frame);
@@ -66,11 +49,12 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
   };
 
   // ---- Scene isolation ------------------------------------------------------
-  // Per-frame visibility: the active scene is on; during a flight the arriving
-  // scene fades in early and the departing one dissolves late; everyone else
-  // simply does not exist. Nested descendants of the active scene stay visible
-  // (they ARE part of its picture) and ancestors are always at least as
-  // visible as their children (you dive INTO them, so they surround you).
+  // ONE scene at a time, strictly. The active scene is on; during a flight the
+  // arriving scene MATERIALISES out of thin air (fade + condense) while the
+  // departing one dissolves; everyone else simply does not exist. Nested
+  // (zoom_nest) scenes are NEVER previewed as a small picture-in-picture
+  // inside their parent — they only come into being mid-dive, and the parent
+  // dissolves away underneath them as the camera closes in.
   let active = camera.windows.length - 1;
   for (let k = 0; k < camera.windows.length; k++) {
     if (frame < camera.windows[k].start + camera.windows[k].frames) {
@@ -83,47 +67,60 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
   const inTravel = active > 0 && local < aw.travel;
 
   const alphas = new Array<number>(scenes.length).fill(0);
+  // 0..1 birth progress of the arriving scene (drives its condense-in pop).
+  const enters = new Array<number>(scenes.length).fill(1);
+
   if (inTravel) {
     const t = local / Math.max(1, aw.travel);
     const arriving = itemByScene.get(scenes[active].scene_id);
-    // A nested scene was already visible as a picture-in-picture before the
-    // dive — never re-fade it. Top-level arrivals materialise over the first
-    // third of the flight.
-    alphas[active] = arriving?.parent_id ? 1 : smooth(t / 0.32);
+    const nested = Boolean(arriving?.parent_id);
 
-    const relation = arriving?.relation ?? 'continues';
-    // Contrast beats hold the departing scene longer (the comparison is the
-    // point); everything else lets go just past mid-flight.
-    const fadeStart = relation === 'contrast' ? 0.72 : 0.55;
-    const leaving = 1 - smooth((t - fadeStart) / (1 - fadeStart));
-    alphas[active - 1] = Math.max(alphas[active - 1], leaving);
+    if (nested) {
+      // The dive: the scene doesn't exist yet — it condenses into place as
+      // the camera closes in on the parent's focal point.
+      alphas[active] = smooth((t - 0.3) / 0.34);
+      enters[active] = alphas[active];
+      // The parent's picture carries most of the dive, then hands over.
+      alphas[active - 1] = 1 - smooth((t - 0.62) / 0.38);
+      // Deeper ancestors of the parent were already gone; leave them at 0.
+    } else {
+      alphas[active] = smooth(t / 0.32);
+      enters[active] = alphas[active];
 
-    // Callback flights draw their line from an EARLIER scene — that endpoint
-    // fades in with the line and dissolves with the departure.
-    const conn = plan.connectors[active - 1];
-    if (conn && conn.from !== scenes[active - 1].scene_id) {
-      const fromIdx = scenes.findIndex((s) => s.scene_id === conn.from);
-      if (fromIdx >= 0) {
-        alphas[fromIdx] = Math.max(alphas[fromIdx], Math.min(leaving, smooth(t / 0.32)));
+      const relation = arriving?.relation ?? 'continues';
+      // Contrast beats hold the departing scene longer (the comparison is the
+      // point); everything else lets go just past mid-flight.
+      const fadeStart = relation === 'contrast' ? 0.72 : 0.55;
+      const leaving = 1 - smooth((t - fadeStart) / (1 - fadeStart));
+      alphas[active - 1] = Math.max(alphas[active - 1], leaving);
+
+      // Leaving a NESTED scene: from flight altitude the departed detail is
+      // microscopic, so the pull-out would read as flying over empty canvas.
+      // Its ancestor chain fades back in — we pull back OUT of the picture we
+      // dove into, then fly on (and it dissolves like any departing scene).
+      let up = itemByScene.get(scenes[active - 1].scene_id)?.parent_id ?? null;
+      let guard = 0;
+      while (up && guard++ < 12) {
+        const idx = scenes.findIndex((s) => s.scene_id === up);
+        if (idx < 0) break;
+        alphas[idx] = Math.max(alphas[idx], Math.min(leaving, smooth(t / 0.28)));
+        up = itemByScene.get(up)?.parent_id ?? null;
+      }
+
+      // Callback flights draw their line from an EARLIER scene — that endpoint
+      // fades in with the line and dissolves with the departure.
+      const conn = plan.connectors[active - 1];
+      if (conn && conn.from !== scenes[active - 1].scene_id) {
+        const fromIdx = scenes.findIndex((s) => s.scene_id === conn.from);
+        if (fromIdx >= 0) {
+          alphas[fromIdx] = Math.max(alphas[fromIdx], Math.min(leaving, smooth(t / 0.32)));
+        }
       }
     }
   } else {
+    // Hold: the active scene lives alone — even a nested scene's parent stays
+    // gone (the camera is so deep inside that only raw canvas surrounds it).
     alphas[active] = 1;
-  }
-
-  // Descendants of the active scene stay visible (nest previews; LOD gates
-  // how early they actually read), then ancestors inherit their children's
-  // visibility so a nested hold always keeps its surrounding parent.
-  for (let j = 0; j < scenes.length; j++) {
-    if (j !== active && ancestors[j].includes(active)) {
-      alphas[j] = Math.max(alphas[j], alphas[active]);
-    }
-  }
-  for (let j = 0; j < scenes.length; j++) {
-    if (alphas[j] <= 0) continue;
-    for (const anc of ancestors[j]) {
-      alphas[anc] = Math.max(alphas[anc], alphas[j]);
-    }
   }
 
   // Level of detail: how large a region currently appears on screen (as a
@@ -157,8 +154,13 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
       />
 
       {/* Camera roll: the world rotates a few degrees around the viewport
-          center mid-flight and always lands level — a banked-turn feel. */}
-      <AbsoluteFill style={{ transform: `rotate(${cam.rot}deg)`, willChange: 'transform' }}>
+          center mid-flight and always lands level — a banked-turn feel.
+          NO will-change anywhere on the camera path: forcing the huge world
+          into a cached compositor layer makes Chromium reuse rasters taken at
+          mid-flight scales, which is exactly the "text goes blurry when the
+          camera lands" bug. Un-promoted, every frame rasters at the true
+          accumulated scale and DOM text stays vector-crisp. */}
+      <AbsoluteFill style={{ transform: cam.rot !== 0 ? `rotate(${cam.rot}deg)` : undefined }}>
       {/* THE WORLD — one camera transform moves everything. */}
       <div
         style={{
@@ -167,7 +169,6 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
           height: plan.world.height,
           transform: `translate(${vw / 2 - cam.x * cam.scale}px, ${vh / 2 - cam.y * cam.scale}px) scale(${cam.scale})`,
           transformOrigin: '0 0',
-          willChange: 'transform',
         }}
       >
         {/* Full-speed dot grid pinned to the world itself. */}
@@ -222,6 +223,10 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
         {renderOrder.map(({ scene, i, item }) => {
           const w = camera.windows[i];
           const next = camera.windows[i + 1];
+          // Nested scenes materialise mid-dive, so their content must spring
+          // in earlier or the newborn region arrives as an empty plate; a
+          // contrast scene must be readable DURING the shared-frame beat.
+          const contentDelay = item!.parent_id ? 0.35 : item!.relation === 'contrast' ? 0.38 : 0.55;
           return (
             <SceneRegion
               key={scene.scene_id}
@@ -230,13 +235,17 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
               focus={camera.focus(i, frame)}
               lod={lodFor(item!.w)}
               alpha={alphas[i]}
+              enter={enters[i]}
               clock={{
                 // Content starts revealing just before touchdown so the region
                 // is alive the moment the camera lands. The cold open (scene 1)
                 // starts immediately — the camera IS already inside it, and a
                 // frameless region with unrevealed content is a blank screen.
-                start: w.start + (i === 0 ? 0 : Math.round(w.travel * 0.55)),
+                start: w.start + (i === 0 ? 0 : Math.round(w.travel * contentDelay)),
                 end: w.start + w.frames,
+                // Narration audio plays from the scene window start — word-
+                // synced overlays (punchlines) anchor here.
+                narrationStart: w.start,
                 // Full on-screen life of the region (flight in -> faded out
                 // during the next flight); slot videos only mount inside it.
                 mediaFrom: Math.max(0, w.start - Math.round(fps * 0.2)),

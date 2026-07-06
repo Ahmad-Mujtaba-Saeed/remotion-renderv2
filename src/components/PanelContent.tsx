@@ -11,7 +11,11 @@ import { GlassCard } from './GlassCard';
  * - `glass` false → the parent supplies the glass (banner strip), so content
  *   renders transparent.
  */
-export const PanelContent: React.FC<{ slot?: Slot; glass: boolean }> = ({ slot, glass }) => {
+export const PanelContent: React.FC<{ slot?: Slot; glass: boolean; compact?: boolean }> = ({
+  slot,
+  glass,
+  compact,
+}) => {
   if (!slot) return null;
 
   if (slot.content_type === 'explanation_box') {
@@ -21,10 +25,10 @@ export const PanelContent: React.FC<{ slot?: Slot; glass: boolean }> = ({ slot, 
   if (slot.content_type === 'text_block') {
     return glass ? (
       <GlassCard style={{ padding: '7%' }}>
-        <TextBlock slot={slot} transparent />
+        <TextBlock slot={slot} transparent compact={compact} />
       </GlassCard>
     ) : (
-      <TextBlock slot={slot} transparent />
+      <TextBlock slot={slot} transparent compact={compact} />
     );
   }
 

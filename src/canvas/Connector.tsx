@@ -52,6 +52,10 @@ export const Connector: React.FC<{
   // the same visual weight whether the cards are 700 or 3000 world units.
   const u = Math.max(0.7, Math.min(2.2, Math.min(from.w, from.h, to.w, to.h) / 1000));
 
+  // Per-hop rhythm: the dot spacing varies so no two trails read identical.
+  const seeded = Math.abs(Math.sin(hopIndex * 127.1 + 7 * 311.7) * 43758.5453) % 1;
+  const dashGap = (56 + seeded * 20) * u;
+
   const pts = useMemo(() => {
     const p0 = edgePoint(from, [to.x, to.y], 60);
     const p1 = edgePoint(to, [from.x, from.y], 80);
@@ -109,7 +113,7 @@ export const Connector: React.FC<{
             stroke={theme.accent}
             strokeWidth={40 * u}
             strokeLinecap="round"
-            strokeDasharray={`0.1 ${64 * u}`}
+            strokeDasharray={`0.1 ${dashGap}`}
             opacity={0.14}
           />
           <path
@@ -118,7 +122,7 @@ export const Connector: React.FC<{
             stroke={theme.accent}
             strokeWidth={19 * u}
             strokeLinecap="round"
-            strokeDasharray={`0.1 ${64 * u}`}
+            strokeDasharray={`0.1 ${dashGap}`}
             opacity={0.85}
           />
           {drawn < 1 ? (

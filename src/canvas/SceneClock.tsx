@@ -15,6 +15,12 @@ export interface SceneClockWindow {
   /** Global frame the station loses focus (end of its scene). */
   end: number;
   /**
+   * Global frame the scene's NARRATION audio starts at (the scene window
+   * start, travel included). Word-synced overlays (punchlines) anchor to
+   * this, not to `start` — the voice begins during the flight in.
+   */
+  narrationStart?: number;
+  /**
    * Global frame range in which the region is on screen AT ALL (from the
    * start of the flight toward it until it has faded out during the next
    * flight). Slot videos mount only inside this window, so a 20-scene journey

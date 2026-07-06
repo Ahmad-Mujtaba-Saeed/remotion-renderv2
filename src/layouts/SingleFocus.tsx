@@ -32,13 +32,13 @@ const Illustration: React.FC<{ url: string }> = ({ url }) => {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {/* Accent halo bleeding out behind the picture. */}
+      {/* Accent halo bleeding out behind the picture (gradient only — a blur
+          filter here would force raster surfaces inside the region). */}
       <div
         style={{
           position: 'absolute',
           inset: '-12%',
           background: `radial-gradient(55% 55% at 50% 50%, ${theme.accent}3d, transparent 72%)`,
-          filter: 'blur(40px)',
         }}
       />
       <div
@@ -66,9 +66,74 @@ const Illustration: React.FC<{ url: string }> = ({ url }) => {
   );
 };
 
-/** Two soft theme-coloured washes that anchor text-only regions. */
-const AccentWash: React.FC = () => {
+/**
+ * Soft theme-coloured washes that anchor text-only regions. Three variants
+ * (picked per scene) so consecutive text scenes never share a silhouette:
+ *  0 — twin corner glows (the classic);
+ *  1 — one diagonal light beam sweeping behind the copy;
+ *  2 — an off-center halo ring.
+ * Gradients only — no blur filters, they'd rasterize the region and soften
+ * its text under the camera (see SceneRegion).
+ */
+const AccentWash: React.FC<{ variant?: number }> = ({ variant = 0 }) => {
   const theme = useTheme();
+
+  if (variant === 1) {
+    return (
+      <AbsoluteFill style={{ pointerEvents: 'none' }}>
+        <div
+          style={{
+            position: 'absolute',
+            width: '160%',
+            height: '46%',
+            left: '-30%',
+            top: '12%',
+            transform: 'rotate(-14deg)',
+            background: `linear-gradient(90deg, transparent 4%, ${theme.accent}1f 30%, ${theme.accent2}17 62%, transparent 92%)`,
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            width: '44%',
+            height: '54%',
+            right: '-10%',
+            bottom: '-16%',
+            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}22, transparent 70%)`,
+          }}
+        />
+      </AbsoluteFill>
+    );
+  }
+
+  if (variant === 2) {
+    return (
+      <AbsoluteFill style={{ pointerEvents: 'none' }}>
+        <div
+          style={{
+            position: 'absolute',
+            width: '78%',
+            aspectRatio: '1',
+            left: '46%',
+            top: '-24%',
+            borderRadius: '50%',
+            background: `radial-gradient(50% 50% at 50% 50%, transparent 52%, ${theme.accent}26 62%, transparent 74%)`,
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            width: '48%',
+            height: '58%',
+            left: '-12%',
+            bottom: '-18%',
+            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}24, transparent 70%)`,
+          }}
+        />
+      </AbsoluteFill>
+    );
+  }
+
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
       <div
@@ -79,7 +144,6 @@ const AccentWash: React.FC = () => {
           left: '-14%',
           top: '-18%',
           background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent}30, transparent 70%)`,
-          filter: 'blur(30px)',
         }}
       />
       <div
@@ -90,11 +154,17 @@ const AccentWash: React.FC = () => {
           right: '-12%',
           bottom: '-16%',
           background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}28, transparent 70%)`,
-          filter: 'blur(30px)',
         }}
       />
     </AbsoluteFill>
   );
+};
+
+/** Cheap stable hash so each scene picks its own wash variant. */
+const hashId = (id: string): number => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return Math.abs(h);
 };
 
 export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
@@ -125,11 +195,13 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
   const aspect = region.aspect ?? width / Math.max(1, height);
   const portrait = aspect < 0.9;
 
+  const washVariant = hashId(scene.scene_id) % 3;
+
   // ---- Canvas journey: text + AI illustration = editorial split ------------
   if (isText && scene.illustration_url) {
     return (
       <AbsoluteFill style={{ padding: '5.5%', boxSizing: 'border-box' }}>
-        <AccentWash />
+        <AccentWash variant={washVariant} />
         <div
           style={{
             display: 'flex',
@@ -154,8 +226,8 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
   // ---- Canvas journey: text only = copy over an accent wash ----------------
   if (isText) {
     return (
-      <AbsoluteFill style={{ padding: '3%', boxSizing: 'border-box' }}>
-        <AccentWash />
+      <AbsoluteFill style={{ padding: '3%', boxSizing: 'border-box', justifyContent: 'center' }}>
+        <AccentWash variant={washVariant} />
         <SlotRenderer slot={slot} />
       </AbsoluteFill>
     );
@@ -172,7 +244,6 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
           left: '-9%',
           top: '-11%',
           background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent}33, transparent 70%)`,
-          filter: 'blur(46px)',
         }}
       />
       <div
@@ -183,7 +254,6 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
           right: '-8%',
           bottom: '-10%',
           background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}2b, transparent 70%)`,
-          filter: 'blur(46px)',
         }}
       />
       <AbsoluteFill style={{ padding: '4.5%' }}>

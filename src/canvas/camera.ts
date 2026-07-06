@@ -157,7 +157,7 @@ export const buildCamera = (
     const relation: SceneRelation = item.relation ?? 'continues';
     const treatment = item.treatment ?? 'canvas_hop';
     if (relation === 'consequence') {
-      return { ease: easeInOutQuint, dip: 1.1, roll: 3.2, bendScale: 1.0, overshoot: 0.045 };
+      return { ease: easeInOutQuint, dip: 1.1, roll: 3.2, bendScale: 1.0, overshoot: 0.03 };
     }
     if (relation === 'callback') {
       return { ease: easeInOutSine, dip: 1.5, roll: 1.6, bendScale: 1.5, overshoot: 0 };
@@ -169,26 +169,58 @@ export const buildCamera = (
   };
 
   // ---- Hold moves (per-scene seeded variation so no two feel identical) ----
+  // CONTINUITY CONTRACT: every hold move starts EXACTLY at the flight's
+  // landing framing (item center, fit scale) with zero velocity. Flights land
+  // at that same state with zero velocity too, so arrival→hold is seamless —
+  // the old `drift` started offset from center at a different zoom, which
+  // read as a visible snap ("camera shake") the instant the flight ended.
   const holdState = (i: number, h: number): CamState => {
     const item = items[i];
     const move = item.hold_move ?? 'breathe';
-    const e = easeInOutSine(clamp(h, 0, 1));
+    const t = clamp(h, 0, 1);
+    // Smooth 0→1 ramp with zero slope at both ends.
+    const s = easeInOutSine(t);
 
     if (move === 'push_in') {
-      const target = 1.12 + seeded(i, 11) * 0.06;
-      return { x: item.x, y: item.y, scale: lerp(fits[i], fits[i] * target, e), rot: 0 };
+      const target = 0.12 + seeded(i, 11) * 0.06;
+      return { x: item.x, y: item.y, scale: fits[i] * (1 + target * s), rot: 0 };
     }
     if (move === 'drift') {
       const sx = seeded(i, 12) > 0.5 ? 1 : -1;
       const sy = seeded(i, 13) > 0.5 ? 1 : -1;
-      const dx = item.w * 0.035 * sx;
-      const dy = item.h * 0.03 * sy;
-      const zoom = 1.04 + seeded(i, 14) * 0.03;
-      return { x: lerp(item.x - dx, item.x + dx, e), y: lerp(item.y - dy, item.y + dy, e), scale: fits[i] * zoom, rot: 0 };
+      const dx = item.w * 0.05 * sx;
+      const dy = item.h * 0.04 * sy;
+      return {
+        x: item.x + dx * s,
+        y: item.y + dy * s,
+        scale: fits[i] * (1 + (0.035 + seeded(i, 14) * 0.025) * s),
+        rot: 0,
+      };
+    }
+    if (move === 'orbit') {
+      // A gentle elliptical sway that leaves home and returns to it — sin²
+      // envelope keeps velocity zero at both ends of the hold.
+      const env = Math.sin(Math.PI * t) ** 2;
+      const theta = seeded(i, 16) * Math.PI * 2 + t * Math.PI * 0.8;
+      return {
+        x: item.x + item.w * 0.04 * env * Math.cos(theta),
+        y: item.y + item.h * 0.032 * env * Math.sin(theta),
+        scale: fits[i] * (1 + 0.03 * env),
+        rot: 0,
+      };
+    }
+    if (move === 'rise') {
+      // Slow upward reveal with a light push — feels like standing taller.
+      return {
+        x: item.x,
+        y: item.y - item.h * (0.04 + seeded(i, 17) * 0.02) * s,
+        scale: fits[i] * (1 + 0.05 * s),
+        rot: 0,
+      };
     }
     // breathe
-    const amp = 1.045 + seeded(i, 15) * 0.025;
-    return { x: item.x, y: item.y, scale: lerp(fits[i], fits[i] * amp, e), rot: 0 };
+    const amp = 0.045 + seeded(i, 15) * 0.025;
+    return { x: item.x, y: item.y, scale: fits[i] * (1 + amp * s), rot: 0 };
   };
 
   /** Where the camera is at the END of scene i (start point of the next flight). */
@@ -240,8 +272,11 @@ export const buildCamera = (
       if (treatment === 'zoom_nest') {
         // DIVE with anticipation: a breath outward (classic animation antic),
         // then a straight log-zoom into the previous scene's focal point.
+        // The antic rides a smoothstep so it eases in from zero velocity —
+        // no kick the instant the dive starts.
         const e = easeInOutCubic(t);
-        const antic = 1 - 0.05 * Math.sin(Math.PI * clamp(t / 0.24, 0, 1));
+        const au = clamp(t / 0.24, 0, 1);
+        const antic = 1 - 0.04 * Math.sin(Math.PI * (au * au * (3 - 2 * au)));
         return {
           x: lerp(from[0], to[0], e),
           y: lerp(from[1], to[1], e),
@@ -264,8 +299,10 @@ export const buildCamera = (
           };
         }
         if (t < 0.6) {
-          // Hold the comparison; lean a hair toward where we're going.
-          const e = (t - 0.42) / 0.18;
+          // Hold the comparison; lean a hair toward where we're going. The
+          // lean is eased so both ends of this plateau have zero velocity —
+          // segment boundaries must never kick.
+          const e = easeInOutSine((t - 0.42) / 0.18);
           return {
             x: lerp(duo.cx, lerp(duo.cx, to[0], 0.08), e),
             y: lerp(duo.cy, lerp(duo.cy, to[1], 0.08), e),
@@ -302,8 +339,10 @@ export const buildCamera = (
 
       // Overshoot-settle: ride slightly past the framing then relax into it
       // (only for punchy arrivals — it reads as the camera "catching" itself).
+      // sin² keeps the pulse velocity-continuous at both ends, so the settle
+      // is a breath, never a jolt.
       if (profile.overshoot > 0) {
-        scale *= 1 + profile.overshoot * Math.sin(Math.PI * clamp((t - 0.7) / 0.3, 0, 1));
+        scale *= 1 + profile.overshoot * Math.sin(Math.PI * clamp((t - 0.7) / 0.3, 0, 1)) ** 2;
       }
 
       // Roll into the curve, level out on landing.

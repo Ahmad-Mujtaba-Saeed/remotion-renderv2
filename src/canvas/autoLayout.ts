@@ -38,7 +38,7 @@ const autoItem = (sceneId: string, i: number, placed: CanvasItem[], base: { w: n
     h,
     rotation: 0,
     emphasis: i === 0 ? 'hero' : 'normal',
-    hold_move: (['breathe', 'push_in', 'drift'] as const)[i % 3],
+    hold_move: (['breathe', 'push_in', 'drift', 'orbit', 'rise'] as const)[i % 5],
     props: [],
     depth: 0,
     parent_id: null,

@@ -27,6 +27,18 @@ export type TransitionType =
   | 'wipe'
   | 'zoom_through';
 
+/**
+ * A pre-extracted JPEG frame sequence for a slot video. Rendering stills via
+ * <Img> is fully deterministic — no <video> seeking, so no stuck/step-back
+ * frames ever. Backend extracts once per upload (idempotent) and ships this.
+ */
+export interface FrameSequence {
+  /** URL prefix; frame N (1-based) lives at `${url_prefix}${NNNNN}.jpg`. */
+  url_prefix: string;
+  count: number;
+  fps: number;
+}
+
 export interface AssetRef {
   url?: string;
   path?: string;
@@ -36,6 +48,8 @@ export interface AssetRef {
   /** Real pixel dimensions (backend probe) so slots can fit, not crop. */
   width?: number | null;
   height?: number | null;
+  /** Optional extracted frame sequence (preferred over <Video> when present). */
+  frames?: FrameSequence | null;
 }
 
 export interface Callout {
@@ -65,6 +79,31 @@ export interface Slot {
   width_pct?: number;
 }
 
+/** One spoken word with its real timestamps (seconds, relative to the scene's
+ *  narration audio start). Comes from Kokoro's token timings on the backend. */
+export interface NarrationWord {
+  word: string;
+  start: number;
+  end: number;
+}
+
+export type PunchlineStyle = 'plate' | 'stamp' | 'quote';
+
+/**
+ * A short, impactful phrase lifted VERBATIM from the scene's narration that
+ * pops on screen (with its own backdrop) exactly as the narrator says it,
+ * highlighting word by word. Backend extracts + aligns it to word timings.
+ */
+export interface Punchline {
+  text: string;
+  style?: PunchlineStyle;
+  /** Seconds relative to narration start. */
+  start: number;
+  end: number;
+  /** Aligned per-word timings; may be evenly distributed when unaligned. */
+  words: NarrationWord[];
+}
+
 export interface Scene {
   scene_id: string;
   order: number;
@@ -80,6 +119,10 @@ export interface Scene {
   illustration_url?: string;
   /** Optional fal Chatterbox narration audio URL. */
   narration_audio_url?: string;
+  /** Real word-level timings of the narration audio (Kokoro tokens). */
+  narration_words?: NarrationWord[];
+  /** Optional narration-synced punchline overlay. */
+  punchline?: Punchline | null;
 }
 
 export interface Theme {
@@ -108,7 +151,7 @@ export interface Music {
 
 export type CompositionMode = 'canvas_journey' | 'slides';
 
-export type HoldMove = 'breathe' | 'push_in' | 'drift';
+export type HoldMove = 'breathe' | 'push_in' | 'drift' | 'orbit' | 'rise';
 
 /** How the camera reaches (and treats) a scene — the motion language. */
 export type Treatment =

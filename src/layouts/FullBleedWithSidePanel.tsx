@@ -22,7 +22,10 @@ export const FullBleedWithSidePanel: React.FC<{ scene: Scene }> = ({ scene }) =>
   const bg = scene.slots['slot_background'];
   const panel = scene.slots['slot_panel'];
   const dock = panel?.dock === 'left' ? 'left' : 'right';
-  const widthPct = Math.max(24, Math.min(48, panel?.width_pct ?? 38));
+  // The image is the scene — the panel is a caption on it, never a co-star.
+  // Hard cap well under half the frame so no upload ever disappears behind
+  // its own explanation.
+  const widthPct = Math.max(24, Math.min(38, panel?.width_pct ?? 33));
 
   const enter = spring({ frame, fps, config: { damping: 200 }, durationInFrames: Math.round(fps * 0.6) });
   const offset = interpolate(enter, [0, 1], [portrait ? 60 : dock === 'left' ? -60 : 60, 0]);
@@ -33,14 +36,15 @@ export const FullBleedWithSidePanel: React.FC<{ scene: Scene }> = ({ scene }) =>
         <MediaSlot slot={bg} />
       </AbsoluteFill>
 
-      {/* Legibility scrim that fades from the docked side. */}
+      {/* Legibility scrim, kept tight to the docked side so the image stays
+          visible across most of the frame. */}
       <AbsoluteFill
         style={{
           background: portrait
-            ? 'linear-gradient(0deg, rgba(0,0,0,0.6), transparent 48%)'
+            ? 'linear-gradient(0deg, rgba(0,0,0,0.55), transparent 38%)'
             : dock === 'left'
-              ? 'linear-gradient(90deg, rgba(0,0,0,0.55), transparent 55%)'
-              : 'linear-gradient(270deg, rgba(0,0,0,0.55), transparent 55%)',
+              ? 'linear-gradient(90deg, rgba(0,0,0,0.5), transparent 44%)'
+              : 'linear-gradient(270deg, rgba(0,0,0,0.5), transparent 44%)',
         }}
       />
 
@@ -54,7 +58,7 @@ export const FullBleedWithSidePanel: React.FC<{ scene: Scene }> = ({ scene }) =>
       >
         <div
           style={{
-            width: portrait ? '100%' : `${widthPct}%`,
+            width: portrait ? '86%' : `${widthPct}%`,
             opacity: enter,
             transform: portrait ? `translateY(${offset}px)` : `translateX(${offset}px)`,
           }}

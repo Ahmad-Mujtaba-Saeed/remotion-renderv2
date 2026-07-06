@@ -6,6 +6,7 @@ import { glassStyle } from './GlassCard';
 import { KineticText } from './KineticText';
 import { useScaleUnit } from '../responsive';
 import { useSceneClock } from '../canvas/SceneClock';
+import { useRegionStyle } from '../canvas/RegionStyle';
 
 /**
  * A floating explanation card: accent tab, kinetic heading, and a short body.
@@ -17,7 +18,19 @@ export const ExplanationBox: React.FC<{ slot: Slot; transparent?: boolean }> = (
   const { frame } = useSceneClock();
   const { fps } = useVideoConfig();
   const u = useScaleUnit();
+  const region = useRegionStyle();
   const inn = spring({ frame, fps, config: { damping: 200 }, durationInFrames: Math.round(fps * 0.55) });
+
+  // Frameless canvas regions swap the glass (backdrop-filter would rasterize
+  // the region and soften its text under the camera zoom) for a soft plate.
+  const surface: React.CSSProperties = region.frameless
+    ? {
+        background: `linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015)), ${theme.panel}`,
+        border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: 30,
+        boxShadow: '0 30px 80px rgba(0,0,0,0.45)',
+      }
+    : glassStyle(theme);
 
   const inner = (
     <div style={{ padding: transparent ? 0 : '7%', color: theme.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -56,7 +69,7 @@ export const ExplanationBox: React.FC<{ slot: Slot; transparent?: boolean }> = (
   return (
     <div
       style={{
-        ...glassStyle(theme),
+        ...surface,
         opacity: inn,
         transform: `translateY(${interpolate(inn, [0, 1], [24, 0])}px)`,
         width: '100%',

@@ -4,20 +4,28 @@ import { CanvasItem, Scene } from '../types';
 import { SceneLayout } from '../components/SceneRouter';
 import { SceneClockProvider, SceneClockWindow } from './SceneClock';
 import { RegionStyleProvider } from './RegionStyle';
+import { PunchLine } from '../components/PunchLine';
+import { useTheme } from '../theme';
 
 /**
  * One scene as a FRAMELESS composition region on the world canvas (the soft
  * collage look): media masks itself with big rounded corners and a deep
- * shadow, text floats directly on the world background. No cards, no borders,
- * no rotation, no badges.
+ * shadow, text floats on a soft plate. No cards, no borders, no rotation.
  *
  * The content is the scene's REGULAR layout rendered at the composition's
  * design resolution and uniformly scaled into the region — every layout,
  * theme token and responsive fix behaves identically in slides mode and here.
  *
- * `focus` (0..1) drives brightness/saturation and a micro scale-pop;
+ * CRISPNESS: this element must never carry a CSS `filter` — filters force the
+ * region into its own rasterized surface, and combined with the animated
+ * camera transform Chromium reuses rasters taken at flight scales, which is
+ * what made text blurry once the camera settled. Dimming is therefore an
+ * OVERLAY (pure opacity), and focus is transform/opacity only.
+ *
+ * `focus` (0..1) drives the dim scrim and a micro scale-pop;
+ * `enter` (0..1) condenses the region in as it materialises out of thin air;
  * `lod` (0..1) fades regions that are too small to matter at the current
- * camera distance (deeply nested scenes stay invisible until you dive).
+ * camera distance.
  */
 export const SceneRegion: React.FC<{
   item: CanvasItem;
@@ -26,9 +34,12 @@ export const SceneRegion: React.FC<{
   lod: number;
   /** Isolation visibility (0..1): scenes off the camera's beat don't exist. */
   alpha?: number;
+  /** Birth progress (0..1) while the scene materialises mid-flight. */
+  enter?: number;
   clock: SceneClockWindow;
-}> = ({ item, scene, focus, lod, alpha = 1, clock }) => {
+}> = ({ item, scene, focus, lod, alpha = 1, enter = 1, clock }) => {
   const { width: designW } = useVideoConfig();
+  const theme = useTheme();
 
   // Content is designed at the viewport's width with the height that keeps
   // the region's own aspect, then scaled uniformly into place.
@@ -37,6 +48,12 @@ export const SceneRegion: React.FC<{
 
   const opacity = lod * alpha;
   if (opacity <= 0.01) return null;
+
+  // Materialise: condense from slightly larger + drift down a touch, so the
+  // scene reads as forming out of thin air rather than being switched on.
+  const born = Math.max(0, Math.min(1, enter));
+  const pop = 1 + 0.015 * focus + 0.05 * (1 - born);
+  const settleY = (1 - born) * item.h * 0.02;
 
   return (
     <div
@@ -47,9 +64,8 @@ export const SceneRegion: React.FC<{
         width: item.w,
         height: item.h,
         opacity,
-        transform: `scale(${1 + 0.015 * focus})`,
+        transform: `translateY(${settleY}px) scale(${pop})`,
         transformOrigin: 'center center',
-        filter: `brightness(${0.7 + 0.3 * focus}) saturate(${0.85 + 0.15 * focus})`,
       }}
     >
       <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
@@ -65,10 +81,24 @@ export const SceneRegion: React.FC<{
           <RegionStyleProvider value={{ frameless: true, mediaRadius: 48, aspect: item.w / Math.max(1, item.h) }}>
             <SceneClockProvider window={clock}>
               <SceneLayout scene={scene} />
+              {scene.punchline ? <PunchLine scene={scene} /> : null}
             </SceneClockProvider>
           </RegionStyleProvider>
         </div>
       </div>
+
+      {/* Out-of-focus dim as an overlay wash (NOT a filter — see above). */}
+      {focus < 0.98 ? (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: theme.bg_from,
+            opacity: 0.32 * (1 - focus),
+            pointerEvents: 'none',
+          }}
+        />
+      ) : null}
     </div>
   );
 };

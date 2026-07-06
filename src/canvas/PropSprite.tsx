@@ -95,7 +95,6 @@ export const PropSprite: React.FC<{
         mixBlendMode: 'screen',
         opacity: 0.95 * entranceOpacity * alpha,
         transform: `${idle} translateY(${entranceY}px) rotate(${entranceRotate}deg) scale(${entranceScale})`,
-        willChange: 'transform, opacity',
         pointerEvents: 'none',
       }}
     />

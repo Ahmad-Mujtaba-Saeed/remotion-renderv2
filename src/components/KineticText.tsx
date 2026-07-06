@@ -31,7 +31,6 @@ export const KineticText: React.FC<{
               marginRight: '0.28em',
               opacity: e,
               transform: `translateY(${(1 - e) * 20}px)`,
-              willChange: 'transform, opacity',
             }}
           >
             {word}

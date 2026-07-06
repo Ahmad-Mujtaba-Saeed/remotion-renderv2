@@ -42,12 +42,17 @@ export const FullBleedWithBanner: React.FC<{ scene: Scene }> = ({ scene }) => {
           style={{
             ...glassStyle(theme, 22),
             width: '100%',
-            padding: '3.4% 4%',
+            // A banner is a strip, not a wall: compact content (inline chip
+            // bullets) plus a hard height cap keep the image the star even
+            // when the AI writes five long bullets.
+            maxHeight: '32%',
+            overflow: 'hidden',
+            padding: '2.6% 4%',
             opacity: enter,
             transform: `translateY(${offset}px)`,
           }}
         >
-          <PanelContent slot={banner} glass={false} />
+          <PanelContent slot={banner} glass={false} compact />
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

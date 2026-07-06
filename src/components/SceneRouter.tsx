@@ -7,6 +7,7 @@ import { SplitTopBottom } from '../layouts/SplitTopBottom';
 import { FullBleedWithSidePanel } from '../layouts/FullBleedWithSidePanel';
 import { FullBleedWithBanner } from '../layouts/FullBleedWithBanner';
 import { AmbientBackground } from './AmbientBackground';
+import { PunchLine } from './PunchLine';
 
 /** A gentle scale+fade entrance so each scene's content settles in. */
 const Entrance: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -52,6 +53,9 @@ export const SceneRouter: React.FC<{ scene: Scene }> = ({ scene }) => {
       <Entrance>
         <SceneLayout scene={scene} />
       </Entrance>
+      {/* Narration-synced punchline (slides mode: the Sequence clock IS the
+          narration clock, so no scene-window re-basing is needed). */}
+      {scene.punchline ? <PunchLine scene={scene} /> : null}
     </AbsoluteFill>
   );
 };

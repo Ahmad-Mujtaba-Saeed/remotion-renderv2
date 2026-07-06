@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { Img, Loop, Sequence, Video, useVideoConfig } from 'remotion';
-import { Slot } from '../types';
+import { Img, Loop, Sequence, Video, useCurrentFrame, useVideoConfig } from 'remotion';
+import { FrameSequence, Slot } from '../types';
 import { CameraMove } from './CameraMove';
 import { useTheme } from '../theme';
 import { useScaleUnit } from '../responsive';
@@ -18,6 +18,22 @@ import { useSceneWindow } from '../canvas/SceneClock';
  * media is CONTAINED at its natural aspect over a soft blurred fill instead
  * of being brutally centre-cropped by objectFit: cover.
  */
+
+/**
+ * Deterministic video playback from a pre-extracted JPEG frame sequence: the
+ * exact still for the current frame is drawn with <Img> — no <video> element,
+ * no seeking, so playback can never stick, stutter or step backwards (the
+ * html5 <Video> path seeks per frame, and Chrome's snap-to-frame at exact
+ * boundaries is what produced the back-and-forward frame jitter). Loops
+ * naturally via modulo when the clip is shorter than its scene.
+ */
+const FrameStrip: React.FC<{ frames: FrameSequence; style: React.CSSProperties }> = ({ frames, style }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const count = Math.max(1, frames.count);
+  const idx = (((Math.floor((Math.max(0, frame) * frames.fps) / fps) % count) + count) % count) + 1;
+  return <Img src={`${frames.url_prefix}${String(idx).padStart(5, '0')}.jpg`} style={style} />;
+};
 
 /** Aspect of the slot's box, measured pre-transform (offset* ignores scale). */
 const useBoxAspect = (): [React.RefObject<HTMLDivElement>, number | null] => {
@@ -161,8 +177,19 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
     ? Math.max(1, Math.floor(slot.asset_ref.duration_seconds * fps) - 2)
     : null;
 
+  // Prefer the extracted frame sequence when the backend shipped one — it is
+  // the only fully deterministic playback path. <Video> stays as fallback for
+  // clips without frames (extraction failed / too long).
+  const frames = slot.asset_ref?.frames;
+
   let media = isVideo ? (
-    clipFrames ? <Loop durationInFrames={clipFrames}>{video}</Loop> : video
+    frames?.count && frames.url_prefix ? (
+      <FrameStrip frames={frames} style={fitStyle} />
+    ) : clipFrames ? (
+      <Loop durationInFrames={clipFrames}>{video}</Loop>
+    ) : (
+      video
+    )
   ) : (
     <Img src={url} style={fitStyle} />
   );
