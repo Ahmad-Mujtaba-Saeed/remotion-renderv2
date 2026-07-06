@@ -71,6 +71,9 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
         }}
       />
 
+      {/* Camera roll: the world rotates a few degrees around the viewport
+          center mid-flight and always lands level — a banked-turn feel. */}
+      <AbsoluteFill style={{ transform: `rotate(${cam.rot}deg)`, willChange: 'transform' }}>
       {/* THE WORLD — one camera transform moves everything. */}
       <div
         style={{
@@ -152,8 +155,10 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
           ))
         )}
       </div>
+      </AbsoluteFill>
 
-      {/* Per-scene narration, timed to each region's window. */}
+      {/* Per-scene narration, timed to each region's window. Boosted above
+          the music bed so the voice always leads the mix. */}
       {scenes.map((scene, i) =>
         scene.narration_audio_url ? (
           <Sequence
@@ -161,7 +166,7 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
             from={camera.windows[i].start}
             durationInFrames={camera.windows[i].frames}
           >
-            <Audio src={scene.narration_audio_url} />
+            <Audio src={scene.narration_audio_url} volume={1.3} />
           </Sequence>
         ) : null
       )}

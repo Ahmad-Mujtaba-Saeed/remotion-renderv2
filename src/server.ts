@@ -36,7 +36,21 @@ function toHostPath(p: string): string {
 // Storage is bind-mounted, so this process can serve the same files directly —
 // point REMOTION_ASSET_BASE_URL at this server. CORS (needed for CSS
 // mask-image fetches) comes from the global cors() middleware above.
-app.use('/storage', express.static(path.join(HOST_STORAGE_PREFIX, 'app', 'public')));
+app.use(
+  '/storage',
+  express.static(path.join(HOST_STORAGE_PREFIX, 'app', 'public'), {
+    // no-store: headless Chrome's disk cache can't do range operations on
+    // revalidated media entries (net::ERR_CACHE_OPERATION_NOT_SUPPORTED ->
+    // "Format error" mid-render). Streaming every request from this local
+    // process is free and side-steps the Chromium cache entirely.
+    cacheControl: false,
+    etag: false,
+    lastModified: false,
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'no-store');
+    },
+  })
+);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'remotion-render' });

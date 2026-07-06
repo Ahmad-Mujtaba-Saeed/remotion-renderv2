@@ -47,7 +47,7 @@ export const SceneRouter: React.FC<{ scene: Scene }> = ({ scene }) => {
     <AbsoluteFill>
       {/* Per-scene narration (self-hosted Kokoro). Plays from the scene start;
           scene durations are paced to the audio length on the PHP side. */}
-      {scene.narration_audio_url ? <Audio src={scene.narration_audio_url} /> : null}
+      {scene.narration_audio_url ? <Audio src={scene.narration_audio_url} volume={1.3} /> : null}
       <AmbientBackground imageUrl={scene.ambient_image_url} />
       <Entrance>
         <SceneLayout scene={scene} />

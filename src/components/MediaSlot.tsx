@@ -71,7 +71,16 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   // on the first frames of remote mp4s (reproduced repeatedly, even with
   // +faststart files). The browser video tag streams the same files fine
   // now that assets are served by this host process (see server.ts).
-  const video = <Video src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />;
+  // onError: a flaky user upload degrades to an empty region instead of
+  // aborting the whole multi-minute render.
+  const video = (
+    <Video
+      src={url}
+      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      muted
+      onError={(e) => console.warn(`MediaSlot video failed (${url}):`, e?.message ?? e)}
+    />
+  );
 
   // Canvas-journey mode mounts every scene's media for the WHOLE composition,
   // so a clip shorter than the video must loop — seeking a <video> past its

@@ -132,10 +132,24 @@ export interface CanvasProp {
   size?: number;
 }
 
+/** How a scene relates to the story so far — drives the camera's flight style. */
+export type SceneRelation =
+  | 'opening'
+  | 'continues'
+  | 'elaborates'
+  | 'consequence'
+  | 'contrast'
+  | 'callback'
+  | 'new_chapter';
+
 /** A scene's frameless composition region on the world canvas (x/y = center). */
 export interface CanvasItem {
   scene_id: string;
   treatment?: Treatment;
+  /** Story relation to the previous scene (validator-normalised). */
+  relation?: SceneRelation;
+  /** For relation "callback": the earlier scene this one returns to. */
+  callback_to?: string | null;
   x: number;
   y: number;
   w: number;
@@ -157,6 +171,7 @@ export interface CanvasConnector {
   to: string;
   style?: ConnectorStyle;
   label?: string;
+  relation?: SceneRelation;
 }
 
 export interface CanvasPlan {
