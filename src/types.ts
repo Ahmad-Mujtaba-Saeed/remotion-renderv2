@@ -33,6 +33,9 @@ export interface AssetRef {
   type?: string;
   /** Real media duration (ffprobe, backend) so videos can loop safely. */
   duration_seconds?: number | null;
+  /** Real pixel dimensions (backend probe) so slots can fit, not crop. */
+  width?: number | null;
+  height?: number | null;
 }
 
 export interface Callout {
@@ -72,6 +75,9 @@ export interface Scene {
   slots: Record<string, Slot>;
   /** Optional AI-generated decorative background URL (text-only scenes). */
   ambient_image_url?: string;
+  /** Optional AI-generated illustration URL — pairs with the copy on
+      media-less scenes so they never render as bare floating text. */
+  illustration_url?: string;
   /** Optional fal Chatterbox narration audio URL. */
   narration_audio_url?: string;
 }

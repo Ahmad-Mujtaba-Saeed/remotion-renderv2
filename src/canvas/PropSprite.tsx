@@ -16,13 +16,15 @@ export const PropSprite: React.FC<{
   item: CanvasItem;
   /** Global frame at which the prop's region gains focus (entrance timing). */
   appearFrame: number;
+  /** Isolation visibility of the prop's scene (props die with their scene). */
+  alpha?: number;
   /** Stable per-prop seed so identical props on screen don't move in sync. */
   seed: number;
-}> = ({ prop, item, appearFrame, seed }) => {
+}> = ({ prop, item, appearFrame, alpha = 1, seed }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  if (!prop.url) return null;
+  if (!prop.url || alpha <= 0.01) return null;
 
   const size = (prop.size ?? 0.16) * Math.min(item.w, item.h);
   const cx = item.x - item.w / 2 + (prop.x ?? 0.9) * item.w;
@@ -91,7 +93,7 @@ export const PropSprite: React.FC<{
         maskSize: '100% 100%',
         WebkitMaskSize: '100% 100%',
         mixBlendMode: 'screen',
-        opacity: 0.95 * entranceOpacity,
+        opacity: 0.95 * entranceOpacity * alpha,
         transform: `${idle} translateY(${entranceY}px) rotate(${entranceRotate}deg) scale(${entranceScale})`,
         willChange: 'transform, opacity',
         pointerEvents: 'none',

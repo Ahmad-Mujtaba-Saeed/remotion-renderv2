@@ -53,6 +53,8 @@ export const renderExplainer = async (req: RenderRequest): Promise<string> => {
     inputProps,
     onProgress: ({ progress }) => req.onProgress?.(progress),
     chromiumOptions: { gl: 'angle' },
+    // Optional override for memory-constrained hosts (default: Remotion's).
+    concurrency: process.env.RENDER_CONCURRENCY ? parseInt(process.env.RENDER_CONCURRENCY, 10) : null,
     // Allow remote (Laravel-served) asset URLs.
     timeoutInMilliseconds: 120000,
   });

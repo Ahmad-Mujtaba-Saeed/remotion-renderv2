@@ -14,6 +14,14 @@ export interface SceneClockWindow {
   start: number;
   /** Global frame the station loses focus (end of its scene). */
   end: number;
+  /**
+   * Global frame range in which the region is on screen AT ALL (from the
+   * start of the flight toward it until it has faded out during the next
+   * flight). Slot videos mount only inside this window, so a 20-scene journey
+   * never seeks 20 <video> elements per frame.
+   */
+  mediaFrom?: number;
+  mediaUntil?: number;
 }
 
 const SceneClockContext = createContext<SceneClockWindow | null>(null);
@@ -22,6 +30,9 @@ export const SceneClockProvider: React.FC<{ window: SceneClockWindow; children: 
   window,
   children,
 }) => <SceneClockContext.Provider value={window}>{children}</SceneClockContext.Provider>;
+
+/** The raw scene window, or null outside the canvas journey (slides mode). */
+export const useSceneWindow = (): SceneClockWindow | null => useContext(SceneClockContext);
 
 /**
  * Drop-in clock for reveal animations: local frame + window length. Outside a

@@ -25,12 +25,14 @@ const autoItem = (sceneId: string, i: number, placed: CanvasItem[], base: { w: n
   const { w, h } = base;
   const jx = seeded(i, 1) * 0.12 - 0.06;
   const jy = seeded(i, 2) * 0.12 - 0.06;
-  const swing = i % 2 === 0 ? -0.55 : 0.55;
+  const swing = i % 2 === 0 ? -0.85 : 0.85;
 
+  // Scenes live FAR apart — each one should feel alone in its own stretch of
+  // space, with real travel between stops (mirrors the PHP validator).
   const item: CanvasItem = {
     scene_id: sceneId,
     treatment: i === 0 ? 'hero_open' : 'canvas_hop',
-    x: i * w * 1.45 + jx * w,
+    x: i * w * 2.2 + jx * w,
     y: swing * h + jy * h,
     w,
     h,
@@ -43,7 +45,7 @@ const autoItem = (sceneId: string, i: number, placed: CanvasItem[], base: { w: n
   };
 
   for (const other of placed) {
-    while (overlaps(item, other, 160)) {
+    while (overlaps(item, other, 480)) {
       item.x += w * 0.35;
       item.y += h * 0.2;
     }
@@ -68,6 +70,52 @@ const fitWorld = (items: CanvasItem[]): CanvasPlan['world'] => {
   }
 
   return { width: Math.ceil(maxX - minX + 2 * margin), height: Math.ceil(maxY - minY + 2 * margin) };
+};
+
+/**
+ * Spread top-level regions away from their centroid, dragging nested children
+ * along with their parent. Existing director plans were laid out for the old,
+ * denser look; scaling their positions (never their sizes) buys the isolation
+ * aesthetic real travel distance without re-running the director. Pure
+ * scaling about a point can only INCREASE pairwise distances, so it can never
+ * introduce an overlap.
+ */
+const spreadItems = (items: CanvasItem[], factor: number): void => {
+  const top = items.filter((it) => (it.depth ?? 0) === 0);
+  if (top.length < 2 || factor <= 1) return;
+
+  const cx = top.reduce((s, it) => s + it.x, 0) / top.length;
+  const cy = top.reduce((s, it) => s + it.y, 0) / top.length;
+
+  const delta = new Map<string, [number, number]>();
+  for (const it of top) {
+    const dx = (it.x - cx) * (factor - 1);
+    const dy = (it.y - cy) * (factor - 1);
+    delta.set(it.scene_id, [dx, dy]);
+    it.x += dx;
+    it.y += dy;
+  }
+
+  const byId = new Map(items.map((it) => [it.scene_id, it]));
+  for (const it of items) {
+    if ((it.depth ?? 0) === 0) continue;
+    // Follow the parent chain up to the top-level ancestor and move with it.
+    let cur = it.parent_id ?? null;
+    let guard = 0;
+    while (cur && guard++ < 12) {
+      const parent = byId.get(cur);
+      if (!parent) break;
+      if ((parent.depth ?? 0) === 0) {
+        const d = delta.get(parent.scene_id);
+        if (d) {
+          it.x += d[0];
+          it.y += d[1];
+        }
+        break;
+      }
+      cur = parent.parent_id ?? null;
+    }
+  }
 };
 
 /** v1 plans used curve/straight arrows; map them onto the v2 styles. */
@@ -111,7 +159,13 @@ export const normalizePlan = (
     }
   });
 
-  const world = usePlan && plan?.world?.width ? plan.world : fitWorld(items);
+  // Director plans were composed for a denser canvas; stretch them so every
+  // scene gets its own empty stretch of space, then re-fit the world (the
+  // stored world no longer matches after spreading).
+  if (usePlan) {
+    spreadItems(items, 1.35);
+  }
+  const world = fitWorld(items);
 
   // The journey is a chain in scene order; keep any director labels/styles.
   const labelByPair = new Map<string, CanvasConnector>();

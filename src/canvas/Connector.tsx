@@ -6,8 +6,12 @@ import { travelControl } from './camera';
 /**
  * The guide line between two scene regions, drawn in sync with the camera's
  * flight. Two styles:
- *  - "dotted": a subtle breadcrumb path — the default; decoration, not chrome.
+ *  - "dotted": a chunky breadcrumb path with a glowing scout at its tip.
  *  - "arrow":  a bold accent arrow for hops where direction/causality matters.
+ * The draw-on progress arrives ALREADY eased to the camera's own flight curve
+ * (travelProgressEased), and the tip runs ~16% ahead of it, so the line always
+ * leads the camera instead of trailing behind mid-flight. All strokes scale
+ * with the regions they connect so they stay bold at flight altitude.
  * Draw-on works by emitting only the sampled sub-path up to the current
  * progress, so dash patterns and heads stay correct for both styles.
  */
@@ -35,12 +39,18 @@ export const Connector: React.FC<{
   from: CanvasItem;
   to: CanvasItem;
   hopIndex: number;
-  /** 0..1 draw-on progress (the camera's travel into `to`). */
+  /** 0..1 draw-on progress, pre-eased to the camera's flight curve. */
   progress: number;
+  /** Whole-connector fade (the line dissolves shortly after touchdown). */
+  opacity?: number;
   label?: string;
   style?: 'dotted' | 'arrow';
-}> = ({ from, to, hopIndex, progress, label, style = 'dotted' }) => {
+}> = ({ from, to, hopIndex, progress, opacity = 1, label, style = 'dotted' }) => {
   const theme = useTheme();
+
+  // Everything scales with the smaller of the two regions, so connectors keep
+  // the same visual weight whether the cards are 700 or 3000 world units.
+  const u = Math.max(0.7, Math.min(2.2, Math.min(from.w, from.h, to.w, to.h) / 1000));
 
   const pts = useMemo(() => {
     const p0 = edgePoint(from, [to.x, to.y], 60);
@@ -54,10 +64,10 @@ export const Connector: React.FC<{
     return sampled;
   }, [from, to, hopIndex]);
 
-  if (progress <= 0.001) return null;
+  if (progress <= 0.001 || opacity <= 0.01) return null;
 
-  // The tip leads the camera slightly — the line lands just before we do.
-  const drawn = Math.min(1, progress * 1.12);
+  // The tip leads the camera — the line lands well before we do.
+  const drawn = Math.min(1, progress * 1.16);
   const upto = Math.max(2, Math.ceil(drawn * (pts.length - 1)) + 1);
   const visible = pts.slice(0, upto);
   const tip = visible[visible.length - 1];
@@ -67,56 +77,76 @@ export const Connector: React.FC<{
   const d = `M ${visible.map((p) => `${p[0]} ${p[1]}`).join(' L ')}`;
   const mid = pts[Math.floor(pts.length / 2)];
   const isArrow = style === 'arrow';
-  const headSize = 34;
+  const headSize = 64 * u;
+  const fs = 42 * u; // label font size
 
   return (
-    <g>
+    <g opacity={opacity}>
       {isArrow ? (
         <>
           {/* Soft under-glow, then the bold line. */}
-          <path d={d} fill="none" stroke={theme.accent} strokeWidth={18} strokeLinecap="round" opacity={0.16} />
-          <path d={d} fill="none" stroke={theme.accent} strokeWidth={7} strokeLinecap="round" opacity={0.95} />
+          <path d={d} fill="none" stroke={theme.accent} strokeWidth={42 * u} strokeLinecap="round" opacity={0.15} />
+          <path d={d} fill="none" stroke={theme.accent} strokeWidth={15 * u} strokeLinecap="round" opacity={0.95} />
           <g transform={`translate(${tip[0]}, ${tip[1]}) rotate(${(angle * 180) / Math.PI})`}>
             <path
               d={`M 0 0 L ${-headSize} ${headSize * 0.55} L ${-headSize * 0.72} 0 L ${-headSize} ${-headSize * 0.55} Z`}
               fill={theme.accent}
             />
-            {drawn < 1 ? <circle r={13} fill={theme.accent2} opacity={0.9} /> : null}
+            {drawn < 1 ? (
+              <>
+                <circle r={44 * u} fill={theme.accent2} opacity={0.22} />
+                <circle r={22 * u} fill={theme.accent2} opacity={0.95} />
+              </>
+            ) : null}
           </g>
         </>
       ) : (
         <>
-          {/* Subtle dotted breadcrumb with a small glowing scout at the tip. */}
+          {/* Chunky dotted breadcrumb with a glowing scout at the tip. */}
           <path
             d={d}
             fill="none"
             stroke={theme.accent}
-            strokeWidth={6}
+            strokeWidth={40 * u}
             strokeLinecap="round"
-            strokeDasharray="1 30"
-            opacity={0.55}
+            strokeDasharray={`0.1 ${64 * u}`}
+            opacity={0.14}
           />
-          {drawn < 1 ? <circle cx={tip[0]} cy={tip[1]} r={11} fill={theme.accent2} opacity={0.8} /> : null}
+          <path
+            d={d}
+            fill="none"
+            stroke={theme.accent}
+            strokeWidth={19 * u}
+            strokeLinecap="round"
+            strokeDasharray={`0.1 ${64 * u}`}
+            opacity={0.85}
+          />
+          {drawn < 1 ? (
+            <>
+              <circle cx={tip[0]} cy={tip[1]} r={40 * u} fill={theme.accent2} opacity={0.22} />
+              <circle cx={tip[0]} cy={tip[1]} r={20 * u} fill={theme.accent2} opacity={0.9} />
+            </>
+          ) : null}
         </>
       )}
 
       {label && drawn > 0.45 ? (
         <g transform={`translate(${mid[0]}, ${mid[1]})`} opacity={Math.min(1, (drawn - 0.45) / 0.3)}>
           <rect
-            x={-label.length * 11 - 18}
-            y={-30}
-            width={label.length * 22 + 36}
-            height={60}
-            rx={30}
+            x={-(label.length * fs * 0.32 + fs * 0.75)}
+            y={-fs * 1.05}
+            width={label.length * fs * 0.64 + fs * 1.5}
+            height={fs * 2.1}
+            rx={fs * 1.05}
             fill={theme.panel}
             stroke={`${theme.accent}88`}
-            strokeWidth={2}
+            strokeWidth={3 * u}
           />
           <text
             textAnchor="middle"
             dominantBaseline="central"
             fill={theme.text}
-            fontSize={30}
+            fontSize={fs}
             fontFamily="Inter, system-ui, sans-serif"
             fontWeight={700}
           >

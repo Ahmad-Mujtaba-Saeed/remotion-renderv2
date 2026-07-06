@@ -1,22 +1,44 @@
-import React from 'react';
-import { Img, Loop, Video, useVideoConfig } from 'remotion';
+import React, { useLayoutEffect, useRef, useState } from 'react';
+import { Img, Loop, Sequence, Video, useVideoConfig } from 'remotion';
 import { Slot } from '../types';
 import { CameraMove } from './CameraMove';
 import { useTheme } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { useRegionStyle } from '../canvas/RegionStyle';
+import { useSceneWindow } from '../canvas/SceneClock';
 
 /**
  * Renders an image (or video) slot with its camera move. If no asset has been
  * uploaded yet, a labelled placeholder is shown so previews still render — the
  * PHP render path refuses to start until all image slots are filled, so this
  * placeholder is only ever seen in the storyboard preview.
+ *
+ * Fit logic: when the media's real aspect (probed by Laravel into asset_ref)
+ * fights the slot's shape — a portrait phone shot in a landscape region — the
+ * media is CONTAINED at its natural aspect over a soft blurred fill instead
+ * of being brutally centre-cropped by objectFit: cover.
  */
+
+/** Aspect of the slot's box, measured pre-transform (offset* ignores scale). */
+const useBoxAspect = (): [React.RefObject<HTMLDivElement>, number | null] => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [aspect, setAspect] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (el && el.offsetHeight > 0) {
+      setAspect(el.offsetWidth / el.offsetHeight);
+    }
+  }, []);
+  return [ref, aspect];
+};
+
 export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   const theme = useTheme();
   const u = useScaleUnit();
   const region = useRegionStyle();
   const { fps } = useVideoConfig();
+  const sceneWindow = useSceneWindow();
+  const [boxRef, boxAspect] = useBoxAspect();
   const url = slot.asset_ref?.url;
   // Decide image-vs-video from the ACTUAL file, not the slot's declared
   // content_type — users may upload a jpg into a slot the AI marked `video`
@@ -66,6 +88,56 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
     );
   }
 
+  // ---- Fit: contain-over-blur when the shapes disagree ----------------------
+  const mediaW = slot.asset_ref?.width ?? null;
+  const mediaH = slot.asset_ref?.height ?? null;
+  const mediaAspect = mediaW && mediaH ? mediaW / mediaH : null;
+  const mismatch =
+    boxAspect && mediaAspect ? Math.max(boxAspect / mediaAspect, mediaAspect / boxAspect) : 1;
+  const contained = mismatch > 1.25;
+  const fitStyle: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    objectFit: contained ? 'contain' : 'cover',
+  };
+
+  // Behind a contained image: the image itself, blown up, blurred and dimmed
+  // (the classic broadcast treatment for portrait footage). Videos get a
+  // themed wash instead — a second seeking <video> would double decode cost.
+  const containBackdrop = contained ? (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      {isVideo ? (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: `linear-gradient(135deg, ${theme.bg_from}, ${theme.bg_to})`,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: `radial-gradient(60% 85% at 28% 18%, ${theme.accent}30, transparent 70%), radial-gradient(70% 70% at 76% 86%, ${theme.accent2}28, transparent 72%)`,
+            }}
+          />
+        </>
+      ) : (
+        <Img
+          src={url}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: 'blur(46px) brightness(0.42) saturate(1.15)',
+            transform: 'scale(1.18)',
+          }}
+        />
+      )}
+    </div>
+  ) : null;
+
   // Html5 <Video>, NOT <OffthreadVideo>: the Rust compositor races its own
   // asset download on Windows and dies with "No frame found at position N"
   // on the first frames of remote mp4s (reproduced repeatedly, even with
@@ -76,28 +148,48 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   const video = (
     <Video
       src={url}
-      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      style={fitStyle}
       muted
       onError={(e) => console.warn(`MediaSlot video failed (${url}):`, e?.message ?? e)}
     />
   );
 
-  // Canvas-journey mode mounts every scene's media for the WHOLE composition,
-  // so a clip shorter than the video must loop — seeking a <video> past its
-  // end never completes and times out the render.
+  // A clip shorter than its scene must loop; the loop stops a couple of frames
+  // short of the probed duration because seeking a <video> AT its very end
+  // never completes and times out the render.
   const clipFrames = slot.asset_ref?.duration_seconds
-    ? Math.max(1, Math.floor(slot.asset_ref.duration_seconds * fps))
+    ? Math.max(1, Math.floor(slot.asset_ref.duration_seconds * fps) - 2)
     : null;
 
-  const media = isVideo ? (
+  let media = isVideo ? (
     clipFrames ? <Loop durationInFrames={clipFrames}>{video}</Loop> : video
   ) : (
-    <Img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+    <Img src={url} style={fitStyle} />
   );
 
+  // Canvas-journey mode: mount the video ONLY while its region is on screen.
+  // With scene isolation nothing else is visible anyway, and this means one
+  // or two <video> elements seek per frame instead of every scene's — the
+  // main cause of "stuck", repeating frames in long journeys. The clip also
+  // starts from ITS first frame as the camera flies in.
+  if (isVideo && sceneWindow?.mediaFrom !== undefined && sceneWindow.mediaUntil !== undefined) {
+    media = (
+      <Sequence
+        from={sceneWindow.mediaFrom}
+        durationInFrames={Math.max(1, sceneWindow.mediaUntil - sceneWindow.mediaFrom)}
+        layout="none"
+      >
+        {media}
+      </Sequence>
+    );
+  }
+
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', ...framelessWrap }}>
-      <CameraMove move={slot.camera_move}>{media}</CameraMove>
+    <div ref={boxRef} style={{ width: '100%', height: '100%', position: 'relative', ...framelessWrap }}>
+      {containBackdrop}
+      {/* Panning letterboxed media around looks broken — contained assets get
+          a gentle push-in instead of their assigned pan. */}
+      <CameraMove move={contained ? 'slow_zoom_in' : slot.camera_move}>{media}</CameraMove>
       {slot.label ? (
         <div
           style={{

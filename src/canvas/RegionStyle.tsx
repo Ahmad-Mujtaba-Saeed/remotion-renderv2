@@ -10,6 +10,8 @@ import React, { createContext, useContext } from 'react';
 export interface RegionStyle {
   frameless: boolean;
   mediaRadius: number;
+  /** The region's w/h aspect, so layouts can compose for its real shape. */
+  aspect?: number;
 }
 
 const RegionStyleContext = createContext<RegionStyle>({ frameless: false, mediaRadius: 0 });

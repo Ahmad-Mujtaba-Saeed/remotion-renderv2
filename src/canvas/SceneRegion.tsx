@@ -24,8 +24,10 @@ export const SceneRegion: React.FC<{
   scene: Scene;
   focus: number;
   lod: number;
+  /** Isolation visibility (0..1): scenes off the camera's beat don't exist. */
+  alpha?: number;
   clock: SceneClockWindow;
-}> = ({ item, scene, focus, lod, clock }) => {
+}> = ({ item, scene, focus, lod, alpha = 1, clock }) => {
   const { width: designW } = useVideoConfig();
 
   // Content is designed at the viewport's width with the height that keeps
@@ -33,7 +35,8 @@ export const SceneRegion: React.FC<{
   const scale = item.w / designW;
   const contentH = item.h / scale;
 
-  if (lod <= 0.01) return null;
+  const opacity = lod * alpha;
+  if (opacity <= 0.01) return null;
 
   return (
     <div
@@ -43,7 +46,7 @@ export const SceneRegion: React.FC<{
         top: item.y - item.h / 2,
         width: item.w,
         height: item.h,
-        opacity: lod,
+        opacity,
         transform: `scale(${1 + 0.015 * focus})`,
         transformOrigin: 'center center',
         filter: `brightness(${0.7 + 0.3 * focus}) saturate(${0.85 + 0.15 * focus})`,
@@ -59,7 +62,7 @@ export const SceneRegion: React.FC<{
             position: 'relative',
           }}
         >
-          <RegionStyleProvider value={{ frameless: true, mediaRadius: 48 }}>
+          <RegionStyleProvider value={{ frameless: true, mediaRadius: 48, aspect: item.w / Math.max(1, item.h) }}>
             <SceneClockProvider window={clock}>
               <SceneLayout scene={scene} />
             </SceneClockProvider>

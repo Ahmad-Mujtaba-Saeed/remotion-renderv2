@@ -101,6 +101,12 @@ export interface CameraTrack {
   at: (frame: number) => CamState;
   /** 0..1 progress of the flight INTO scene i (drives connector draw-on). */
   travelProgress: (sceneIndex: number, frame: number) => number;
+  /**
+   * Same progress but through the flight's OWN easing curve, so anything
+   * synced to it (the connector draw-on) moves at the camera's actual pace
+   * instead of falling behind mid-flight.
+   */
+  travelProgressEased: (sceneIndex: number, frame: number) => number;
   /** 0..1 how focused station i is (drives glow/dim on cards). */
   focus: (sceneIndex: number, frame: number) => number;
 }
@@ -143,13 +149,24 @@ export const buildCamera = (
   // ---- Precomputed framing scales -----------------------------------------
   const fits = items.map((item) => fitScale(item, vw, vh));
 
-  // Overview of the whole journey (the closing shot).
-  const minX = Math.min(...items.map((i) => i.x - i.w / 2));
-  const maxX = Math.max(...items.map((i) => i.x + i.w / 2));
-  const minY = Math.min(...items.map((i) => i.y - i.h / 2));
-  const maxY = Math.max(...items.map((i) => i.y + i.h / 2));
-  const overviewScale = fitRect(minX, minY, maxX, maxY, vw, vh, 1.12);
-  const overviewCenter: [number, number] = [(minX + maxX) / 2, (minY + maxY) / 2];
+  // Flight profile for the hop INTO scene i, flavoured by its relation.
+  // Dips are shallow on purpose: the journey should read as "one scene at a
+  // time", never as a pull-back that reveals the whole map.
+  const profileFor = (i: number) => {
+    const item = items[i];
+    const relation: SceneRelation = item.relation ?? 'continues';
+    const treatment = item.treatment ?? 'canvas_hop';
+    if (relation === 'consequence') {
+      return { ease: easeInOutQuint, dip: 1.1, roll: 3.2, bendScale: 1.0, overshoot: 0.045 };
+    }
+    if (relation === 'callback') {
+      return { ease: easeInOutSine, dip: 1.5, roll: 1.6, bendScale: 1.5, overshoot: 0 };
+    }
+    if (treatment === 'pull_reveal' || relation === 'new_chapter') {
+      return { ease: easeInOutCubic, dip: 1.42, roll: 1.2, bendScale: 1.1, overshoot: 0 };
+    }
+    return { ease: easeInOutCubic, dip: 1.16, roll: 2.2, bendScale: 1.0, overshoot: 0 };
+  };
 
   // ---- Hold moves (per-scene seeded variation so no two feel identical) ----
   const holdState = (i: number, h: number): CamState => {
@@ -266,18 +283,7 @@ export const buildCamera = (
       }
 
       // ---- Standard curved flights, flavoured by relation ----
-      const profile = (() => {
-        if (relation === 'consequence') {
-          return { ease: easeInOutQuint, dip: 1.18, roll: 3.2, bendScale: 1.0, overshoot: 0.045 };
-        }
-        if (relation === 'callback') {
-          return { ease: easeInOutSine, dip: 2.0, roll: 1.6, bendScale: 1.5, overshoot: 0 };
-        }
-        if (treatment === 'pull_reveal' || relation === 'new_chapter') {
-          return { ease: easeInOutCubic, dip: 1.78, roll: 1.2, bendScale: 1.1, overshoot: 0 };
-        }
-        return { ease: easeInOutCubic, dip: 1.3, roll: 2.2, bendScale: 1.0, overshoot: 0 };
-      })();
+      const profile = profileFor(i);
 
       const e = profile.ease(t);
       const control = travelControl(from, to, i - 1, profile.bendScale);
@@ -289,6 +295,10 @@ export const buildCamera = (
       const straightMid = Math.exp(lerp(Math.log(fromState.scale), Math.log(fits[i]), 0.5));
       const dip = Math.log(Math.min(duo.scale, straightMid) / straightMid);
       let scale = Math.exp(lerp(Math.log(fromState.scale), Math.log(fits[i]), e) + dip * Math.sin(Math.PI * e));
+
+      // Altitude floor: however far apart the scenes sit, the camera never
+      // recedes into a map view — mid-flight it cruises, it doesn't survey.
+      scale = Math.max(scale, Math.min(fromState.scale, fits[i]) * 0.42);
 
       // Overshoot-settle: ride slightly past the framing then relax into it
       // (only for punchy arrivals — it reads as the camera "catching" itself).
@@ -302,28 +312,11 @@ export const buildCamera = (
       return { x, y, scale, rot };
     }
 
-    // ---- Phase 2: hold (with a closing overview on the last scene) ----
+    // ---- Phase 2: hold ----
+    // The video ends ON the last scene — no closing pull-back to an overview
+    // of the whole journey; each scene lives alone in its stretch of space.
     const holdFrames = Math.max(1, w.frames - w.travel);
     const h = (local - w.travel) / holdFrames;
-
-    if (i === windows.length - 1 && windows.length > 1) {
-      const outroFrames = Math.min(Math.round(fps * 1.8), Math.round(w.frames * 0.35));
-      const outroStart = w.frames - w.travel - outroFrames;
-      const holdLocal = local - w.travel;
-
-      if (holdLocal >= outroStart && outroFrames > 0) {
-        // Final pull-back: reveal the whole journey map.
-        const t = easeInOutCubic(clamp((holdLocal - outroStart) / outroFrames, 0, 1));
-        const fromState = holdState(i, outroStart / Math.max(1, holdFrames));
-        return {
-          x: lerp(fromState.x, overviewCenter[0], t),
-          y: lerp(fromState.y, overviewCenter[1], t),
-          scale: Math.exp(lerp(Math.log(fromState.scale), Math.log(overviewScale), t)),
-          rot: 0,
-        };
-      }
-      return holdState(i, holdLocal / Math.max(1, outroStart > 0 ? outroStart : holdFrames));
-    }
 
     return holdState(i, h);
   };
@@ -332,6 +325,16 @@ export const buildCamera = (
     const w = windows[sceneIndex];
     if (!w || w.travel <= 0) return frame >= (w?.start ?? 0) ? 1 : 0;
     return clamp((frame - w.start) / w.travel, 0, 1);
+  };
+
+  const travelProgressEased = (sceneIndex: number, frame: number): number => {
+    const t = travelProgress(sceneIndex, frame);
+    if (sceneIndex <= 0 || t <= 0 || t >= 1) return t;
+    const item = items[sceneIndex];
+    if ((item.treatment ?? '') === 'zoom_nest' || (item.relation ?? '') === 'contrast') {
+      return easeInOutCubic(t);
+    }
+    return profileFor(sceneIndex).ease(t);
   };
 
   const focus = (sceneIndex: number, frame: number): number => {
@@ -353,5 +356,5 @@ export const buildCamera = (
     return 1 - easeInOutSine(clamp((frame - downStart) / Math.max(1, next.travel), 0, 1));
   };
 
-  return { windows, totalFrames, at, travelProgress, focus };
+  return { windows, totalFrames, at, travelProgress, travelProgressEased, focus };
 };
