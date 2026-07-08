@@ -67,16 +67,82 @@ const Illustration: React.FC<{ url: string }> = ({ url }) => {
 };
 
 /**
- * Soft theme-coloured washes that anchor text-only regions. Three variants
+ * Soft theme-coloured washes that anchor text-only regions. Five variants
  * (picked per scene) so consecutive text scenes never share a silhouette:
  *  0 — twin corner glows (the classic);
  *  1 — one diagonal light beam sweeping behind the copy;
- *  2 — an off-center halo ring.
+ *  2 — an off-center halo ring;
+ *  3 — a faint blueprint grid patch in one corner;
+ *  4 — twin diagonal accent rays.
  * Gradients only — no blur filters, they'd rasterize the region and soften
- * its text under the camera (see SceneRegion).
+ * its text under the camera (see SceneRegion). (Masking a text-free gradient
+ * div is fine — PropSprite has always done it.)
  */
 const AccentWash: React.FC<{ variant?: number }> = ({ variant = 0 }) => {
   const theme = useTheme();
+
+  if (variant === 3) {
+    // Blueprint corner: a faint accent grid patch fading out diagonally.
+    return (
+      <AbsoluteFill style={{ pointerEvents: 'none' }}>
+        <div
+          style={{
+            position: 'absolute',
+            width: '62%',
+            height: '72%',
+            right: '-8%',
+            top: '-10%',
+            backgroundImage: `linear-gradient(${theme.accent}22 1.5px, transparent 1.5px), linear-gradient(90deg, ${theme.accent}22 1.5px, transparent 1.5px)`,
+            backgroundSize: '72px 72px',
+            maskImage: 'radial-gradient(60% 60% at 70% 30%, black, transparent)',
+            WebkitMaskImage: 'radial-gradient(60% 60% at 70% 30%, black, transparent)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            width: '46%',
+            height: '56%',
+            left: '-12%',
+            bottom: '-16%',
+            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}26, transparent 70%)`,
+          }}
+        />
+      </AbsoluteFill>
+    );
+  }
+
+  if (variant === 4) {
+    // Twin rays: two thin diagonal accent lines with a glow pooling below.
+    return (
+      <AbsoluteFill style={{ pointerEvents: 'none' }}>
+        {[0, 1].map((k) => (
+          <div
+            key={k}
+            style={{
+              position: 'absolute',
+              width: '150%',
+              height: 4 + k * 2,
+              left: '-24%',
+              top: `${18 + k * 9}%`,
+              transform: `rotate(${-18 + k * 3}deg)`,
+              background: `linear-gradient(90deg, transparent, ${k ? theme.accent2 : theme.accent}55 45%, transparent 90%)`,
+            }}
+          />
+        ))}
+        <div
+          style={{
+            position: 'absolute',
+            width: '58%',
+            height: '64%',
+            right: '-14%',
+            bottom: '-22%',
+            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent}2b, transparent 70%)`,
+          }}
+        />
+      </AbsoluteFill>
+    );
+  }
 
   if (variant === 1) {
     return (
@@ -195,7 +261,7 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
   const aspect = region.aspect ?? width / Math.max(1, height);
   const portrait = aspect < 0.9;
 
-  const washVariant = hashId(scene.scene_id) % 3;
+  const washVariant = hashId(scene.scene_id) % 5;
 
   // ---- Canvas journey: text + AI illustration = editorial split ------------
   if (isText && scene.illustration_url) {

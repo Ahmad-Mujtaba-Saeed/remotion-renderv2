@@ -87,7 +87,7 @@ export interface NarrationWord {
   end: number;
 }
 
-export type PunchlineStyle = 'plate' | 'stamp' | 'quote';
+export type PunchlineStyle = 'plate' | 'glass' | 'stamp' | 'quote';
 
 /**
  * A short, impactful phrase lifted VERBATIM from the scene's narration that
@@ -104,6 +104,21 @@ export interface Punchline {
   words: NarrationWord[];
 }
 
+/**
+ * How a text card presents itself — the scene stylist (LLM pass on the PHP
+ * side, seeded fallback otherwise) hands every scene a personality so a long
+ * video never repeats one look.
+ */
+export type TextStyleVariant = 'editorial' | 'statement' | 'numbered' | 'checklist' | 'cards';
+
+export interface SceneStyle {
+  variant?: TextStyleVariant;
+  /** Tiny uppercase eyebrow line above the heading (e.g. "THE PROBLEM"). */
+  kicker?: string;
+  /** Heading words to paint with the accent gradient (verbatim matches). */
+  highlight?: string[];
+}
+
 export interface Scene {
   scene_id: string;
   order: number;
@@ -111,6 +126,8 @@ export interface Scene {
   narration?: { text?: string };
   layout_template: string;
   transition?: TransitionType;
+  /** Per-scene presentation personality (variant, kicker, highlights). */
+  style?: SceneStyle | null;
   slots: Record<string, Slot>;
   /** Optional AI-generated decorative background URL (text-only scenes). */
   ambient_image_url?: string;
@@ -237,6 +254,8 @@ export interface ShotList {
   theme?: Theme;
   /** Optional curated background music for the whole video. */
   music?: Music | null;
+  /** Sound-effects layer config (whooshes/pops/impacts). Defaults to on. */
+  sfx?: { enabled?: boolean; volume?: number } | null;
   /** Optional single narration track (one TTS request) spanning the whole video. */
   narration_audio_url?: string | null;
   /** How to compose: one continuous camera journey vs. classic slide transitions. */

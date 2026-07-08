@@ -16,6 +16,7 @@ import { ThemeProvider, useTheme } from './theme';
 import { presentationFor } from './transitions';
 import { GrainOverlay } from './components/AmbientBackground';
 import { CanvasJourney } from './canvas/CanvasJourney';
+import { SfxProvider, SfxCue } from './sfx';
 
 /** Global overlays drawn above every scene: a progress bar + film grain. */
 const GlobalOverlays: React.FC = () => {
@@ -92,51 +93,77 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   if (canvasMode) {
     return (
       <ThemeProvider theme={shotList?.theme}>
-        <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
-          {music?.url && musicVolume ? (
-            <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
-          ) : null}
-          <CanvasJourney shotList={shotList} />
-          <GlobalOverlays />
-        </AbsoluteFill>
+        <SfxProvider config={shotList?.sfx}>
+          <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+            {music?.url && musicVolume ? (
+              <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
+            ) : null}
+            <CanvasJourney shotList={shotList} />
+            <GlobalOverlays />
+          </AbsoluteFill>
+        </SfxProvider>
       </ThemeProvider>
     );
   }
 
+  // Slides mode: a whoosh under every scene transition (the cut itself).
+  const transitionCues: React.ReactNode[] = [];
+  {
+    let cursor = 0;
+    scenes.forEach((scene, i) => {
+      if (hasIncomingTransition(scenes, i)) {
+        cursor -= tf;
+        transitionCues.push(
+          <SfxCue
+            key={`ts-${scene.scene_id}`}
+            name={scene.transition === 'zoom_through' ? 'whoosh_deep' : 'whoosh_soft'}
+            at={cursor}
+            volume={0.85}
+            playbackRate={1.2}
+          />
+        );
+      }
+      cursor += sceneFrames(scene, fps);
+    });
+  }
+
   return (
     <ThemeProvider theme={shotList?.theme}>
-      <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
-        {music?.url && musicVolume ? (
-          <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
-        ) : null}
-        {scenes.length ? (
-          <TransitionSeries>
-            {scenes.flatMap((scene, i) => {
-              const nodes: React.ReactNode[] = [];
+      <SfxProvider config={shotList?.sfx}>
+        <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+          {music?.url && musicVolume ? (
+            <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
+          ) : null}
+          {scenes.length ? (
+            <TransitionSeries>
+              {scenes.flatMap((scene, i) => {
+                const nodes: React.ReactNode[] = [];
 
-              if (hasIncomingTransition(scenes, i)) {
+                if (hasIncomingTransition(scenes, i)) {
+                  nodes.push(
+                    <TransitionSeries.Transition
+                      key={`t-${scene.scene_id}`}
+                      presentation={presentationFor(scene.transition)}
+                      timing={linearTiming({ durationInFrames: tf })}
+                    />
+                  );
+                }
+
                 nodes.push(
-                  <TransitionSeries.Transition
-                    key={`t-${scene.scene_id}`}
-                    presentation={presentationFor(scene.transition)}
-                    timing={linearTiming({ durationInFrames: tf })}
-                  />
+                  <TransitionSeries.Sequence key={scene.scene_id} durationInFrames={sceneFrames(scene, fps)}>
+                    <SceneRouter scene={scene} index={i} count={scenes.length} />
+                  </TransitionSeries.Sequence>
                 );
-              }
 
-              nodes.push(
-                <TransitionSeries.Sequence key={scene.scene_id} durationInFrames={sceneFrames(scene, fps)}>
-                  <SceneRouter scene={scene} />
-                </TransitionSeries.Sequence>
-              );
+                return nodes;
+              })}
+            </TransitionSeries>
+          ) : null}
+          {transitionCues}
 
-              return nodes;
-            })}
-          </TransitionSeries>
-        ) : null}
-
-        <GlobalOverlays />
-      </AbsoluteFill>
+          <GlobalOverlays />
+        </AbsoluteFill>
+      </SfxProvider>
     </ThemeProvider>
   );
 };

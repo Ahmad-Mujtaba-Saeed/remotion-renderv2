@@ -25,6 +25,7 @@ import { selectComposition, renderStill } from '@remotion/renderer';
   const serveUrl = await bundle({
     entryPoint: path.join(__dirname, '..', 'src', 'remotion', 'index.ts'),
     outDir: path.join(os.tmpdir(), 'remotion-probe-bundle'),
+    publicDir: path.join(__dirname, '..', 'public'),
   });
 
   const inputProps = { shotList, fps: 30, width: 1920, height: 1080 };

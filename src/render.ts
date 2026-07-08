@@ -25,6 +25,9 @@ const getServeUrl = (): Promise<string> => {
       entryPoint: path.join(__dirname, 'remotion', 'index.ts'),
       // Keep webpack cache in a stable temp dir for faster warm renders.
       outDir: path.join(os.tmpdir(), 'remotion-render-bundle'),
+      // Bundled static assets (the SFX library) — explicit so it works no
+      // matter which directory the server/CLI was started from.
+      publicDir: path.join(__dirname, '..', 'public'),
     });
   }
   return bundlePromise;

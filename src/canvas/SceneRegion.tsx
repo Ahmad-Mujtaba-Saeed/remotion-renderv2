@@ -4,7 +4,7 @@ import { CanvasItem, Scene } from '../types';
 import { SceneLayout } from '../components/SceneRouter';
 import { SceneClockProvider, SceneClockWindow } from './SceneClock';
 import { RegionStyleProvider } from './RegionStyle';
-import { PunchLine } from '../components/PunchLine';
+import { SceneMetaProvider } from '../components/SceneMeta';
 import { useTheme } from '../theme';
 
 /**
@@ -30,6 +30,9 @@ import { useTheme } from '../theme';
 export const SceneRegion: React.FC<{
   item: CanvasItem;
   scene: Scene;
+  /** 0-based scene position + total count (feeds the per-scene styling). */
+  index?: number;
+  count?: number;
   focus: number;
   lod: number;
   /** Isolation visibility (0..1): scenes off the camera's beat don't exist. */
@@ -37,7 +40,7 @@ export const SceneRegion: React.FC<{
   /** Birth progress (0..1) while the scene materialises mid-flight. */
   enter?: number;
   clock: SceneClockWindow;
-}> = ({ item, scene, focus, lod, alpha = 1, enter = 1, clock }) => {
+}> = ({ item, scene, index = 0, count = 1, focus, lod, alpha = 1, enter = 1, clock }) => {
   const { width: designW } = useVideoConfig();
   const theme = useTheme();
 
@@ -79,10 +82,13 @@ export const SceneRegion: React.FC<{
           }}
         >
           <RegionStyleProvider value={{ frameless: true, mediaRadius: 48, aspect: item.w / Math.max(1, item.h) }}>
-            <SceneClockProvider window={clock}>
-              <SceneLayout scene={scene} />
-              {scene.punchline ? <PunchLine scene={scene} /> : null}
-            </SceneClockProvider>
+            <SceneMetaProvider value={{ index, count, style: scene.style }}>
+              <SceneClockProvider window={clock}>
+                {/* Punchlines render in CanvasJourney's screen-space layer,
+                    NOT here — inside the scaled world they'd soften. */}
+                <SceneLayout scene={scene} />
+              </SceneClockProvider>
+            </SceneMetaProvider>
           </RegionStyleProvider>
         </div>
       </div>

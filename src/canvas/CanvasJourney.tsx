@@ -1,13 +1,82 @@
 import React, { useMemo } from 'react';
 import { AbsoluteFill, Audio, Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
-import { ShotList } from '../types';
-import { useTheme } from '../theme';
+import { CanvasItem, Scene, ShotList } from '../types';
+import { useTheme, useDisplayFont } from '../theme';
 import { AmbientBackground } from '../components/AmbientBackground';
+import { PunchLine } from '../components/PunchLine';
 import { normalizePlan } from './autoLayout';
 import { buildCamera } from './camera';
 import { Connector } from './Connector';
 import { SceneRegion } from './SceneRegion';
 import { PropSprite } from './PropSprite';
+import { SceneClockProvider } from './SceneClock';
+import { SfxCue, SfxName, sfxDuration } from '../sfx';
+import { useScaleUnit } from '../responsive';
+
+/** Which whoosh a flight deserves, from its story relation / treatment. */
+const flightSound = (item: CanvasItem | undefined): { name: SfxName; volume: number } => {
+  const treatment = item?.treatment ?? 'canvas_hop';
+  const relation = item?.relation ?? 'continues';
+  if (treatment === 'zoom_nest') return { name: 'whoosh_deep', volume: 1 };
+  if (relation === 'consequence') return { name: 'whoosh_impact', volume: 1 };
+  if (treatment === 'pull_reveal' || relation === 'new_chapter') return { name: 'whoosh_rise', volume: 0.95 };
+  if (relation === 'callback') return { name: 'whoosh_rise', volume: 0.8 };
+  return { name: 'whoosh_soft', volume: 0.95 };
+};
+
+/** Minimal HUD: the journey position as an accent-lit index (top corner). */
+const SceneIndexHud: React.FC<{ active: number; count: number }> = ({ active, count }) => {
+  const theme = useTheme();
+  const displayFont = useDisplayFont();
+  const u = useScaleUnit();
+  if (count < 2) return null;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 36 * u,
+        right: 44 * u,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14 * u,
+        pointerEvents: 'none',
+        opacity: 0.85,
+      }}
+    >
+      <div style={{ display: 'flex', gap: 7 * u }}>
+        {Array.from({ length: count }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              width: i === active ? 26 * u : 9 * u,
+              height: 9 * u,
+              borderRadius: 999,
+              background:
+                i === active
+                  ? `linear-gradient(90deg, ${theme.accent}, ${theme.accent2})`
+                  : i < active
+                    ? `${theme.accent}66`
+                    : 'rgba(255,255,255,0.16)',
+            }}
+          />
+        ))}
+      </div>
+      <span
+        style={{
+          fontFamily: displayFont,
+          fontSize: 24 * u,
+          fontWeight: 800,
+          letterSpacing: 2 * u,
+          color: theme.muted,
+        }}
+      >
+        <span style={{ color: theme.text }}>{String(active + 1).padStart(2, '0')}</span>
+        {' / '}
+        {String(count).padStart(2, '0')}
+      </span>
+    </div>
+  );
+};
 
 /**
  * The cinematic canvas journey, v3 "isolated islands": every scene is a
@@ -232,6 +301,8 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
               key={scene.scene_id}
               item={item!}
               scene={scene}
+              index={i}
+              count={scenes.length}
               focus={camera.focus(i, frame)}
               lod={lodFor(item!.w)}
               alpha={alphas[i]}
@@ -273,6 +344,41 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
         )}
       </div>
       </AbsoluteFill>
+
+      {/* SOUND DESIGN: every flight whooshes past, flavoured by its story
+          relation (dives rumble, consequences land with a thump, reveals
+          rise). Stretched to ride the flight's own length; the cold open
+          gets a soft glass shimmer instead. */}
+      <SfxCue name="shimmer" at={2} volume={0.8} />
+      {scenes.map((scene, i) => {
+        if (i === 0) return null;
+        const w = camera.windows[i];
+        if (!w || w.travel <= 0) return null;
+        const { name, volume } = flightSound(itemByScene.get(scene.scene_id));
+        const travelSec = w.travel / fps;
+        const rate = Math.max(0.8, Math.min(1.45, sfxDuration(name) / Math.max(0.5, travelSec)));
+        return <SfxCue key={`w-${scene.scene_id}`} name={name} at={w.start} volume={volume} playbackRate={rate} />;
+      })}
+
+      {/* PUNCHLINES in screen space: outside the camera transform they stay
+          pixel-crisp at any zoom and may use real backdrop-filter glass (the
+          no-filter rule only applies INSIDE the scaled world). Each one gets
+          its scene's clock so word-sync anchors to the narration start. */}
+      {scenes.map((scene: Scene, i) => {
+        if (!scene.punchline) return null;
+        const w = camera.windows[i];
+        return (
+          <SceneClockProvider
+            key={`p-${scene.scene_id}`}
+            window={{ start: w.start, end: w.start + w.frames, narrationStart: w.start }}
+          >
+            <PunchLine scene={scene} />
+          </SceneClockProvider>
+        );
+      })}
+
+      {/* Journey position HUD (screen space, above everything). */}
+      <SceneIndexHud active={active} count={scenes.length} />
 
       {/* Per-scene narration, timed to each region's window. Boosted above
           the music bed so the voice always leads the mix. */}
