@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Img, Loop, Sequence, Video, useCurrentFrame, useVideoConfig } from 'remotion';
 import { FrameSequence, Slot } from '../types';
 import { CameraMove } from './CameraMove';
-import { useTheme } from '../theme';
+import { useTheme, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { useRegionStyle } from '../canvas/RegionStyle';
 import { useSceneWindow } from '../canvas/SceneClock';
@@ -231,7 +231,7 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
             borderLeft: `${5 * u}px solid ${theme.accent}`,
             fontSize: 34 * u,
             fontWeight: 700,
-            fontFamily: 'Inter, system-ui, sans-serif',
+            fontFamily: BODY_FONT,
             letterSpacing: 0.5,
           }}
         >

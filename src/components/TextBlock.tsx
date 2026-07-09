@@ -1,13 +1,12 @@
 import React from 'react';
 import { useVideoConfig, spring, interpolate } from 'remotion';
 import { Slot, TextStyleVariant } from '../types';
-import { useTheme, useDisplayFont, BODY_FONT } from '../theme';
+import { useTheme, useDisplayFont, BODY_FONT, MONO_FONT, raise, hairline } from '../theme';
 import { KineticText } from './KineticText';
 import { useScaleUnit } from '../responsive';
 import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useRegionStyle } from '../canvas/RegionStyle';
 import { useSceneMeta } from './SceneMeta';
-import { SfxCue, POPS } from '../sfx';
 
 /** Deterministic per-scene variation seed (scene windows differ per scene). */
 const seeded = (n: number, salt: number): number => {
@@ -64,9 +63,6 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
   const startAt = Math.round(durationInFrames * 0.12);
   const endAt = Math.round(durationInFrames * 0.92);
   const step = bullets.length > 0 ? (endAt - startAt) / bullets.length : 0;
-  // SFX cues need the frame in the CURRENT Remotion clock: global in canvas
-  // mode (window re-bases the scene clock), scene-local in slides mode.
-  const cueBase = win?.start ?? 0;
 
   // ---- Personality ----------------------------------------------------------
   const longest = bullets.reduce((m, b) => Math.max(m, b.length), 0);
@@ -123,12 +119,12 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
       />
       <span
         style={{
-          fontSize: 25 * u,
-          fontWeight: 800,
+          fontSize: 23 * u,
+          fontWeight: 700,
           letterSpacing: 5 * u,
           textTransform: 'uppercase',
           color: theme.accent,
-          fontFamily: BODY_FONT,
+          fontFamily: MONO_FONT,
         }}
       >
         {kicker}
@@ -183,8 +179,8 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
     </div>
   ) : null;
 
-  /** Enter spring for point i, plus its pop-sound cue. */
-  const pointEnter = (i: number) => {
+  /** Enter spring for point i. */
+  const pointEnter = (i: number): number => {
     const appearFrame = Math.round(sequential ? startAt + step * i : startAt);
     const enter = spring({
       frame: frame - appearFrame,
@@ -192,12 +188,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
       config: { damping: 200 },
       durationInFrames: Math.round(fps * 0.5),
     });
-    const cue = sequential ? (
-      <SfxCue name={POPS[i % POPS.length]} at={cueBase + appearFrame} volume={0.9} />
-    ) : i === 0 ? (
-      <SfxCue name={POPS[0]} at={cueBase + appearFrame} volume={0.9} />
-    ) : null;
-    return { enter: sequential ? enter : 1, cue };
+    return sequential ? enter : 1;
   };
 
   // ---- Compact banner strip: heading + bullets as inline chips -------------
@@ -232,15 +223,15 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
         {bullets.length ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 * u }}>
             {bullets.slice(0, 4).map((bullet, i) => {
-              const { enter, cue } = pointEnter(i);
+              const enter = pointEnter(i);
               return (
                 <div
                   key={i}
                   style={{
                     padding: `${10 * u}px ${22 * u}px`,
                     borderRadius: 999,
-                    background: 'rgba(255,255,255,0.07)',
-                    border: '1px solid rgba(255,255,255,0.12)',
+                    background: raise(theme, 0.07),
+                    border: `1px solid ${hairline(theme, 0.12)}`,
                     fontSize: 30 * u,
                     fontWeight: 600,
                     opacity: enter,
@@ -250,7 +241,6 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
                     gap: 12 * u,
                   }}
                 >
-                  {cue}
                   <span
                     style={{
                       width: 10 * u,
@@ -275,7 +265,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
   const editorialPoints = (
     <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
       {bullets.map((bullet, i) => {
-        const { enter, cue } = pointEnter(i);
+        const enter = pointEnter(i);
         const slide = interpolate(enter, [0, 1], [fromLeft ? -34 * u : 34 * u, 0]);
         return (
           <li
@@ -293,11 +283,10 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
               // being "shown" always has a backdrop of its own.
               padding: plated || bare ? `${14 * u}px ${20 * u}px` : `0 0 ${8 * u}px 0`,
               borderRadius: 20 * u,
-              background: plated || bare ? 'rgba(255,255,255,0.045)' : 'transparent',
-              border: plated || bare ? '1px solid rgba(255,255,255,0.07)' : 'none',
+              background: plated || bare ? raise(theme, 0.045) : 'transparent',
+              border: plated || bare ? `1px solid ${hairline(theme, 0.07)}` : 'none',
             }}
           >
-            {cue}
             <span
               style={{
                 marginTop: 8 * u,
@@ -327,15 +316,15 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
   const statementPoints = (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 * u, justifyContent: 'center' }}>
       {bullets.map((bullet, i) => {
-        const { enter, cue } = pointEnter(i);
+        const enter = pointEnter(i);
         return (
           <div
             key={i}
             style={{
               padding: `${14 * u}px ${30 * u}px`,
               borderRadius: 999,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: raise(theme, 0.06),
+              border: `1px solid ${hairline(theme, 0.12)}`,
               fontSize: 34 * u,
               fontWeight: 650,
               display: 'flex',
@@ -345,7 +334,6 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
               transform: `translateY(${interpolate(enter, [0, 1], [18 * u, 0])}px) scale(${interpolate(enter, [0, 1], [0.92, 1])})`,
             }}
           >
-            {cue}
             <span
               style={{
                 width: 12 * u,
@@ -366,7 +354,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
   const numberedPoints = (
     <div>
       {bullets.map((bullet, i) => {
-        const { enter, cue } = pointEnter(i);
+        const enter = pointEnter(i);
         const slide = interpolate(enter, [0, 1], [fromLeft ? -40 * u : 40 * u, 0]);
         return (
           <div
@@ -376,12 +364,11 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
               alignItems: 'center',
               gap: 26 * u,
               padding: `${16 * u}px 0`,
-              borderBottom: i < bullets.length - 1 ? '1px solid rgba(255,255,255,0.09)' : 'none',
+              borderBottom: i < bullets.length - 1 ? `1px solid ${hairline(theme, 0.09)}` : 'none',
               opacity: enter,
               transform: `translateX(${slide}px)`,
             }}
           >
-            {cue}
             <span
               style={{
                 fontSize: 84 * u,
@@ -408,7 +395,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
   const checkPoints = (
     <div>
       {bullets.map((bullet, i) => {
-        const { enter } = pointEnter(i);
+        const enter = pointEnter(i);
         const draw = interpolate(enter, [0.25, 1], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
         const r = 26;
         const circ = 2 * Math.PI * r;
@@ -422,18 +409,12 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
               marginBottom: 20 * u,
               padding: `${12 * u}px ${18 * u}px`,
               borderRadius: 18 * u,
-              background: bare ? 'rgba(255,255,255,0.045)' : 'transparent',
-              border: bare ? '1px solid rgba(255,255,255,0.07)' : 'none',
+              background: bare ? raise(theme, 0.045) : 'transparent',
+              border: bare ? `1px solid ${hairline(theme, 0.07)}` : 'none',
               opacity: enter,
               transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
             }}
           >
-            {/* A tick as the mark draws on (instead of the generic pop). */}
-            <SfxCue
-              name="tick"
-              at={cueBase + Math.round((sequential ? startAt + step * i : startAt) + fps * 0.22)}
-              volume={1}
-            />
             <svg width={60 * u} height={60 * u} viewBox="0 0 60 60" style={{ flexShrink: 0 }}>
               <circle cx="30" cy="30" r={r} fill={`${theme.accent}1a`} stroke={theme.accent} strokeWidth="3.5"
                 strokeDasharray={circ} strokeDashoffset={circ * (1 - draw)} strokeLinecap="round"
@@ -452,7 +433,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
   const cardPoints = (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 22 * u, alignItems: 'stretch' }}>
       {bullets.map((bullet, i) => {
-        const { enter, cue } = pointEnter(i);
+        const enter = pointEnter(i);
         const basis = bullets.length <= 3 ? `${100 / bullets.length - 3}%` : '46%';
         return (
           <div
@@ -463,14 +444,13 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
               boxSizing: 'border-box',
               padding: `${26 * u}px ${26 * u}px`,
               borderRadius: 26 * u,
-              background: `linear-gradient(165deg, rgba(255,255,255,0.085), rgba(255,255,255,0.02)), ${theme.panel}`,
-              border: '1px solid rgba(255,255,255,0.12)',
-              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.12), 0 ${18 * u}px ${50 * u}px rgba(0,0,0,0.35)`,
+              background: `linear-gradient(165deg, ${raise(theme, 0.085)}, ${raise(theme, 0.02)}), ${theme.panel}`,
+              border: `1px solid ${hairline(theme, 0.12)}`,
+              boxShadow: `inset 0 1px 0 ${hairline(theme, 0.12)}, 0 ${18 * u}px ${50 * u}px rgba(0,0,0,0.35)`,
               opacity: enter,
               transform: `translateY(${interpolate(enter, [0, 1], [30 * u, 0])}px) scale(${interpolate(enter, [0, 1], [0.9, 1])})`,
             }}
           >
-            {cue}
             <div
               style={{
                 width: 46 * u,
@@ -529,14 +509,14 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
         boxSizing: 'border-box',
         position: 'relative',
         background: plated
-          ? `linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.012)), ${theme.panel}`
+          ? `linear-gradient(160deg, ${raise(theme, 0.05)}, ${raise(theme, 0.012)}), ${theme.panel}`
           : bare
             ? 'transparent'
             : theme.panel,
-        border: plated ? '1px solid rgba(255,255,255,0.10)' : 'none',
+        border: plated ? `1px solid ${hairline(theme, 0.1)}` : 'none',
         borderRadius: plated ? 40 : 0,
         boxShadow: plated
-          ? 'inset 0 1px 0 rgba(255,255,255,0.12), 0 34px 90px rgba(0,0,0,0.42)'
+          ? `inset 0 1px 0 ${hairline(theme, 0.12)}, 0 34px 90px rgba(0,0,0,0.42)`
           : 'none',
         backdropFilter: bare || plated ? undefined : 'blur(6px)',
         fontFamily: BODY_FONT,

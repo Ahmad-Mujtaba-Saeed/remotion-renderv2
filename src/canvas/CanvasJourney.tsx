@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { AbsoluteFill, Audio, Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
 import { CanvasItem, Scene, ShotList } from '../types';
-import { useTheme, useDisplayFont } from '../theme';
+import { useTheme, isLightTheme } from '../theme';
 import { AmbientBackground } from '../components/AmbientBackground';
 import { PunchLine } from '../components/PunchLine';
 import { normalizePlan } from './autoLayout';
@@ -11,7 +11,6 @@ import { SceneRegion } from './SceneRegion';
 import { PropSprite } from './PropSprite';
 import { SceneClockProvider } from './SceneClock';
 import { SfxCue, SfxName, sfxDuration } from '../sfx';
-import { useScaleUnit } from '../responsive';
 
 /** Which whoosh a flight deserves, from its story relation / treatment. */
 const flightSound = (item: CanvasItem | undefined): { name: SfxName; volume: number } => {
@@ -22,60 +21,6 @@ const flightSound = (item: CanvasItem | undefined): { name: SfxName; volume: num
   if (treatment === 'pull_reveal' || relation === 'new_chapter') return { name: 'whoosh_rise', volume: 0.95 };
   if (relation === 'callback') return { name: 'whoosh_rise', volume: 0.8 };
   return { name: 'whoosh_soft', volume: 0.95 };
-};
-
-/** Minimal HUD: the journey position as an accent-lit index (top corner). */
-const SceneIndexHud: React.FC<{ active: number; count: number }> = ({ active, count }) => {
-  const theme = useTheme();
-  const displayFont = useDisplayFont();
-  const u = useScaleUnit();
-  if (count < 2) return null;
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 36 * u,
-        right: 44 * u,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14 * u,
-        pointerEvents: 'none',
-        opacity: 0.85,
-      }}
-    >
-      <div style={{ display: 'flex', gap: 7 * u }}>
-        {Array.from({ length: count }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              width: i === active ? 26 * u : 9 * u,
-              height: 9 * u,
-              borderRadius: 999,
-              background:
-                i === active
-                  ? `linear-gradient(90deg, ${theme.accent}, ${theme.accent2})`
-                  : i < active
-                    ? `${theme.accent}66`
-                    : 'rgba(255,255,255,0.16)',
-            }}
-          />
-        ))}
-      </div>
-      <span
-        style={{
-          fontFamily: displayFont,
-          fontSize: 24 * u,
-          fontWeight: 800,
-          letterSpacing: 2 * u,
-          color: theme.muted,
-        }}
-      >
-        <span style={{ color: theme.text }}>{String(active + 1).padStart(2, '0')}</span>
-        {' / '}
-        {String(count).padStart(2, '0')}
-      </span>
-    </div>
-  );
 };
 
 /**
@@ -108,6 +53,11 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
   const itemByScene = useMemo(() => new Map(plan.items.map((item) => [item.scene_id, item])), [plan.items]);
 
   if (!scenes.length) return null;
+
+  // Parallax/world dot grids read as white specks on dark themes; on a light
+  // (cream) theme they must be ink specks or they vanish.
+  const dotColor = (alpha: number): string =>
+    isLightTheme(theme) ? `rgba(23,18,14,${alpha})` : `rgba(255,255,255,${alpha})`;
 
   const cam = camera.at(frame);
 
@@ -215,7 +165,7 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
           speed sells the depth between backdrop and canvas. */}
       <AbsoluteFill
         style={{
-          backgroundImage: `radial-gradient(rgba(255,255,255,0.09) 2.5px, transparent 2.5px)`,
+          backgroundImage: `radial-gradient(${dotColor(0.09)} 2.5px, transparent 2.5px)`,
           backgroundSize: '130px 130px',
           backgroundPosition: `${-cam.x * cam.scale * 0.22}px ${-cam.y * cam.scale * 0.22}px`,
           opacity: 0.6,
@@ -245,7 +195,7 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `radial-gradient(rgba(255,255,255,0.13) 3px, transparent 3px)`,
+            backgroundImage: `radial-gradient(${dotColor(0.13)} 3px, transparent 3px)`,
             backgroundSize: '170px 170px',
             opacity: 0.5,
           }}
@@ -376,9 +326,6 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
           </SceneClockProvider>
         );
       })}
-
-      {/* Journey position HUD (screen space, above everything). */}
-      <SceneIndexHud active={active} count={scenes.length} />
 
       {/* Per-scene narration, timed to each region's window. Boosted above
           the music bed so the voice always leads the mix. */}

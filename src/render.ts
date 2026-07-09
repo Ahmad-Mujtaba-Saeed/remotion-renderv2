@@ -60,6 +60,16 @@ export const renderExplainer = async (req: RenderRequest): Promise<string> => {
     concurrency: process.env.RENDER_CONCURRENCY ? parseInt(process.env.RENDER_CONCURRENCY, 10) : null,
     // Allow remote (Laravel-served) asset URLs.
     timeoutInMilliseconds: 120000,
+    // Quality over file size, deliberately: Remotion's defaults (crf 18,
+    // jpegQuality 80) capture every frame through a lossy JPEG step before
+    // it even reaches the video encoder. `png` frame capture skips that
+    // compression entirely, `crf: 16` pushes the h264 encode to
+    // near-lossless, and the `slow` x264 preset spends more effort per
+    // frame for a better quality-per-bit result at the same crf.
+    imageFormat: 'png',
+    crf: 16,
+    x264Preset: 'slow',
+    colorSpace: 'bt709',
   });
 
   return req.outputPath;

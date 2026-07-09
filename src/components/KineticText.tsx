@@ -1,5 +1,5 @@
 import React from 'react';
-import { useVideoConfig, spring } from 'remotion';
+import { useVideoConfig, spring, interpolate } from 'remotion';
 import { useSceneClock } from '../canvas/SceneClock';
 import { useTheme } from '../theme';
 
@@ -12,9 +12,11 @@ const norm = (w: string): string => w.toLowerCase().replace(/[^a-z0-9]/g, '');
  * Uses the scene clock so canvas-journey stations animate on camera arrival.
  *
  * `highlight` paints the given words (verbatim heading words, matched loosely)
- * with the theme's accent gradient — the scene stylist uses it to make the
- * one word that matters carry the line. Gradient text is background-clip
- * only: no filters, so it stays camera-safe inside scaled canvas regions.
+ * with the theme's accent gradient AND draws a thin accent underline that
+ * sweeps in a beat after the word lands — the editorial "this is the word
+ * that matters" mark. Both the gradient text and the underline are
+ * background-clip/transform only: no filters, so it stays camera-safe inside
+ * scaled canvas regions.
  */
 export const KineticText: React.FC<{
   text: string;
@@ -36,12 +38,19 @@ export const KineticText: React.FC<{
         const local = frame - delay - i * step;
         const e = spring({ frame: local, fps, config: { damping: 200 }, durationInFrames: Math.round(fps * 0.45) });
         const hot = marked.size > 0 && marked.has(norm(word));
+        const underline = hot
+          ? interpolate(local - Math.round(fps * 0.22), [0, Math.round(fps * 0.3)], [0, 1], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+            })
+          : 0;
         return (
           <span
             key={i}
             style={{
               display: 'inline-block',
               marginRight: '0.28em',
+              position: 'relative',
               opacity: e,
               transform: `translateY(${(1 - e) * 20}px)`,
               ...(hot
@@ -55,6 +64,23 @@ export const KineticText: React.FC<{
             }}
           >
             {word}
+            {hot ? (
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '-0.02em',
+                  right: '-0.02em',
+                  bottom: '0.03em',
+                  height: '0.1em',
+                  borderRadius: '0.08em',
+                  background: `linear-gradient(92deg, ${theme.accent}, ${theme.accent2})`,
+                  opacity: 0.32,
+                  transformOrigin: 'left center',
+                  transform: `scaleX(${underline})`,
+                  pointerEvents: 'none',
+                }}
+              />
+            ) : null}
           </span>
         );
       })}

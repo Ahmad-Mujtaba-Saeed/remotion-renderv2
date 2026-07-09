@@ -1,20 +1,27 @@
 import React from 'react';
 import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
-import { useTheme } from '../theme';
+import { useTheme, isLightTheme } from '../theme';
 import { MotionGraphics } from './MotionGraphics';
 
 const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
 
-/** Soft dark vignette to focus the eye toward the centre. */
-export const Vignette: React.FC = () => (
-  <AbsoluteFill
-    style={{
-      background:
-        'radial-gradient(120% 120% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%)',
-      pointerEvents: 'none',
-    }}
-  />
-);
+/**
+ * Soft vignette to focus the eye toward the centre. A heavy dark vignette is
+ * right on dark themes but muddies a light (cream) one, so light themes get a
+ * whisper-soft warm darkening instead.
+ */
+export const Vignette: React.FC = () => {
+  const theme = useTheme();
+  const edge = isLightTheme(theme) ? 'rgba(60,45,30,0.10)' : 'rgba(0,0,0,0.45)';
+  return (
+    <AbsoluteFill
+      style={{
+        background: `radial-gradient(120% 120% at 50% 45%, transparent 55%, ${edge} 100%)`,
+        pointerEvents: 'none',
+      }}
+    />
+  );
+};
 
 /** Subtle film grain via SVG turbulence (cheap, static, blended). */
 export const GrainOverlay: React.FC<{ opacity?: number }> = ({ opacity = 0.05 }) => (

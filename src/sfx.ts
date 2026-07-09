@@ -4,9 +4,15 @@ import { Audio, Sequence, staticFile, useVideoConfig } from 'remotion';
 /**
  * The explainer's sound design layer. A small procedurally-generated library
  * (public/sfx, see scripts/gen-sfx.ts) gives the edit physical feedback:
- * flights whoosh past, bullet points pop as they land, punchlines hit with a
- * stamp or a glass shimmer. Everything is mixed WELL below the narration
- * (1.3) and above the music bed (~0.09) so the voice always leads.
+ * flights whoosh past and punchlines hit with a stamp or a soft chime.
+ * Everything is mixed WELL below the narration (1.3) and above the music bed
+ * (~0.09) so the voice always leads.
+ *
+ * NOTE: the old per-bullet "pop" and per-tick sounds were deliberately
+ * removed — a chirp on every point that lands read as cheap/noisy against the
+ * clean editorial look. Text now animates silently; only camera flights and
+ * punchlines carry sound. The pop and tick entries below are kept in the
+ * library (harmless, unused) so the type/table stay in sync with gen-sfx.ts.
  *
  * All cues render through <SfxCue>, which mounts a <Sequence> only around the
  * sound's own few-second window — a 20-scene journey never has more than a

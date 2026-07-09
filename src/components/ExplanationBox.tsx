@@ -1,14 +1,13 @@
 import React from 'react';
 import { useVideoConfig, spring, interpolate } from 'remotion';
 import { Slot } from '../types';
-import { useTheme, useDisplayFont, BODY_FONT } from '../theme';
+import { useTheme, useDisplayFont, BODY_FONT, MONO_FONT, raise, hairline } from '../theme';
 import { glassStyle } from './GlassCard';
 import { KineticText } from './KineticText';
 import { useScaleUnit } from '../responsive';
-import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
+import { useSceneClock } from '../canvas/SceneClock';
 import { useRegionStyle } from '../canvas/RegionStyle';
 import { useSceneMeta } from './SceneMeta';
-import { SfxCue } from '../sfx';
 
 /**
  * A floating explanation card: kicker eyebrow, kinetic heading with accent
@@ -20,7 +19,6 @@ export const ExplanationBox: React.FC<{ slot: Slot; transparent?: boolean }> = (
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const { frame } = useSceneClock();
-  const win = useSceneWindow();
   const { fps } = useVideoConfig();
   const u = useScaleUnit();
   const region = useRegionStyle();
@@ -34,10 +32,10 @@ export const ExplanationBox: React.FC<{ slot: Slot; transparent?: boolean }> = (
   // the region and soften its text under the camera zoom) for a soft plate.
   const surface: React.CSSProperties = region.frameless
     ? {
-        background: `linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015)), ${theme.panel}`,
-        border: '1px solid rgba(255,255,255,0.12)',
+        background: `linear-gradient(160deg, ${raise(theme, 0.07)}, ${raise(theme, 0.015)}), ${theme.panel}`,
+        border: `1px solid ${hairline(theme, 0.12)}`,
         borderRadius: 30,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 30px 80px rgba(0,0,0,0.45)',
+        boxShadow: `inset 0 1px 0 ${hairline(theme, 0.12)}, 0 30px 80px rgba(0,0,0,0.45)`,
       }
     : glassStyle(theme);
 
@@ -50,8 +48,6 @@ export const ExplanationBox: React.FC<{ slot: Slot; transparent?: boolean }> = (
         position: 'relative',
       }}
     >
-      {/* Soft entrance thunk when the card lands. */}
-      <SfxCue name="pop_c" at={(win?.start ?? 0) + Math.round(fps * 0.1)} volume={0.7} />
       {/* Oversized quote glyph anchoring the card (editorial poster feel). */}
       {!transparent ? (
         <div
@@ -83,11 +79,12 @@ export const ExplanationBox: React.FC<{ slot: Slot; transparent?: boolean }> = (
         {kicker ? (
           <span
             style={{
-              fontSize: 23 * u,
-              fontWeight: 800,
+              fontSize: 21 * u,
+              fontWeight: 700,
               letterSpacing: 4 * u,
               textTransform: 'uppercase',
               color: theme.accent,
+              fontFamily: MONO_FONT,
             }}
           >
             {kicker}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { Scene, PunchlineStyle } from '../types';
-import { useTheme, useDisplayFont, BODY_FONT } from '../theme';
+import { useTheme, useDisplayFont, BODY_FONT, inkOn, hairline, raise } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { useSceneWindow } from '../canvas/SceneClock';
 import { SfxCue } from '../sfx';
@@ -19,8 +19,10 @@ import { SfxCue } from '../sfx';
  * world, where mid-flight rasters get reused (the blurry-text bug).
  *
  * Three looks, chosen by the backend per scene:
- *  - "glass" (also legacy "plate"): a bold, centered frosted-glass card —
- *    the world blurs through it while the words punch over it.
+ *  - "glass" (also legacy "plate"): the flagship "punch card" — a flat,
+ *    solid accent-coloured poster card with ink-toned type and two minimal
+ *    geometric marks (a bled-off ring, a small dot). No blur, no glow —
+ *    a confident printed card, not a floating hint.
  *  - "stamp": full-width uppercase SLAM with an impact ring and a thud.
  *  - "quote": an editorial serif pull-quote on a glass bar.
  */
@@ -47,13 +49,20 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
   const appearAt = p.start - lead;
   const holdUntil = p.end + 1.0;
 
-  // Entrance sound cue frames (absolute on the current clock).
+  // The flagship "card" look flips the palette: the card itself IS the
+  // accent colour (a flat poster field, no glass), so its type must read in
+  // ink tones instead of the usual light-text-on-dark-panel scheme.
+  const isCard = style === 'glass';
+
+  // Entrance sound cue frames (absolute on the current clock). The card's
+  // pop is carried by its own geometry (ring + dot), so it gets a quieter
+  // chime than the old glass panel did — a confirmation, not an announcement.
   const cueAt = base + Math.round(Math.max(0, appearAt) * fps);
   const sound =
     style === 'stamp' ? (
       <SfxCue name="stamp" at={cueAt + Math.round(fps * 0.1)} volume={1} />
     ) : (
-      <SfxCue name="shimmer" at={cueAt} volume={style === 'quote' ? 0.7 : 1} />
+      <SfxCue name="shimmer" at={cueAt} volume={style === 'quote' ? 0.7 : 0.8} />
     );
 
   if (t < appearAt || t > holdUntil + 0.55) return null;
@@ -61,7 +70,7 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
   const enter = spring({
     frame: Math.max(0, Math.round((t - appearAt) * fps)),
     fps,
-    config: style === 'stamp' ? { damping: 11, mass: 0.8 } : { damping: 15 },
+    config: style === 'stamp' ? { damping: 11, mass: 0.8 } : isCard ? { damping: 12, mass: 0.7 } : { damping: 15 },
     durationInFrames: Math.round(fps * 0.55),
   });
   const exit = interpolate(t, [holdUntil, holdUntil + 0.5], [1, 0], {
@@ -69,11 +78,22 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
     extrapolateRight: 'clamp',
   });
 
-  // How much of the line has been spoken (drives the glass progress bar).
+  // How much of the line has been spoken (drives the progress bar).
   const spokenProgress = interpolate(t, [p.start, Math.max(p.start + 0.1, p.end)], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
+
+  // Word ink: the card is a solid accent field, so its ink is chosen for
+  // maximum contrast against the ACCENT (works on any theme + any accent — a
+  // dark accent gets cream ink, a bright accent gets near-black); the current
+  // word pops to the opposite tone as it's spoken. Every other style keeps the
+  // theme's own text colour (which already flips ink/paper per light/dark).
+  const cardInk = inkOn(theme.accent);
+  const cardPop = cardInk === '#17120E' ? '#FBF7F0' : '#17120E';
+  const baseInk = isCard ? cardInk : theme.text;
+  const hotInk = isCard ? cardPop : theme.accent;
+  const hotGlow = isCard ? undefined : `0 0 ${28 * u}px ${theme.accent}aa`;
 
   const words = p.words.map((w, i) => {
     const spoken = t >= w.start;
@@ -90,9 +110,9 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
         style={{
           display: 'inline-block',
           marginRight: '0.3em',
-          opacity: spoken ? 1 : 0.32,
-          color: isCurrent ? theme.accent : theme.text,
-          textShadow: isCurrent ? `0 0 ${28 * u}px ${theme.accent}aa` : undefined,
+          opacity: spoken ? 1 : isCard ? 0.42 : 0.32,
+          color: isCurrent ? hotInk : baseInk,
+          textShadow: isCurrent ? hotGlow : undefined,
           transform: `scale(${scale}) translateY(${spoken ? 0 : 6 * u}px)`,
           transition: 'none',
         }}
@@ -183,12 +203,12 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
           gap: 22 * u,
           padding: `${28 * u}px ${48 * u}px`,
           borderRadius: 30 * u,
-          background: 'rgba(255,255,255,0.055)',
+          background: raise(theme, 0.055),
           backdropFilter: 'blur(22px) saturate(1.35)',
           WebkitBackdropFilter: 'blur(22px) saturate(1.35)',
-          border: '1px solid rgba(255,255,255,0.16)',
+          border: `1px solid ${hairline(theme, 0.16)}`,
           borderLeft: `${8 * u}px solid ${theme.accent}`,
-          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.18), 0 ${26 * u}px ${80 * u}px rgba(0,0,0,0.5)`,
+          boxShadow: `inset 0 1px 0 ${hairline(theme, 0.18)}, 0 ${26 * u}px ${80 * u}px rgba(0,0,0,0.5)`,
           transform: `translateX(${interpolate(enter, [0, 1], [-46 * u, 0])}px)`,
           opacity: enter,
         }}
@@ -220,40 +240,73 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
       </div>
     );
   } else {
-    // glass — the signature look: a bold centered line on real frosted glass.
+    // "glass" — now the flagship PUNCH CARD: a flat, solid accent field
+    // (no blur, no glow — a printed card, not a hint of one), ink-toned
+    // karaoke type, and two minimal geometric marks bled off the corners:
+    // a thin ring (top-right) and a small dot (bottom-left), each popping
+    // in with its own spring beat — the redesign's signature decoration.
+    const ringPop = spring({
+      frame: Math.max(0, Math.round((t - appearAt) * fps)),
+      fps,
+      config: { damping: 10, mass: 0.75 },
+      durationInFrames: Math.round(fps * 0.7),
+    });
+    const dotPop = spring({
+      frame: Math.max(0, Math.round((t - appearAt - 0.16) * fps)),
+      fps,
+      config: { damping: 9, mass: 0.6 },
+      durationInFrames: Math.round(fps * 0.5),
+    });
+
     inner = (
       <div
         style={{
           position: 'relative',
-          padding: `${30 * u}px ${58 * u}px ${34 * u}px`,
-          borderRadius: 32 * u,
-          background: `linear-gradient(165deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))`,
-          backdropFilter: 'blur(26px) saturate(1.45)',
-          WebkitBackdropFilter: 'blur(26px) saturate(1.45)',
-          border: '1.5px solid rgba(255,255,255,0.18)',
-          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.22), 0 ${28 * u}px ${90 * u}px rgba(0,0,0,0.55), 0 0 ${60 * u}px ${theme.accent}26`,
-          transform: `translateY(${interpolate(enter, [0, 1], [46 * u, 0])}px) scale(${interpolate(enter, [0, 1], [0.93, 1])})`,
+          padding: `${32 * u}px ${56 * u}px ${34 * u}px`,
+          borderRadius: 26 * u,
+          background: theme.accent,
+          boxShadow: `0 ${26 * u}px ${80 * u}px rgba(0,0,0,0.45)`,
+          transform: `translateY(${interpolate(enter, [0, 1], [36 * u, 0])}px) scale(${interpolate(enter, [0, 1], [0.92, 1])})`,
           opacity: enter,
           overflow: 'hidden',
         }}
       >
-        {/* Accent glow pooling in one corner of the glass. */}
+        {/* Ring — a thin outline circle bled off the top-right corner. */}
         <div
           style={{
             position: 'absolute',
-            width: '60%',
-            height: '120%',
-            left: '-18%',
-            top: '-60%',
-            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent}30, transparent 70%)`,
+            width: 130 * u,
+            height: 130 * u,
+            right: -34 * u,
+            top: -40 * u,
+            borderRadius: '50%',
+            border: `${2.4 * u}px solid ${cardInk}`,
+            opacity: 0.2,
+            transform: `scale(${ringPop})`,
+            pointerEvents: 'none',
+          }}
+        />
+        {/* Dot — small filled circle, bottom-left, a beat behind the ring. */}
+        <div
+          style={{
+            position: 'absolute',
+            width: 14 * u,
+            height: 14 * u,
+            left: 22 * u,
+            bottom: 20 * u,
+            borderRadius: '50%',
+            background: cardInk,
+            opacity: 0.24,
+            transform: `scale(${dotPop})`,
             pointerEvents: 'none',
           }}
         />
         <div
           style={{
-            fontSize: 52 * u,
-            fontWeight: 850,
-            lineHeight: 1.24,
+            fontSize: 50 * u,
+            fontWeight: 800,
+            lineHeight: 1.22,
+            letterSpacing: '-0.01em',
             fontFamily: displayFont,
             textAlign: 'center',
             position: 'relative',
@@ -261,14 +314,14 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
         >
           {words}
         </div>
-        {/* Spoken-progress underline: fills as the narrator works the line. */}
+        {/* Spoken-progress rule: fills as the narrator works the line. */}
         <div
           style={{
             position: 'relative',
-            height: 7 * u,
-            marginTop: 18 * u,
+            height: 6 * u,
+            marginTop: 20 * u,
             borderRadius: 999,
-            background: 'rgba(255,255,255,0.12)',
+            background: `${cardInk}2e`,
             overflow: 'hidden',
           }}
         >
@@ -278,8 +331,7 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
               inset: 0,
               width: `${spokenProgress * 100}%`,
               borderRadius: 999,
-              background: `linear-gradient(90deg, ${theme.accent}, ${theme.accent2})`,
-              boxShadow: `0 0 ${18 * u}px ${theme.accent}88`,
+              background: cardInk,
             }}
           />
         </div>

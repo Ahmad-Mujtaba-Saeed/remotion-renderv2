@@ -12,11 +12,12 @@ import {
   NarrationWindow,
 } from './timing';
 import { SceneRouter } from './components/SceneRouter';
-import { ThemeProvider, useTheme } from './theme';
+import { ThemeProvider, useTheme, hairline } from './theme';
 import { presentationFor } from './transitions';
 import { GrainOverlay } from './components/AmbientBackground';
 import { CanvasJourney } from './canvas/CanvasJourney';
 import { SfxProvider, SfxCue } from './sfx';
+import { FontLoader } from './fonts';
 
 /** Global overlays drawn above every scene: a progress bar + film grain. */
 const GlobalOverlays: React.FC = () => {
@@ -31,7 +32,7 @@ const GlobalOverlays: React.FC = () => {
     <>
       <GrainOverlay opacity={0.045} />
       <AbsoluteFill style={{ justifyContent: 'flex-end', pointerEvents: 'none' }}>
-        <div style={{ height: 6, width: '100%', background: 'rgba(255,255,255,0.10)' }}>
+        <div style={{ height: 6, width: '100%', background: hairline(theme, 0.1) }}>
           <div
             style={{
               height: '100%',
@@ -95,6 +96,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
       <ThemeProvider theme={shotList?.theme}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+            <FontLoader />
             {music?.url && musicVolume ? (
               <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
             ) : null}
@@ -131,6 +133,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     <ThemeProvider theme={shotList?.theme}>
       <SfxProvider config={shotList?.sfx}>
         <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+          <FontLoader />
           {music?.url && musicVolume ? (
             <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
           ) : null}
