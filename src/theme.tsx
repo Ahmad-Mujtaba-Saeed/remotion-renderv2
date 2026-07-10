@@ -29,13 +29,14 @@ export const useDisplayFont = (): string => DISPLAY_FONT;
 // ---------------------------------------------------------------------------
 // Light/dark surface kit
 //
-// Most components paint their subtle raised surfaces + hairlines with
-// `rgba(255,255,255, α)` — a lift toward white that only reads on a DARK
-// background. To support light themes (the cream/ink "Sunrise" scheme) those
-// literals now go through these helpers, which flip to an ink-toned tint when
-// the theme's own background is light. For every existing (dark) theme the
-// helpers return the identical `rgba(255,255,255, α)`, so those renders are
-// byte-for-byte unchanged; only a light theme diverges.
+// The design paints its dividers with `rgba(255,255,255, α)` — a lift toward
+// white that only reads on a DARK background. To support light themes (the
+// cream/ink "Paper", "Bone" and "Sand" schemes) those literals go through
+// `hairline`, which flips to an ink-toned tint when the theme's own background
+// is light.
+//
+// (There used to be a `raise()` twin of this for translucent raised surfaces.
+// The flat design has no raised surfaces, so it went with them.)
 // ---------------------------------------------------------------------------
 
 /** Relative luminance (0..1, sRGB) of a #rrggbb color. */
@@ -56,14 +57,7 @@ export const isLightTheme = (theme: Theme): boolean => luminance(theme.bg_from) 
 const INK = '23,18,14';
 const PAPER = '255,255,255';
 
-/**
- * A subtle contrasting tint for raised surfaces (pills, chips, plates): lifts
- * toward white on dark themes, deepens toward ink on light themes.
- */
-export const raise = (theme: Theme, alpha: number): string =>
-  `rgba(${isLightTheme(theme) ? INK : PAPER},${alpha})`;
-
-/** A hairline border/divider tint, theme-aware (same rule as {@link raise}). */
+/** A hairline rule/divider tint: toward white on dark themes, toward ink on light. */
 export const hairline = (theme: Theme, alpha: number): string =>
   `rgba(${isLightTheme(theme) ? INK : PAPER},${alpha})`;
 

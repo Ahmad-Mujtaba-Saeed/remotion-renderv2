@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Img, Loop, Sequence, Video, useCurrentFrame, useVideoConfig } from 'remotion';
 import { FrameSequence, Slot } from '../types';
 import { CameraMove } from './CameraMove';
-import { useTheme, BODY_FONT } from '../theme';
+import { useTheme, inkOn, hairline, MONO_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { useRegionStyle } from '../canvas/RegionStyle';
 import { useSceneWindow } from '../canvas/SceneClock';
@@ -15,8 +15,8 @@ import { useSceneWindow } from '../canvas/SceneClock';
  *
  * Fit logic: when the media's real aspect (probed by Laravel into asset_ref)
  * fights the slot's shape — a portrait phone shot in a landscape region — the
- * media is CONTAINED at its natural aspect over a soft blurred fill instead
- * of being brutally centre-cropped by objectFit: cover.
+ * media is CONTAINED at its natural aspect over a flat panel-coloured field
+ * instead of being brutally centre-cropped by objectFit: cover.
  */
 
 /**
@@ -70,14 +70,10 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
         ? slot.asset_ref.type === 'video'
         : slot.content_type === 'video';
 
-  // Frameless canvas regions: media masks itself with big soft corners and a
-  // deep shadow for depth (no borders, no card chrome).
+  // Frameless canvas regions: media is a crisp rectangle on the field. No
+  // shadow — depth belongs to the camera, not to a drop shadow under a photo.
   const framelessWrap: React.CSSProperties = region.frameless
-    ? {
-        borderRadius: region.mediaRadius,
-        overflow: 'hidden',
-        boxShadow: '0 40px 110px rgba(0,0,0,0.55)',
-      }
+    ? { borderRadius: region.mediaRadius, overflow: 'hidden' }
     : {};
 
   if (!url) {
@@ -89,10 +85,16 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #1f2937, #111827)',
-          color: '#9ca3af',
-          fontSize: 28 * u,
-          fontFamily: 'sans-serif',
+          background: theme.panel,
+          // A hairline edge and mono type so the placeholder reads as a
+          // reserved slot rather than a hole in the design. Storyboard preview
+          // only — the render path refuses to start with an empty image slot.
+          border: `1px solid ${hairline(theme, 0.14)}`,
+          color: theme.muted,
+          fontSize: 26 * u,
+          fontFamily: MONO_FONT,
+          textTransform: 'uppercase',
+          letterSpacing: 2 * u,
           textAlign: 'center',
           padding: 48 * u,
           boxSizing: 'border-box',
@@ -117,41 +119,12 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
     objectFit: contained ? 'contain' : 'cover',
   };
 
-  // Behind a contained image: the image itself, blown up, blurred and dimmed
-  // (the classic broadcast treatment for portrait footage). Videos get a
-  // themed wash instead — a second seeking <video> would double decode cost.
+  // Behind a contained image or clip: one flat panel colour. The old blurred,
+  // blown-up copy of the image was a `filter` living inside the camera-scaled
+  // canvas world — the exact thing that forces Chromium to rasterize a subtree
+  // and lands the region's text soft. A letterbox is not a place for texture.
   const containBackdrop = contained ? (
-    <div style={{ position: 'absolute', inset: 0 }}>
-      {isVideo ? (
-        <>
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: `linear-gradient(135deg, ${theme.bg_from}, ${theme.bg_to})`,
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: `radial-gradient(60% 85% at 28% 18%, ${theme.accent}30, transparent 70%), radial-gradient(70% 70% at 76% 86%, ${theme.accent2}28, transparent 72%)`,
-            }}
-          />
-        </>
-      ) : (
-        <Img
-          src={url}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            filter: 'blur(46px) brightness(0.42) saturate(1.15)',
-            transform: 'scale(1.18)',
-          }}
-        />
-      )}
-    </div>
+    <div style={{ position: 'absolute', inset: 0, background: theme.panel }} />
   ) : null;
 
   // Html5 <Video>, NOT <OffthreadVideo>: the Rust compositor races its own
@@ -159,16 +132,15 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   // on the first frames of remote mp4s (reproduced repeatedly, even with
   // +faststart files). The browser video tag streams the same files fine
   // now that assets are served by this host process (see server.ts).
-  // onError: a flaky user upload degrades to an empty region instead of
-  // aborting the whole multi-minute render.
-  const video = (
-    <Video
-      src={url}
-      style={fitStyle}
-      muted
-      onError={(e) => console.warn(`MediaSlot video failed (${url}):`, e?.message ?? e)}
-    />
-  );
+  //
+  // Deliberately no onError. While rendering, Remotion never forwards it to
+  // the <video> element; it only reads it as "the caller handles errors",
+  // then swallows the MediaPlaybackError WITHOUT clearing its own
+  // delayRender() handle. A bad clip therefore killed the render two minutes
+  // later with an opaque delayRender timeout instead of reporting the media
+  // error. Fail fast instead — and note this whole path is a fallback, since
+  // RemotionRenderService pre-extracts every slot clip to a frame sequence.
+  const video = <Video src={url} style={fitStyle} muted />;
 
   // A clip shorter than its scene must loop; the loop stops a couple of frames
   // short of the probed duration because seeking a <video> AT its very end
@@ -221,18 +193,16 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
         <div
           style={{
             position: 'absolute',
-            left: 32 * u,
-            bottom: 32 * u,
-            padding: `${10 * u}px ${24 * u}px`,
-            background: theme.panel,
-            backdropFilter: 'blur(6px)',
-            color: theme.text,
-            borderRadius: 12 * u,
-            borderLeft: `${5 * u}px solid ${theme.accent}`,
-            fontSize: 34 * u,
+            left: 0,
+            bottom: 40 * u,
+            padding: `${12 * u}px ${26 * u}px`,
+            background: theme.accent,
+            color: inkOn(theme.accent),
+            fontSize: 32 * u,
             fontWeight: 700,
-            fontFamily: BODY_FONT,
-            letterSpacing: 0.5,
+            fontFamily: MONO_FONT,
+            textTransform: 'uppercase',
+            letterSpacing: 2 * u,
           }}
         >
           {slot.label}

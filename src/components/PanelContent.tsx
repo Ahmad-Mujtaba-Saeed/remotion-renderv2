@@ -3,13 +3,13 @@ import { Slot } from '../types';
 import { TextBlock } from './TextBlock';
 import { ExplanationBox } from './ExplanationBox';
 import { MediaSlot } from './MediaSlot';
-import { GlassCard } from './GlassCard';
+import { PanelSurface } from './Surface';
 
 /**
- * Renders the content of a floating panel / banner slot.
- * - `glass` true  → the content supplies its own glass surface (side panel).
- * - `glass` false → the parent supplies the glass (banner strip), so content
- *   renders transparent.
+ * Renders the content of a docked panel / banner slot.
+ * - `glass` true  → the content supplies its own surface (side panel).
+ * - `glass` false → the parent supplies it (banner strip), so content renders
+ *   transparent.
  */
 export const PanelContent: React.FC<{ slot?: Slot; glass: boolean; compact?: boolean }> = ({
   slot,
@@ -24,9 +24,9 @@ export const PanelContent: React.FC<{ slot?: Slot; glass: boolean; compact?: boo
 
   if (slot.content_type === 'text_block') {
     return glass ? (
-      <GlassCard style={{ padding: '7%' }}>
+      <PanelSurface style={{ padding: '7%' }}>
         <TextBlock slot={slot} transparent compact={compact} />
-      </GlassCard>
+      </PanelSurface>
     ) : (
       <TextBlock slot={slot} transparent compact={compact} />
     );

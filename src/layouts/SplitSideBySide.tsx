@@ -6,7 +6,7 @@ import { useTheme } from '../theme';
 import { useIsPortrait } from '../responsive';
 
 const Half: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden', borderRadius: 24 }}>{children}</div>
+  <div style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden', borderRadius: 6 }}>{children}</div>
 );
 
 /**
@@ -32,12 +32,10 @@ export const SplitSideBySide: React.FC<{ scene: Scene }> = ({ scene }) => {
       </Half>
       <div
         style={{
-          width: portrait ? undefined : 5,
-          height: portrait ? 5 : undefined,
+          width: portrait ? undefined : 4,
+          height: portrait ? 4 : undefined,
           alignSelf: 'stretch',
-          borderRadius: 999,
-          background: `linear-gradient(${portrait ? '90deg, ' : ''}${theme.accent}, ${theme.accent2})`,
-          boxShadow: `0 0 24px ${theme.accent}66`,
+          background: theme.accent,
         }}
       />
       <Half>

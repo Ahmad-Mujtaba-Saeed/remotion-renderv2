@@ -8,9 +8,9 @@ import { SceneMetaProvider } from '../components/SceneMeta';
 import { useTheme } from '../theme';
 
 /**
- * One scene as a FRAMELESS composition region on the world canvas (the soft
- * collage look): media masks itself with big rounded corners and a deep
- * shadow, text floats on a soft plate. No cards, no borders, no rotation.
+ * One scene as a FRAMELESS composition region on the world canvas: text sits
+ * directly on the flat colour field, media is a crisp rectangle. No cards, no
+ * plates, no shadows, no rotation.
  *
  * The content is the scene's REGULAR layout rendered at the composition's
  * design resolution and uniformly scaled into the region — every layout,
@@ -81,7 +81,7 @@ export const SceneRegion: React.FC<{
             position: 'relative',
           }}
         >
-          <RegionStyleProvider value={{ frameless: true, mediaRadius: 48, aspect: item.w / Math.max(1, item.h) }}>
+          <RegionStyleProvider value={{ frameless: true, mediaRadius: 6, aspect: item.w / Math.max(1, item.h) }}>
             <SceneMetaProvider value={{ index, count, style: scene.style }}>
               <SceneClockProvider window={clock}>
                 {/* Punchlines render in CanvasJourney's screen-space layer,

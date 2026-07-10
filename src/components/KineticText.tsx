@@ -12,11 +12,10 @@ const norm = (w: string): string => w.toLowerCase().replace(/[^a-z0-9]/g, '');
  * Uses the scene clock so canvas-journey stations animate on camera arrival.
  *
  * `highlight` paints the given words (verbatim heading words, matched loosely)
- * with the theme's accent gradient AND draws a thin accent underline that
- * sweeps in a beat after the word lands — the editorial "this is the word
- * that matters" mark. Both the gradient text and the underline are
- * background-clip/transform only: no filters, so it stays camera-safe inside
- * scaled canvas regions.
+ * in solid accent AND draws a thin accent rule that sweeps in a beat after the
+ * word lands — the editorial "this is the word that matters" mark. Colour and
+ * transform only: no filters, so it stays camera-safe inside scaled canvas
+ * regions.
  */
 export const KineticText: React.FC<{
   text: string;
@@ -53,14 +52,7 @@ export const KineticText: React.FC<{
               position: 'relative',
               opacity: e,
               transform: `translateY(${(1 - e) * 20}px)`,
-              ...(hot
-                ? {
-                    backgroundImage: `linear-gradient(92deg, ${theme.accent}, ${theme.accent2})`,
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    color: 'transparent',
-                  }
-                : null),
+              ...(hot ? { color: theme.accent } : null),
             }}
           >
             {word}
@@ -70,11 +62,9 @@ export const KineticText: React.FC<{
                   position: 'absolute',
                   left: '-0.02em',
                   right: '-0.02em',
-                  bottom: '0.03em',
-                  height: '0.1em',
-                  borderRadius: '0.08em',
-                  background: `linear-gradient(92deg, ${theme.accent}, ${theme.accent2})`,
-                  opacity: 0.32,
+                  bottom: '-0.04em',
+                  height: '0.07em',
+                  background: theme.accent,
                   transformOrigin: 'left center',
                   transform: `scaleX(${underline})`,
                   pointerEvents: 'none',

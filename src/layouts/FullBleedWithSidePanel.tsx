@@ -7,10 +7,10 @@ import { useIsPortrait } from '../responsive';
 import { useSceneClock } from '../canvas/SceneClock';
 
 /**
- * full_bleed_with_side_panel: one full-frame image/video with a floating glass
- * explanation panel docked left or right. This is the "explanation box over the
- * side of an image, wherever the AI wants" layout — constrained to two tested
- * positions and a clamped width so it can never run off-screen or overlap badly.
+ * full_bleed_with_side_panel: one full-frame image/video with a flat explanation
+ * panel docked left or right. This is the "explanation box over the side of an
+ * image, wherever the AI wants" layout — constrained to two tested positions and
+ * a clamped width so it can never run off-screen or overlap badly.
  *
  * In a 9:16 portrait frame a side dock would leave a sliver-thin column, so
  * the panel re-docks to the bottom at near-full width instead.
@@ -36,18 +36,8 @@ export const FullBleedWithSidePanel: React.FC<{ scene: Scene }> = ({ scene }) =>
         <MediaSlot slot={bg} />
       </AbsoluteFill>
 
-      {/* Legibility scrim, kept tight to the docked side so the image stays
-          visible across most of the frame. */}
-      <AbsoluteFill
-        style={{
-          background: portrait
-            ? 'linear-gradient(0deg, rgba(0,0,0,0.55), transparent 38%)'
-            : dock === 'left'
-              ? 'linear-gradient(90deg, rgba(0,0,0,0.5), transparent 44%)'
-              : 'linear-gradient(270deg, rgba(0,0,0,0.5), transparent 44%)',
-        }}
-      />
-
+      {/* No legibility scrim: the panel is opaque, so the image keeps its
+          colour right up to the panel's edge. */}
       <AbsoluteFill
         style={{
           flexDirection: 'row',

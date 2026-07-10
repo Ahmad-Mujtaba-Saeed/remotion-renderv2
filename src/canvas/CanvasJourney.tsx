@@ -54,8 +54,8 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
 
   if (!scenes.length) return null;
 
-  // Parallax/world dot grids read as white specks on dark themes; on a light
-  // (cream) theme they must be ink specks or they vanish.
+  // The world's dot grid reads as white specks on dark themes; on a light
+  // (cream) theme it must be ink specks or it vanishes.
   const dotColor = (alpha: number): string =>
     isLightTheme(theme) ? `rgba(23,18,14,${alpha})` : `rgba(255,255,255,${alpha})`;
 
@@ -158,19 +158,10 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
 
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
-      {/* Living backdrop stays in viewport space (doesn't fly with the world). */}
+      {/* The flat colour field. Stays in viewport space (doesn't fly with the
+          world). There used to be a second, parallax dot grid layered on top of
+          it; one grid, pinned to the world, sells the depth on its own. */}
       <AmbientBackground />
-
-      {/* Parallax texture: a faint dot grid shifting at a fraction of camera
-          speed sells the depth between backdrop and canvas. */}
-      <AbsoluteFill
-        style={{
-          backgroundImage: `radial-gradient(${dotColor(0.09)} 2.5px, transparent 2.5px)`,
-          backgroundSize: '130px 130px',
-          backgroundPosition: `${-cam.x * cam.scale * 0.22}px ${-cam.y * cam.scale * 0.22}px`,
-          opacity: 0.6,
-        }}
-      />
 
       {/* Camera roll: the world rotates a few degrees around the viewport
           center mid-flight and always lands level — a banked-turn feel.
@@ -190,14 +181,15 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
           transformOrigin: '0 0',
         }}
       >
-        {/* Full-speed dot grid pinned to the world itself. */}
+        {/* Dot grid pinned to the world: the one texture in the design, and the
+            only thing that tells the eye the camera is moving across a surface
+            rather than cutting between scenes. Barely there on purpose. */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `radial-gradient(${dotColor(0.13)} 3px, transparent 3px)`,
-            backgroundSize: '170px 170px',
-            opacity: 0.5,
+            backgroundImage: `radial-gradient(${dotColor(0.07)} 1.6px, transparent 1.6px)`,
+            backgroundSize: '190px 190px',
           }}
         />
 
@@ -311,9 +303,8 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
       })}
 
       {/* PUNCHLINES in screen space: outside the camera transform they stay
-          pixel-crisp at any zoom and may use real backdrop-filter glass (the
-          no-filter rule only applies INSIDE the scaled world). Each one gets
-          its scene's clock so word-sync anchors to the narration start. */}
+          pixel-crisp at any zoom. Each one gets its scene's clock so word-sync
+          anchors to the narration start. */}
       {scenes.map((scene: Scene, i) => {
         if (!scene.punchline) return null;
         const w = camera.windows[i];
@@ -340,14 +331,6 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
           </Sequence>
         ) : null
       )}
-
-      {/* Gentle edge vignette keeps the eye centred during flights. */}
-      <AbsoluteFill
-        style={{
-          pointerEvents: 'none',
-          background: `radial-gradient(ellipse at center, transparent 58%, ${theme.bg_from}99 130%)`,
-        }}
-      />
     </AbsoluteFill>
   );
 };

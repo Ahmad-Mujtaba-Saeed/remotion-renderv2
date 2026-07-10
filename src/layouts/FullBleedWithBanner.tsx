@@ -3,13 +3,14 @@ import { AbsoluteFill, useVideoConfig, spring, interpolate } from 'remotion';
 import { Scene } from '../types';
 import { MediaSlot } from '../components/MediaSlot';
 import { PanelContent } from '../components/PanelContent';
-import { glassStyle } from '../components/GlassCard';
+import { surfaceStyle } from '../components/Surface';
 import { useTheme } from '../theme';
 import { useSceneClock } from '../canvas/SceneClock';
 
 /**
- * full_bleed_with_banner: one full-frame image/video with a frosted-glass
- * heading/stat banner docked across the top or bottom.
+ * full_bleed_with_banner: one full-frame image/video with a flat heading/stat
+ * banner docked across the top or bottom, edged with an accent rule on the side
+ * that faces the image.
  */
 export const FullBleedWithBanner: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
@@ -28,23 +29,19 @@ export const FullBleedWithBanner: React.FC<{ scene: Scene }> = ({ scene }) => {
         <MediaSlot slot={bg} />
       </AbsoluteFill>
 
-      <AbsoluteFill
-        style={{
-          background:
-            dock === 'top'
-              ? 'linear-gradient(180deg, rgba(0,0,0,0.5), transparent 38%)'
-              : 'linear-gradient(0deg, rgba(0,0,0,0.5), transparent 38%)',
-        }}
-      />
-
-      <AbsoluteFill style={{ justifyContent: dock === 'top' ? 'flex-start' : 'flex-end', padding: '4%' }}>
+      <AbsoluteFill style={{ justifyContent: dock === 'top' ? 'flex-start' : 'flex-end' }}>
         <div
           style={{
-            ...glassStyle(theme, 22),
+            ...surfaceStyle(theme),
+            border: 'none',
+            // The accent rule is the only edge the banner needs; it reads as a
+            // deliberate mark rather than a card outline.
+            [dock === 'top' ? 'borderBottom' : 'borderTop']: `4px solid ${theme.accent}`,
             width: '100%',
-            // A banner is a strip, not a wall: compact content (inline chip
-            // bullets) plus a hard height cap keep the image the star even
-            // when the AI writes five long bullets.
+            boxSizing: 'border-box',
+            // A banner is a strip, not a wall: compact content (inline bullets)
+            // plus a hard height cap keep the image the star even when the AI
+            // writes five long bullets.
             maxHeight: '32%',
             overflow: 'hidden',
             padding: '2.6% 4%',

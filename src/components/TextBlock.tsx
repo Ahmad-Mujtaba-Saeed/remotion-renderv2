@@ -1,7 +1,7 @@
 import React from 'react';
 import { useVideoConfig, spring, interpolate } from 'remotion';
 import { Slot, TextStyleVariant } from '../types';
-import { useTheme, useDisplayFont, BODY_FONT, MONO_FONT, raise, hairline } from '../theme';
+import { useTheme, useDisplayFont, BODY_FONT, MONO_FONT, hairline } from '../theme';
 import { KineticText } from './KineticText';
 import { useScaleUnit } from '../responsive';
 import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
@@ -14,26 +14,28 @@ const seeded = (n: number, salt: number): number => {
   return v - Math.floor(v);
 };
 
+/** The two ways a text scene can present itself. */
+type Look = 'editorial' | 'statement';
+
 /**
- * Heading + bullet list — the workhorse text card, redesigned so no two
- * scenes present the same way. Every scene gets a PERSONALITY (assigned by
- * the backend scene stylist, seeded fallback otherwise):
+ * Heading + bullet list — the workhorse text scene.
  *
- *  - "editorial"  kicker + heading + numbered pill rows (the refined classic);
- *  - "statement"  hero-centered: huge gradient-highlighted heading, bullets
- *                 as centered chips underneath;
- *  - "numbered"   oversized gradient index digits (01/02/03) beside each point;
- *  - "checklist"  points check themselves off with a drawn-on tick;
- *  - "cards"      points as a row of mini-cards that pop in one by one.
+ * There are exactly two looks, because five was four too many:
  *
- * Plus: an eyebrow "kicker" line, accent-gradient keyword highlights in the
- * heading, a giant translucent scene numeral behind the copy (frameless
- * regions), and a soft pop sound as each point lands.
+ *  - "editorial"  kicker, heading, then rows hung off big accent numerals and
+ *                 separated by hairline rules that draw in from the left;
+ *  - "statement"  a centered hero heading over a short centered list — for
+ *                 scenes with one big idea and few, short points.
  *
- * Surfaces are unchanged in spirit: slides mode keeps the themed panel,
- * frameless canvas regions get the soft plate (NO backdrop-filter — glass
- * blur inside the camera-scaled world is exactly the text-softening bug),
- * `compact` renders the banner chip strip.
+ * The backend stylist still emits the old five variant names; `numbered`,
+ * `checklist` and `cards` all resolve to `editorial` (they were the same
+ * information wearing different jewellery).
+ *
+ * Surfaces: none. Rows sit directly on the scene's flat colour field,
+ * separated by rules rather than enclosed in boxes. Slides mode keeps its solid
+ * `theme.panel` because there the panel *is* the slide. No gradients, no glass,
+ * no drop shadows — and specifically no `filter`/`backdrop-filter` anywhere,
+ * since inside the camera-scaled canvas world that is what softens the text.
  */
 export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: boolean }> = ({
   slot,
@@ -50,13 +52,10 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
   const meta = useSceneMeta();
   const bullets = slot.bullets ?? [];
   const sequential = (slot.reveal ?? 'sequential') === 'sequential';
-  // Frameless canvas regions get the soft plate instead of the slides panel.
-  const plated = !transparent && !compact && region.frameless;
+  /** Canvas regions and explicit overlays paint straight onto the field. */
   const bare = transparent || region.frameless;
 
   const seed = (win?.start ?? 0) + bullets.length * 13 + meta.index * 7;
-  const fromLeft = seeded(seed, 3) > 0.35; // most scenes slide in from the left
-  const accentCornerRight = seeded(seed, 4) > 0.5;
 
   const headingIn = spring({ frame, fps, config: { damping: 200 }, durationInFrames: Math.round(fps * 0.6) });
 
@@ -64,28 +63,21 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
   const endAt = Math.round(durationInFrames * 0.92);
   const step = bullets.length > 0 ? (endAt - startAt) / bullets.length : 0;
 
-  // ---- Personality ----------------------------------------------------------
+  // ---- Look -----------------------------------------------------------------
   const longest = bullets.reduce((m, b) => Math.max(m, b.length), 0);
-  const allowed = (v: TextStyleVariant): boolean => {
-    switch (v) {
-      case 'statement':
-        return !transparent && !!slot.heading && bullets.length <= 3 && longest <= 52;
-      case 'cards':
-        return !transparent && bullets.length >= 2 && bullets.length <= 4 && longest <= 72;
-      case 'numbered':
-        return bullets.length >= 2;
-      case 'checklist':
-        return bullets.length >= 2 && longest <= 90;
-      default:
-        return true;
-    }
-  };
-  const pool: TextStyleVariant[] = (['statement', 'cards', 'numbered', 'checklist', 'editorial'] as TextStyleVariant[]).filter(allowed);
-  const requested = meta.style?.variant;
-  const variant: TextStyleVariant =
-    requested && allowed(requested) ? requested : pool[Math.floor(seeded(seed, 6) * pool.length)] ?? 'editorial';
+  const statementFits = !transparent && !!slot.heading && bullets.length <= 3 && longest <= 52;
+  const asLook = (v?: TextStyleVariant): Look | undefined =>
+    v === undefined ? undefined : v === 'statement' ? 'statement' : 'editorial';
+
+  const requested = asLook(meta.style?.variant);
+  const look: Look =
+    requested === 'statement' && !statementFits
+      ? 'editorial'
+      : (requested ?? (statementFits && seeded(seed, 6) > 0.5 ? 'statement' : 'editorial'));
+  const centered = look === 'statement';
 
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
+  const index = String(meta.index + 1).padStart(2, '0');
   // Highlight: stylist's picks, or (when the stylist never ran) the longest
   // meaty word so headings still get a focal point. An explicit [] means none.
   const highlight =
@@ -98,78 +90,48 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
 
   // ---- Shared pieces --------------------------------------------------------
 
-  const kickerRow = kicker ? (
+  const rule = (alpha = 0.14): string => hairline(theme, alpha);
+
+  /** Eyebrow: scene numeral, a short accent tick, then the label. */
+  const kickerRow = (
     <div
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 16 * u,
-        marginBottom: 20 * u,
+        gap: 14 * u,
+        marginBottom: 26 * u,
         opacity: headingIn,
-        justifyContent: variant === 'statement' ? 'center' : 'flex-start',
+        justifyContent: centered ? 'center' : 'flex-start',
+        fontFamily: MONO_FONT,
+        fontSize: 21 * u,
+        fontWeight: 600,
+        letterSpacing: 4 * u,
+        textTransform: 'uppercase',
       }}
     >
-      <div
-        style={{
-          width: 34 * u,
-          height: 5 * u,
-          borderRadius: 999,
-          background: `linear-gradient(90deg, ${theme.accent}, ${theme.accent2})`,
-        }}
-      />
-      <span
-        style={{
-          fontSize: 23 * u,
-          fontWeight: 700,
-          letterSpacing: 5 * u,
-          textTransform: 'uppercase',
-          color: theme.accent,
-          fontFamily: MONO_FONT,
-        }}
-      >
-        {kicker}
-      </span>
-      {variant === 'statement' ? (
-        <div
-          style={{
-            width: 34 * u,
-            height: 5 * u,
-            borderRadius: 999,
-            background: `linear-gradient(90deg, ${theme.accent2}, ${theme.accent})`,
-          }}
-        />
-      ) : null}
+      <span style={{ color: theme.muted }}>{index}</span>
+      <div style={{ width: 28 * u, height: 3 * u, background: theme.accent, flexShrink: 0 }} />
+      {kicker ? <span style={{ color: theme.accent }}>{kicker}</span> : null}
     </div>
-  ) : null;
+  );
 
-  const headingSize = variant === 'statement' ? ((slot.heading ?? '').length > 38 ? 76 : 94) : 68;
+  const headingSize = centered ? ((slot.heading ?? '').length > 38 ? 82 : 100) : 70;
   const headingNode = slot.heading ? (
     <div
       style={{
         opacity: headingIn,
         transform: `translateY(${interpolate(headingIn, [0, 1], [22 * u, 0])}px)`,
-        textAlign: variant === 'statement' ? 'center' : 'left',
+        textAlign: centered ? 'center' : 'left',
       }}
     >
-      {kickerRow ??
-        (variant !== 'statement' ? (
-          <div
-            style={{
-              width: 64 * u,
-              height: 6 * u,
-              borderRadius: 999,
-              marginBottom: 22 * u,
-              background: `linear-gradient(90deg, ${theme.accent}, ${theme.accent2})`,
-            }}
-          />
-        ) : null)}
+      {kickerRow}
       <h1
         style={{
           fontSize: headingSize * u,
-          margin: `0 0 ${(variant === 'statement' ? 30 : 36) * u}px 0`,
+          margin: `0 0 ${(centered ? 44 : 40) * u}px 0`,
           fontWeight: 900,
-          lineHeight: 1.06,
-          letterSpacing: -0.5 * u,
+          lineHeight: 1.04,
+          letterSpacing: -1 * u,
           color: theme.text,
           fontFamily: displayFont,
         }}
@@ -191,7 +153,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
     return sequential ? enter : 1;
   };
 
-  // ---- Compact banner strip: heading + bullets as inline chips -------------
+  // ---- Compact banner strip: heading + bullets as a rule-separated row ------
   if (compact) {
     return (
       <div
@@ -199,57 +161,37 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          gap: 16 * u,
+          gap: 18 * u,
           fontFamily: BODY_FONT,
           color: theme.text,
         }}
       >
         {slot.heading ? (
           <div style={{ opacity: headingIn, display: 'flex', alignItems: 'center', gap: 20 * u }}>
-            <div
-              style={{
-                width: 10 * u,
-                height: 42 * u,
-                borderRadius: 999,
-                background: `linear-gradient(180deg, ${theme.accent}, ${theme.accent2})`,
-                flexShrink: 0,
-              }}
-            />
+            <div style={{ width: 6 * u, height: 44 * u, background: theme.accent, flexShrink: 0 }} />
             <h1 style={{ fontSize: 52 * u, margin: 0, fontWeight: 800, lineHeight: 1.05, fontFamily: displayFont }}>
               <KineticText text={slot.heading} delay={Math.round(fps * 0.15)} highlight={highlight} />
             </h1>
           </div>
         ) : null}
         {bullets.length ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 * u }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: `${10 * u}px ${34 * u}px` }}>
             {bullets.slice(0, 4).map((bullet, i) => {
               const enter = pointEnter(i);
               return (
                 <div
                   key={i}
                   style={{
-                    padding: `${10 * u}px ${22 * u}px`,
-                    borderRadius: 999,
-                    background: raise(theme, 0.07),
-                    border: `1px solid ${hairline(theme, 0.12)}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14 * u,
                     fontSize: 30 * u,
                     fontWeight: 600,
                     opacity: enter,
                     transform: `translateY(${interpolate(enter, [0, 1], [14 * u, 0])}px)`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12 * u,
                   }}
                 >
-                  <span
-                    style={{
-                      width: 10 * u,
-                      height: 10 * u,
-                      borderRadius: 999,
-                      flexShrink: 0,
-                      background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent2})`,
-                    }}
-                  />
+                  <span style={{ width: 8 * u, height: 8 * u, background: theme.accent, flexShrink: 0 }} />
                   {bullet}
                 </div>
               );
@@ -260,88 +202,99 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
     );
   }
 
-  // ---- Point renderers, one per personality ---------------------------------
+  // ---- Points ---------------------------------------------------------------
 
+  /**
+   * Rows hung off tabular accent numerals. The hairline above each row draws in
+   * from the left as the row arrives — the separator is the animation, so the
+   * row itself only has to fade and rise.
+   */
   const editorialPoints = (
     <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
       {bullets.map((bullet, i) => {
         const enter = pointEnter(i);
-        const slide = interpolate(enter, [0, 1], [fromLeft ? -34 * u : 34 * u, 0]);
         return (
           <li
             key={i}
             style={{
+              position: 'relative',
               display: 'flex',
-              alignItems: 'flex-start',
-              gap: 20 * u,
+              alignItems: 'baseline',
+              gap: 30 * u,
               fontSize: 44 * u,
               lineHeight: 1.32,
-              marginBottom: 18 * u,
+              padding: `${26 * u}px 0`,
               opacity: enter,
-              transform: `translateX(${slide}px)`,
-              // Each revealed point sits on its own soft pill, so what is
-              // being "shown" always has a backdrop of its own.
-              padding: plated || bare ? `${14 * u}px ${20 * u}px` : `0 0 ${8 * u}px 0`,
-              borderRadius: 20 * u,
-              background: plated || bare ? raise(theme, 0.045) : 'transparent',
-              border: plated || bare ? `1px solid ${hairline(theme, 0.07)}` : 'none',
+              transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
             }}
           >
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                background: rule(),
+                transformOrigin: 'left center',
+                transform: `scaleX(${interpolate(enter, [0.15, 1], [0, 1], {
+                  extrapolateLeft: 'clamp',
+                  extrapolateRight: 'clamp',
+                })})`,
+              }}
+            />
             <span
               style={{
-                marginTop: 8 * u,
-                minWidth: 40 * u,
-                height: 40 * u,
-                borderRadius: 12 * u,
+                minWidth: 78 * u,
                 flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 24 * u,
-                fontWeight: 900,
-                color: theme.bg_from,
-                background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent2})`,
-                fontFamily: displayFont,
+                fontSize: 34 * u,
+                fontWeight: 700,
+                fontFamily: MONO_FONT,
+                fontVariantNumeric: 'tabular-nums',
+                color: theme.accent,
               }}
             >
-              {i + 1}
+              {String(i + 1).padStart(2, '0')}
             </span>
-            <span>{bullet}</span>
+            <span style={{ flex: 1 }}>{bullet}</span>
           </li>
         );
       })}
     </ul>
   );
 
+  /** Centered lines under a hero heading, separated by the same hairline. */
   const statementPoints = (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 * u, justifyContent: 'center' }}>
+    <div style={{ width: '100%', maxWidth: 1180 * u }}>
       {bullets.map((bullet, i) => {
         const enter = pointEnter(i);
         return (
           <div
             key={i}
             style={{
-              padding: `${14 * u}px ${30 * u}px`,
-              borderRadius: 999,
-              background: raise(theme, 0.06),
-              border: `1px solid ${hairline(theme, 0.12)}`,
-              fontSize: 34 * u,
-              fontWeight: 650,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14 * u,
+              position: 'relative',
+              padding: `${24 * u}px 0`,
+              textAlign: 'center',
+              fontSize: 38 * u,
+              lineHeight: 1.3,
+              fontWeight: 600,
               opacity: enter,
-              transform: `translateY(${interpolate(enter, [0, 1], [18 * u, 0])}px) scale(${interpolate(enter, [0, 1], [0.92, 1])})`,
+              transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
             }}
           >
-            <span
+            <div
               style={{
-                width: 12 * u,
-                height: 12 * u,
-                borderRadius: 999,
-                flexShrink: 0,
-                background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent2})`,
-                boxShadow: `0 0 ${14 * u}px ${theme.accent}66`,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                background: rule(),
+                transformOrigin: 'center',
+                transform: `scaleX(${interpolate(enter, [0.15, 1], [0, 1], {
+                  extrapolateLeft: 'clamp',
+                  extrapolateRight: 'clamp',
+                })})`,
               }}
             />
             {bullet}
@@ -351,148 +304,11 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
     </div>
   );
 
-  const numberedPoints = (
-    <div>
-      {bullets.map((bullet, i) => {
-        const enter = pointEnter(i);
-        const slide = interpolate(enter, [0, 1], [fromLeft ? -40 * u : 40 * u, 0]);
-        return (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 26 * u,
-              padding: `${16 * u}px 0`,
-              borderBottom: i < bullets.length - 1 ? `1px solid ${hairline(theme, 0.09)}` : 'none',
-              opacity: enter,
-              transform: `translateX(${slide}px)`,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 84 * u,
-                fontWeight: 900,
-                lineHeight: 1,
-                fontFamily: displayFont,
-                backgroundImage: `linear-gradient(160deg, ${theme.accent}, ${theme.accent2})`,
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent',
-                minWidth: 104 * u,
-                flexShrink: 0,
-              }}
-            >
-              {String(i + 1).padStart(2, '0')}
-            </span>
-            <span style={{ fontSize: 42 * u, lineHeight: 1.3 }}>{bullet}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  const checkPoints = (
-    <div>
-      {bullets.map((bullet, i) => {
-        const enter = pointEnter(i);
-        const draw = interpolate(enter, [0.25, 1], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-        const r = 26;
-        const circ = 2 * Math.PI * r;
-        return (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 22 * u,
-              marginBottom: 20 * u,
-              padding: `${12 * u}px ${18 * u}px`,
-              borderRadius: 18 * u,
-              background: bare ? raise(theme, 0.045) : 'transparent',
-              border: bare ? `1px solid ${hairline(theme, 0.07)}` : 'none',
-              opacity: enter,
-              transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
-            }}
-          >
-            <svg width={60 * u} height={60 * u} viewBox="0 0 60 60" style={{ flexShrink: 0 }}>
-              <circle cx="30" cy="30" r={r} fill={`${theme.accent}1a`} stroke={theme.accent} strokeWidth="3.5"
-                strokeDasharray={circ} strokeDashoffset={circ * (1 - draw)} strokeLinecap="round"
-                transform="rotate(-90 30 30)" />
-              <path d="M18 31 L27 40 L43 22" fill="none" stroke={theme.accent2} strokeWidth="5.5"
-                strokeLinecap="round" strokeLinejoin="round"
-                strokeDasharray={40} strokeDashoffset={40 * (1 - draw)} />
-            </svg>
-            <span style={{ fontSize: 42 * u, lineHeight: 1.3 }}>{bullet}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  const cardPoints = (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 22 * u, alignItems: 'stretch' }}>
-      {bullets.map((bullet, i) => {
-        const enter = pointEnter(i);
-        const basis = bullets.length <= 3 ? `${100 / bullets.length - 3}%` : '46%';
-        return (
-          <div
-            key={i}
-            style={{
-              flex: `1 1 ${basis}`,
-              minWidth: 0,
-              boxSizing: 'border-box',
-              padding: `${26 * u}px ${26 * u}px`,
-              borderRadius: 26 * u,
-              background: `linear-gradient(165deg, ${raise(theme, 0.085)}, ${raise(theme, 0.02)}), ${theme.panel}`,
-              border: `1px solid ${hairline(theme, 0.12)}`,
-              boxShadow: `inset 0 1px 0 ${hairline(theme, 0.12)}, 0 ${18 * u}px ${50 * u}px rgba(0,0,0,0.35)`,
-              opacity: enter,
-              transform: `translateY(${interpolate(enter, [0, 1], [30 * u, 0])}px) scale(${interpolate(enter, [0, 1], [0.9, 1])})`,
-            }}
-          >
-            <div
-              style={{
-                width: 46 * u,
-                height: 46 * u,
-                borderRadius: 14 * u,
-                marginBottom: 18 * u,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 26 * u,
-                fontWeight: 900,
-                color: theme.bg_from,
-                background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent2})`,
-                boxShadow: `0 0 ${20 * u}px ${theme.accent}55`,
-                fontFamily: displayFont,
-              }}
-            >
-              {i + 1}
-            </div>
-            <div style={{ fontSize: 33 * u, lineHeight: 1.34, fontWeight: 600 }}>{bullet}</div>
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  const points =
-    variant === 'statement'
-      ? statementPoints
-      : variant === 'numbered'
-        ? numberedPoints
-        : variant === 'checklist'
-          ? checkPoints
-          : variant === 'cards'
-            ? cardPoints
-            : editorialPoints;
-
   const content = (
-    <div style={{ position: 'relative', zIndex: 1 }}>
-      {!slot.heading && kicker ? kickerRow : null}
+    <div style={{ width: '100%' }}>
+      {!slot.heading ? kickerRow : null}
       {headingNode}
-      {points}
+      {centered ? statementPoints : editorialPoints}
     </div>
   );
 
@@ -504,60 +320,14 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        alignItems: variant === 'statement' ? 'center' : 'stretch',
-        padding: plated ? '7%' : '8%',
+        alignItems: centered ? 'center' : 'stretch',
+        padding: bare ? '7%' : '8%',
         boxSizing: 'border-box',
-        position: 'relative',
-        background: plated
-          ? `linear-gradient(160deg, ${raise(theme, 0.05)}, ${raise(theme, 0.012)}), ${theme.panel}`
-          : bare
-            ? 'transparent'
-            : theme.panel,
-        border: plated ? `1px solid ${hairline(theme, 0.1)}` : 'none',
-        borderRadius: plated ? 40 : 0,
-        boxShadow: plated
-          ? `inset 0 1px 0 ${hairline(theme, 0.12)}, 0 34px 90px rgba(0,0,0,0.42)`
-          : 'none',
-        backdropFilter: bare || plated ? undefined : 'blur(6px)',
+        background: bare ? 'transparent' : theme.panel,
         fontFamily: BODY_FONT,
         color: theme.text,
-        overflow: plated ? 'hidden' : undefined,
       }}
     >
-      {/* Accent corner glow anchors the plate to the theme (seeded corner). */}
-      {plated ? (
-        <div
-          style={{
-            position: 'absolute',
-            width: '52%',
-            height: '52%',
-            top: '-18%',
-            [accentCornerRight ? 'right' : 'left']: '-14%',
-            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent}26, transparent 70%)`,
-            pointerEvents: 'none',
-          }}
-        />
-      ) : null}
-      {/* Giant editorial numeral: the scene's index as a poster watermark. */}
-      {region.frameless && !transparent ? (
-        <div
-          style={{
-            position: 'absolute',
-            [accentCornerRight ? 'left' : 'right']: '-2%',
-            bottom: '-14%',
-            fontSize: 480 * u,
-            lineHeight: 1,
-            fontWeight: 900,
-            fontFamily: displayFont,
-            color: theme.text,
-            opacity: 0.05,
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}
-        >
-          {String(meta.index + 1).padStart(2, '0')}
-        </div>
-      ) : null}
       {content}
     </div>
   );

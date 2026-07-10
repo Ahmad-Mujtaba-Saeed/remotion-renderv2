@@ -2,10 +2,10 @@ import React, { createContext, useContext } from 'react';
 
 /**
  * Style contract between the canvas journey and the shared slot components.
- * In slides mode nothing provides this context and components keep their
- * classic look. Inside a frameless canvas region, media masks itself with big
- * soft-rounded corners + a deep shadow, and text panels drop their surface so
- * copy floats directly on the world background — no cards, no borders.
+ * In slides mode nothing provides this context and components keep their panel.
+ * Inside a frameless canvas region, media is a near-square-cornered rectangle
+ * and text drops its surface entirely so copy sits straight on the world's
+ * colour field — no cards, no borders, no shadows.
  */
 export interface RegionStyle {
   frameless: boolean;

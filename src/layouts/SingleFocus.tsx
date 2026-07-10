@@ -7,23 +7,21 @@ import { useSceneClock } from '../canvas/SceneClock';
 import { useTheme } from '../theme';
 
 /**
- * single_focus: one slot (slot_main) over the ambient background.
+ * single_focus: one slot (slot_main) over the scene's colour field.
  *
  * In the frameless canvas journey this layout carries the scene alone, so it
  * gets a real composition instead of a bare full-bleed slot:
- *  - text + AI illustration  -> editorial split (copy beside a soft-masked
- *    generated visual), stacked when the region is portrait;
- *  - text only               -> copy over a large accent wash so the region
- *    never reads as empty space;
- *  - media                   -> gently inset with an offset accent glow
- *    behind it, so the picture sits IN the scene rather than being the
- *    whole scene.
+ *  - text + AI illustration  -> editorial split (copy beside the generated
+ *    visual), stacked when the region is portrait;
+ *  - text only               -> copy with a flat accent field mark, so the
+ *    region never reads as empty space;
+ *  - media                   -> gently inset, so the picture sits IN the scene
+ *    rather than being the whole scene.
  * Slides mode keeps the classic behaviour untouched.
  */
 
-/** The AI illustration pane: soft mask, deep shadow, slow push-in, glow. */
+/** The AI illustration pane: a crisp rectangle with a slow push-in. */
 const Illustration: React.FC<{ url: string }> = ({ url }) => {
-  const theme = useTheme();
   const { fps } = useVideoConfig();
   const { frame, durationInFrames } = useSceneClock();
 
@@ -31,202 +29,92 @@ const Illustration: React.FC<{ url: string }> = ({ url }) => {
   const p = Math.max(0, Math.min(1, frame / Math.max(1, durationInFrames)));
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {/* Accent halo bleeding out behind the picture (gradient only — a blur
-          filter here would force raster surfaces inside the region). */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: '-12%',
-          background: `radial-gradient(55% 55% at 50% 50%, ${theme.accent}3d, transparent 72%)`,
-        }}
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        borderRadius: 6,
+        overflow: 'hidden',
+        opacity: enter,
+        transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
+      }}
+    >
+      <Img
+        src={url}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${1.04 + 0.07 * p})` }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 44,
-          overflow: 'hidden',
-          boxShadow: '0 40px 110px rgba(0,0,0,0.55)',
-          opacity: enter,
-          transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
-        }}
-      >
-        <Img
-          src={url}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transform: `scale(${1.04 + 0.07 * p})`,
-          }}
-        />
-      </div>
     </div>
   );
 };
 
 /**
- * Soft theme-coloured washes that anchor text-only regions. Five variants
- * (picked per scene) so consecutive text scenes never share a silhouette:
- *  0 — twin corner glows (the classic);
- *  1 — one diagonal light beam sweeping behind the copy;
- *  2 — an off-center halo ring;
- *  3 — a faint blueprint grid patch in one corner;
- *  4 — twin diagonal accent rays.
- * Gradients only — no blur filters, they'd rasterize the region and soften
- * its text under the camera (see SceneRegion). (Masking a text-free gradient
- * div is fine — PropSprite has always done it.)
+ * The flat mark that gives a text-only region its shape. Five variants, picked
+ * per scene, so consecutive text scenes never share a silhouette — but each is
+ * one solid accent form, not a cloud of coloured light.
+ *
+ * These replace the old radial "accent washes". Note the crispness constraint
+ * still holds: no `filter` inside a camera-scaled region, ever.
  */
-const AccentWash: React.FC<{ variant?: number }> = ({ variant = 0 }) => {
+const FieldMark: React.FC<{ variant?: number }> = ({ variant = 0 }) => {
   const theme = useTheme();
+  const rule = (style: React.CSSProperties) => (
+    <div style={{ position: 'absolute', background: theme.accent, ...style }} />
+  );
 
-  if (variant === 3) {
-    // Blueprint corner: a faint accent grid patch fading out diagonally.
-    return (
-      <AbsoluteFill style={{ pointerEvents: 'none' }}>
-        <div
-          style={{
-            position: 'absolute',
-            width: '62%',
-            height: '72%',
-            right: '-8%',
-            top: '-10%',
-            backgroundImage: `linear-gradient(${theme.accent}22 1.5px, transparent 1.5px), linear-gradient(90deg, ${theme.accent}22 1.5px, transparent 1.5px)`,
-            backgroundSize: '72px 72px',
-            maskImage: 'radial-gradient(60% 60% at 70% 30%, black, transparent)',
-            WebkitMaskImage: 'radial-gradient(60% 60% at 70% 30%, black, transparent)',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: '46%',
-            height: '56%',
-            left: '-12%',
-            bottom: '-16%',
-            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}26, transparent 70%)`,
-          }}
-        />
-      </AbsoluteFill>
-    );
-  }
-
-  if (variant === 4) {
-    // Twin rays: two thin diagonal accent lines with a glow pooling below.
-    return (
-      <AbsoluteFill style={{ pointerEvents: 'none' }}>
-        {[0, 1].map((k) => (
+  switch (variant) {
+    case 1:
+      // A rule along the bottom edge.
+      return <AbsoluteFill style={{ pointerEvents: 'none' }}>{rule({ left: 0, right: 0, bottom: 0, height: 14 })}</AbsoluteFill>;
+    case 2:
+      // A large thin outline circle bleeding off the top-right corner.
+      return (
+        <AbsoluteFill style={{ pointerEvents: 'none' }}>
           <div
-            key={k}
             style={{
               position: 'absolute',
-              width: '150%',
-              height: 4 + k * 2,
-              left: '-24%',
-              top: `${18 + k * 9}%`,
-              transform: `rotate(${-18 + k * 3}deg)`,
-              background: `linear-gradient(90deg, transparent, ${k ? theme.accent2 : theme.accent}55 45%, transparent 90%)`,
+              width: '62%',
+              aspectRatio: '1',
+              right: '-16%',
+              top: '-22%',
+              borderRadius: '50%',
+              border: `10px solid ${theme.accent}`,
+              opacity: 0.28,
             }}
           />
-        ))}
-        <div
-          style={{
-            position: 'absolute',
-            width: '58%',
-            height: '64%',
-            right: '-14%',
-            bottom: '-22%',
-            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent}2b, transparent 70%)`,
-          }}
-        />
-      </AbsoluteFill>
-    );
+        </AbsoluteFill>
+      );
+    case 3:
+      // A solid accent square bleeding off the bottom-left corner.
+      return (
+        <AbsoluteFill style={{ pointerEvents: 'none' }}>
+          <div
+            style={{
+              position: 'absolute',
+              width: '30%',
+              aspectRatio: '1',
+              left: '-11%',
+              bottom: '-13%',
+              background: theme.accent,
+              opacity: 0.16,
+            }}
+          />
+        </AbsoluteFill>
+      );
+    case 4:
+      // Editorial frame: a hairline at the top, an accent rule at the bottom.
+      return (
+        <AbsoluteFill style={{ pointerEvents: 'none' }}>
+          {rule({ left: 0, right: 0, top: 0, height: 3, opacity: 0.35 })}
+          {rule({ left: 0, width: '38%', bottom: 0, height: 10 })}
+        </AbsoluteFill>
+      );
+    default:
+      // A rule down the left edge.
+      return <AbsoluteFill style={{ pointerEvents: 'none' }}>{rule({ top: 0, bottom: 0, left: 0, width: 14 })}</AbsoluteFill>;
   }
-
-  if (variant === 1) {
-    return (
-      <AbsoluteFill style={{ pointerEvents: 'none' }}>
-        <div
-          style={{
-            position: 'absolute',
-            width: '160%',
-            height: '46%',
-            left: '-30%',
-            top: '12%',
-            transform: 'rotate(-14deg)',
-            background: `linear-gradient(90deg, transparent 4%, ${theme.accent}1f 30%, ${theme.accent2}17 62%, transparent 92%)`,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: '44%',
-            height: '54%',
-            right: '-10%',
-            bottom: '-16%',
-            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}22, transparent 70%)`,
-          }}
-        />
-      </AbsoluteFill>
-    );
-  }
-
-  if (variant === 2) {
-    return (
-      <AbsoluteFill style={{ pointerEvents: 'none' }}>
-        <div
-          style={{
-            position: 'absolute',
-            width: '78%',
-            aspectRatio: '1',
-            left: '46%',
-            top: '-24%',
-            borderRadius: '50%',
-            background: `radial-gradient(50% 50% at 50% 50%, transparent 52%, ${theme.accent}26 62%, transparent 74%)`,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: '48%',
-            height: '58%',
-            left: '-12%',
-            bottom: '-18%',
-            background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}24, transparent 70%)`,
-          }}
-        />
-      </AbsoluteFill>
-    );
-  }
-
-  return (
-    <AbsoluteFill style={{ pointerEvents: 'none' }}>
-      <div
-        style={{
-          position: 'absolute',
-          width: '58%',
-          height: '78%',
-          left: '-14%',
-          top: '-18%',
-          background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent}30, transparent 70%)`,
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          width: '52%',
-          height: '68%',
-          right: '-12%',
-          bottom: '-16%',
-          background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}28, transparent 70%)`,
-        }}
-      />
-    </AbsoluteFill>
-  );
 };
 
-/** Cheap stable hash so each scene picks its own wash variant. */
+/** Cheap stable hash so each scene picks its own mark. */
 const hashId = (id: string): number => {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
@@ -236,7 +124,6 @@ const hashId = (id: string): number => {
 export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
   const slot = scene.slots['slot_main'];
   const region = useRegionStyle();
-  const theme = useTheme();
   const { width, height } = useVideoConfig();
   const isText = slot?.content_type === 'text_block' || slot?.content_type === 'explanation_box';
 
@@ -245,7 +132,7 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
     if (isText) {
       return (
         <AbsoluteFill style={{ padding: '7%' }}>
-          <div style={{ width: '100%', height: '100%', borderRadius: 28, overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
             <SlotRenderer slot={slot} />
           </div>
         </AbsoluteFill>
@@ -261,13 +148,12 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
   const aspect = region.aspect ?? width / Math.max(1, height);
   const portrait = aspect < 0.9;
 
-  const washVariant = hashId(scene.scene_id) % 5;
+  const mark = hashId(scene.scene_id) % 5;
 
   // ---- Canvas journey: text + AI illustration = editorial split ------------
   if (isText && scene.illustration_url) {
     return (
       <AbsoluteFill style={{ padding: '5.5%', boxSizing: 'border-box' }}>
-        <AccentWash variant={washVariant} />
         <div
           style={{
             display: 'flex',
@@ -289,42 +175,22 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
     );
   }
 
-  // ---- Canvas journey: text only = copy over an accent wash ----------------
+  // ---- Canvas journey: text only = copy against a flat field mark ----------
   if (isText) {
     return (
-      <AbsoluteFill style={{ padding: '3%', boxSizing: 'border-box', justifyContent: 'center' }}>
-        <AccentWash variant={washVariant} />
-        <SlotRenderer slot={slot} />
+      <AbsoluteFill style={{ justifyContent: 'center' }}>
+        <FieldMark variant={mark} />
+        <AbsoluteFill style={{ padding: '5%', boxSizing: 'border-box', justifyContent: 'center' }}>
+          <SlotRenderer slot={slot} />
+        </AbsoluteFill>
       </AbsoluteFill>
     );
   }
 
-  // ---- Canvas journey: media, inset with an offset glow behind it ----------
+  // ---- Canvas journey: media, inset on the field ---------------------------
   return (
-    <AbsoluteFill>
-      <div
-        style={{
-          position: 'absolute',
-          width: '72%',
-          height: '72%',
-          left: '-9%',
-          top: '-11%',
-          background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent}33, transparent 70%)`,
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          width: '60%',
-          height: '60%',
-          right: '-8%',
-          bottom: '-10%',
-          background: `radial-gradient(50% 50% at 50% 50%, ${theme.accent2}2b, transparent 70%)`,
-        }}
-      />
-      <AbsoluteFill style={{ padding: '4.5%' }}>
-        <SlotRenderer slot={slot} />
-      </AbsoluteFill>
+    <AbsoluteFill style={{ padding: '4.5%', boxSizing: 'border-box' }}>
+      <SlotRenderer slot={slot} />
     </AbsoluteFill>
   );
 };

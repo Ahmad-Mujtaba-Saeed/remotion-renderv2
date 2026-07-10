@@ -282,16 +282,18 @@ export interface ExplainerProps {
   height: number;
 }
 
+/** Mirrors the `midnight` entry in explainer_registry.json. Flat field:
+ *  bg_from === bg_to, opaque panel — no gradient, no translucency. */
 export const DEFAULT_THEME: Theme = {
   name: 'midnight',
   label: 'Midnight',
-  bg_from: '#0f172a',
-  bg_to: '#1e293b',
-  accent: '#38bdf8',
-  accent2: '#818cf8',
-  text: '#f8fafc',
-  muted: '#94a3b8',
-  panel: 'rgba(15,23,42,0.62)',
+  bg_from: '#0A0F1E',
+  bg_to: '#0A0F1E',
+  accent: '#FFB020',
+  accent2: '#FF7A45',
+  text: '#EDF0F8',
+  muted: '#838CA2',
+  panel: '#121A2E',
 };
 
 export const TRANSITION_SECONDS = 0.55;

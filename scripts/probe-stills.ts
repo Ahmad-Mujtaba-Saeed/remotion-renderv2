@@ -28,7 +28,11 @@ import { selectComposition, renderStill } from '@remotion/renderer';
     publicDir: path.join(__dirname, '..', 'public'),
   });
 
-  const inputProps = { shotList, fps: 30, width: 1920, height: 1080 };
+  // Match render.ts: the frame size follows the shot list's aspect, so a 9:16
+  // probe shows what the portrait render will actually look like.
+  const aspect = shotList.aspect_ratio ?? '16:9';
+  const [width, height] = aspect === '9:16' ? [1080, 1920] : aspect === '1:1' ? [1080, 1080] : [1920, 1080];
+  const inputProps = { shotList, fps: 30, width, height };
   const composition = await selectComposition({ serveUrl, id: 'Explainer', inputProps });
   console.log(`composition: ${composition.durationInFrames} frames`);
 

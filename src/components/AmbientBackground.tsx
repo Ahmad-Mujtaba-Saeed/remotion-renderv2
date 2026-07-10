@@ -1,44 +1,37 @@
 import React from 'react';
 import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { useTheme, isLightTheme } from '../theme';
-import { MotionGraphics } from './MotionGraphics';
 
 const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
 
 /**
- * Soft vignette to focus the eye toward the centre. A heavy dark vignette is
- * right on dark themes but muddies a light (cream) one, so light themes get a
- * whisper-soft warm darkening instead.
+ * A whisper of edge darkening. Enough to stop the corners competing with the
+ * copy, far too little to read as a "vignette effect".
  */
 export const Vignette: React.FC = () => {
   const theme = useTheme();
-  const edge = isLightTheme(theme) ? 'rgba(60,45,30,0.10)' : 'rgba(0,0,0,0.45)';
+  const edge = isLightTheme(theme) ? 'rgba(40,30,20,0.05)' : 'rgba(0,0,0,0.16)';
   return (
     <AbsoluteFill
       style={{
-        background: `radial-gradient(120% 120% at 50% 45%, transparent 55%, ${edge} 100%)`,
+        background: `radial-gradient(130% 130% at 50% 45%, transparent 68%, ${edge} 100%)`,
         pointerEvents: 'none',
       }}
     />
   );
 };
 
-/** Subtle film grain via SVG turbulence (cheap, static, blended). */
-export const GrainOverlay: React.FC<{ opacity?: number }> = ({ opacity = 0.05 }) => (
-  <AbsoluteFill style={{ opacity, mixBlendMode: 'overlay', pointerEvents: 'none' }}>
-    <svg width="100%" height="100%">
-      <filter id="grain">
-        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
-      </filter>
-      <rect width="100%" height="100%" filter="url(#grain)" />
-    </svg>
-  </AbsoluteFill>
-);
-
 /**
- * Per-scene living background: theme gradient, two slowly drifting accent
- * glows, an optional blurred AI ambient image, and a vignette. Guarantees the
- * frame is never flat — even pure-text scenes feel alive.
+ * The field a scene sits on: ONE flat colour.
+ *
+ * It used to be a diagonal gradient with two drifting accent glows, orbiting
+ * motion graphics, a vignette and film grain — five moving decorations behind
+ * copy that is already moving. Now the background is a colour and nothing else,
+ * so the type, the rules and the camera are the only things asking for
+ * attention.
+ *
+ * `imageUrl` is the slides-mode AI ambient backdrop; it keeps its blur because
+ * it lives in screen space, never inside the camera-scaled world.
  */
 export const AmbientBackground: React.FC<{ imageUrl?: string }> = ({ imageUrl }) => {
   const theme = useTheme();
@@ -48,41 +41,25 @@ export const AmbientBackground: React.FC<{ imageUrl?: string }> = ({ imageUrl })
     extrapolateRight: 'clamp',
   });
 
-  const x1 = 32 + Math.sin(frame / 90) * 12;
-  const y1 = 30 + Math.cos(frame / 110) * 12;
-  const x2 = 68 + Math.cos(frame / 100) * 12;
-  const y2 = 70 + Math.sin(frame / 120) * 12;
-
   return (
-    <AbsoluteFill
-      style={{ background: `linear-gradient(135deg, ${theme.bg_from}, ${theme.bg_to})` }}
-    >
+    <AbsoluteFill style={{ background: theme.bg_from }}>
       {imageUrl ? (
-        <AbsoluteFill>
-          <Img
-            src={imageUrl}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              filter: 'blur(22px) brightness(0.45) saturate(1.1)',
-              transform: `scale(${lerp(1.12, 1.22, p)})`,
-            }}
-          />
-        </AbsoluteFill>
+        <>
+          <AbsoluteFill>
+            <Img
+              src={imageUrl}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                filter: 'blur(26px) brightness(0.4) saturate(0.9)',
+                transform: `scale(${lerp(1.12, 1.2, p)})`,
+              }}
+            />
+          </AbsoluteFill>
+          <Vignette />
+        </>
       ) : null}
-
-      <AbsoluteFill
-        style={{
-          background: `radial-gradient(42% 42% at ${x1}% ${y1}%, ${theme.accent}33, transparent 70%), radial-gradient(46% 46% at ${x2}% ${y2}%, ${theme.accent2}2b, transparent 72%)`,
-        }}
-      />
-
-      {/* Decorative motion graphics are skipped when a photo background is present
-          so they don't muddy the image. */}
-      {imageUrl ? null : <MotionGraphics />}
-
-      <Vignette />
     </AbsoluteFill>
   );
 };

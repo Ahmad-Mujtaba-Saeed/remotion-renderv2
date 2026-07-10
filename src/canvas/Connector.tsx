@@ -1,13 +1,15 @@
 import React, { useMemo } from 'react';
 import { CanvasItem } from '../types';
-import { useTheme } from '../theme';
+import { useTheme, MONO_FONT, hairline } from '../theme';
 import { travelControl } from './camera';
 
 /**
  * The guide line between two scene regions, drawn in sync with the camera's
  * flight. Two styles:
- *  - "dotted": a chunky breadcrumb path with a glowing scout at its tip.
- *  - "arrow":  a bold accent arrow for hops where direction/causality matters.
+ *  - "dotted": a breadcrumb path with a solid scout dot at its tip.
+ *  - "arrow":  an accent arrow for hops where direction/causality matters.
+ * Single-weight strokes: the old halo/under-glow pair was drawing each line
+ * twice to fake a bloom.
  * The draw-on progress arrives ALREADY eased to the camera's own flight curve
  * (travelProgressEased), and the tip runs ~16% ahead of it, so the line always
  * leads the camera instead of trailing behind mid-flight. All strokes scale
@@ -88,73 +90,51 @@ export const Connector: React.FC<{
     <g opacity={opacity}>
       {isArrow ? (
         <>
-          {/* Soft under-glow, then the bold line. */}
-          <path d={d} fill="none" stroke={theme.accent} strokeWidth={42 * u} strokeLinecap="round" opacity={0.15} />
-          <path d={d} fill="none" stroke={theme.accent} strokeWidth={15 * u} strokeLinecap="round" opacity={0.95} />
+          <path d={d} fill="none" stroke={theme.accent} strokeWidth={10 * u} strokeLinecap="round" />
           <g transform={`translate(${tip[0]}, ${tip[1]}) rotate(${(angle * 180) / Math.PI})`}>
             <path
               d={`M 0 0 L ${-headSize} ${headSize * 0.55} L ${-headSize * 0.72} 0 L ${-headSize} ${-headSize * 0.55} Z`}
               fill={theme.accent}
             />
-            {drawn < 1 ? (
-              <>
-                <circle r={44 * u} fill={theme.accent2} opacity={0.22} />
-                <circle r={22 * u} fill={theme.accent2} opacity={0.95} />
-              </>
-            ) : null}
+            {drawn < 1 ? <circle r={18 * u} fill={theme.accent} /> : null}
           </g>
         </>
       ) : (
         <>
-          {/* Chunky dotted breadcrumb with a glowing scout at the tip. */}
           <path
             d={d}
             fill="none"
             stroke={theme.accent}
-            strokeWidth={40 * u}
+            strokeWidth={12 * u}
             strokeLinecap="round"
             strokeDasharray={`0.1 ${dashGap}`}
-            opacity={0.14}
+            opacity={0.8}
           />
-          <path
-            d={d}
-            fill="none"
-            stroke={theme.accent}
-            strokeWidth={19 * u}
-            strokeLinecap="round"
-            strokeDasharray={`0.1 ${dashGap}`}
-            opacity={0.85}
-          />
-          {drawn < 1 ? (
-            <>
-              <circle cx={tip[0]} cy={tip[1]} r={40 * u} fill={theme.accent2} opacity={0.22} />
-              <circle cx={tip[0]} cy={tip[1]} r={20 * u} fill={theme.accent2} opacity={0.9} />
-            </>
-          ) : null}
+          {drawn < 1 ? <circle cx={tip[0]} cy={tip[1]} r={16 * u} fill={theme.accent} /> : null}
         </>
       )}
 
       {label && drawn > 0.45 ? (
         <g transform={`translate(${mid[0]}, ${mid[1]})`} opacity={Math.min(1, (drawn - 0.45) / 0.3)}>
           <rect
-            x={-(label.length * fs * 0.32 + fs * 0.75)}
-            y={-fs * 1.05}
-            width={label.length * fs * 0.64 + fs * 1.5}
-            height={fs * 2.1}
-            rx={fs * 1.05}
+            x={-(label.length * fs * 0.36 + fs * 0.75)}
+            y={-fs * 0.95}
+            width={label.length * fs * 0.72 + fs * 1.5}
+            height={fs * 1.9}
             fill={theme.panel}
-            stroke={`${theme.accent}88`}
-            strokeWidth={3 * u}
+            stroke={hairline(theme, 0.12)}
+            strokeWidth={2 * u}
           />
           <text
             textAnchor="middle"
             dominantBaseline="central"
             fill={theme.text}
-            fontSize={fs}
-            fontFamily="Inter, system-ui, sans-serif"
-            fontWeight={700}
+            fontSize={fs * 0.78}
+            fontFamily={MONO_FONT}
+            fontWeight={600}
+            letterSpacing={fs * 0.1}
           >
-            {label}
+            {label.toUpperCase()}
           </text>
         </g>
       ) : null}

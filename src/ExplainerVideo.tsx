@@ -14,12 +14,15 @@ import {
 import { SceneRouter } from './components/SceneRouter';
 import { ThemeProvider, useTheme, hairline } from './theme';
 import { presentationFor } from './transitions';
-import { GrainOverlay } from './components/AmbientBackground';
 import { CanvasJourney } from './canvas/CanvasJourney';
 import { SfxProvider, SfxCue } from './sfx';
 import { FontLoader } from './fonts';
 
-/** Global overlays drawn above every scene: a progress bar + film grain. */
+/**
+ * The only thing drawn above every scene: a hairline progress rule along the
+ * bottom edge. The film-grain layer is gone — grain is a texture, and this
+ * design has none.
+ */
 const GlobalOverlays: React.FC = () => {
   const theme = useTheme();
   const frame = useCurrentFrame();
@@ -29,20 +32,11 @@ const GlobalOverlays: React.FC = () => {
   });
 
   return (
-    <>
-      <GrainOverlay opacity={0.045} />
-      <AbsoluteFill style={{ justifyContent: 'flex-end', pointerEvents: 'none' }}>
-        <div style={{ height: 6, width: '100%', background: hairline(theme, 0.1) }}>
-          <div
-            style={{
-              height: '100%',
-              width: `${pct}%`,
-              background: `linear-gradient(90deg, ${theme.accent}, ${theme.accent2})`,
-            }}
-          />
-        </div>
-      </AbsoluteFill>
-    </>
+    <AbsoluteFill style={{ justifyContent: 'flex-end', pointerEvents: 'none' }}>
+      <div style={{ height: 4, width: '100%', background: hairline(theme, 0.08) }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: theme.accent }} />
+      </div>
+    </AbsoluteFill>
   );
 };
 
