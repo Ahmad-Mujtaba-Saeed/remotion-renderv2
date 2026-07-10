@@ -133,14 +133,19 @@ export const buildCamera = (
   scenes.forEach((scene, i) => {
     const frames = sceneFrames(scene, fps);
     const long = isLongFlight(items[i]);
+    // kinetic_break SMASHES in: the flight is deliberately shorter than any
+    // ordinary hop so the arrival lands like a cut, not a glide.
+    const smash = (items[i].treatment ?? '') === 'kinetic_break';
     const travel =
       i === 0
         ? Math.min(Math.round(fps * 1.0), Math.round(frames * 0.4))
-        : clamp(
-            Math.round(frames * (long ? 0.34 : 0.24)),
-            Math.round(fps * 0.8),
-            Math.round(fps * (long ? 2.4 : 1.7))
-          );
+        : smash
+          ? clamp(Math.round(frames * 0.14), Math.round(fps * 0.5), Math.round(fps * 0.9))
+          : clamp(
+              Math.round(frames * (long ? 0.34 : 0.24)),
+              Math.round(fps * 0.8),
+              Math.round(fps * (long ? 2.4 : 1.7))
+            );
     windows.push({ start: cursor, frames, travel: Math.min(travel, Math.round(frames * 0.45)) });
     cursor += frames;
   });
@@ -156,6 +161,12 @@ export const buildCamera = (
     const item = items[i];
     const relation: SceneRelation = item.relation ?? 'continues';
     const treatment = item.treatment ?? 'canvas_hop';
+    // Treatment outranks relation: a kinetic_break must smash in no matter
+    // what the story relation says. Near-straight path, no roll, hard quint
+    // ease, and an overshoot so the landing visibly "catches" itself.
+    if (treatment === 'kinetic_break') {
+      return { ease: easeInOutQuint, dip: 1.0, roll: 0, bendScale: 0.5, overshoot: 0.045 };
+    }
     if (relation === 'consequence') {
       return { ease: easeInOutQuint, dip: 1.1, roll: 3.2, bendScale: 1.0, overshoot: 0.03 };
     }
@@ -165,6 +176,13 @@ export const buildCamera = (
     if (treatment === 'pull_reveal' || relation === 'new_chapter') {
       return { ease: easeInOutCubic, dip: 1.42, roll: 1.2, bendScale: 1.1, overshoot: 0 };
     }
+    if (relation === 'elaborates') {
+      // The lean-in: a tight, intimate hop with barely any pull-back — the
+      // camera moves closer to the thought, it doesn't survey. (zoom_nest
+      // elaborations never reach here; the dive has its own branch.)
+      return { ease: easeInOutCubic, dip: 1.05, roll: 1.4, bendScale: 0.7, overshoot: 0 };
+    }
+    // "opening" needs no profile: scene 0 is the cold open, handled in at().
     return { ease: easeInOutCubic, dip: 1.16, roll: 2.2, bendScale: 1.0, overshoot: 0 };
   };
 
@@ -180,6 +198,23 @@ export const buildCamera = (
     const t = clamp(h, 0, 1);
     // Smooth 0→1 ramp with zero slope at both ends.
     const s = easeInOutSine(t);
+
+    if ((item.treatment ?? '') === 'overlay_focus') {
+      // GUIDED SURVEY: the camera lands, rests, pushes into the region's
+      // focal point (seeded third-point — off-center so the push reads as
+      // "look HERE"), then eases back out to the full frame. Every segment
+      // is sine-eased, so the boundaries — including the hand-off into the
+      // next flight at t=1 — have zero velocity.
+      const fx = item.x + item.w * 0.16 * (seeded(i, 21) > 0.5 ? 1 : -1);
+      const fy = item.y + item.h * 0.14 * (seeded(i, 22) > 0.5 ? 1 : -1);
+      const push = t < 0.3 ? 0 : t < 0.65 ? easeInOutSine((t - 0.3) / 0.35) : 1 - easeInOutSine((t - 0.65) / 0.35);
+      return {
+        x: lerp(item.x, fx, push),
+        y: lerp(item.y, fy, push),
+        scale: fits[i] * (1 + 0.18 * push),
+        rot: 0,
+      };
+    }
 
     if (move === 'push_in') {
       const target = 0.12 + seeded(i, 11) * 0.06;
@@ -217,6 +252,20 @@ export const buildCamera = (
         scale: fits[i] * (1 + 0.05 * s),
         rot: 0,
       };
+    }
+    if (move === 'sway') {
+      // Lateral glide across a wide visual — a panorama read, no zoom.
+      const sx = seeded(i, 18) > 0.5 ? 1 : -1;
+      return {
+        x: item.x + item.w * 0.055 * sx * s,
+        y: item.y,
+        scale: fits[i] * (1 + 0.02 * s),
+        rot: 0,
+      };
+    }
+    if (move === 'settle_back') {
+      // The exhale: ease slightly AWAY so a big statement gets air around it.
+      return { x: item.x, y: item.y, scale: fits[i] * (1 - 0.06 * s), rot: 0 };
     }
     // breathe
     const amp = 0.045 + seeded(i, 15) * 0.025;

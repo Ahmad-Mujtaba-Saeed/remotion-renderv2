@@ -1,0 +1,182 @@
+{
+  "project_id": "sample-hybrid-broken",
+  "aspect_ratio": "16:9",
+  "composition_mode": "hybrid",
+  "theme": {
+    "name": "midnight",
+    "label": "Midnight",
+    "bg_from": "#0A0F1E",
+    "bg_to": "#0A0F1E",
+    "accent": "#FFB020",
+    "accent2": "#FF7A45",
+    "text": "#EDF0F8",
+    "muted": "#838CA2",
+    "panel": "#121A2E"
+  },
+  "scenes": [
+    {
+      "scene_id": "scene_1",
+      "order": 1,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "The Suez Canal moves the world's goods."
+      },
+      "layout_template": "single_focus",
+      "transition": "fade",
+      "style": {
+        "variant": "statement",
+        "kicker": "THE HOOK",
+        "highlight": [
+          "Trade"
+        ]
+      },
+      "slots": {
+        "slot_main": {
+          "content_type": "text_block",
+          "heading": "One Canal Moves World Trade",
+          "bullets": [
+            "120 miles of water",
+            "Two continents linked"
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "scene_2",
+      "order": 2,
+      "duration_seconds": 5,
+      "narration": {
+        "text": "Twelve percent of everything traded on earth passes through it."
+      },
+      "layout_template": "stat_spotlight",
+      "transition": "whip_pan",
+      "style": {
+        "variant": "statement",
+        "kicker": "THE NUMBER",
+        "highlight": [
+          "12%"
+        ]
+      },
+      "slots": {
+        "slot_stat": {
+          "content_type": "text_block",
+          "heading": "12% of Global Trade",
+          "bullets": [
+            "Every single day",
+            "One narrow waterway"
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "scene_3",
+      "order": 3,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "As one shipping executive put it, the canal is the world's most important shortcut."
+      },
+      "layout_template": "quote_card",
+      "transition": "zoom_out_in",
+      "style": {
+        "variant": "statement",
+        "kicker": "Maritime Weekly",
+        "highlight": [
+          "shortcut"
+        ]
+      },
+      "slots": {
+        "slot_quote": {
+          "content_type": "explanation_box",
+          "heading": "Maritime Weekly",
+          "body": "The world's most important shortcut — and its most fragile."
+        }
+      }
+    },
+    {
+      "scene_id": "scene_4",
+      "order": 4,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "The Ever Given blocked it for six days in 2021."
+      },
+      "layout_template": "split_side_by_side",
+      "transition": "push_down",
+      "slots": {
+        "slot_left": {
+          "content_type": "text_block",
+          "heading": "The Blockage",
+          "bullets": [
+            "Six days stuck",
+            "400m container ship"
+          ]
+        },
+        "slot_right": {
+          "content_type": "text_block",
+          "heading": "The Cost",
+          "bullets": [
+            "$9.6B per day",
+            "369 ships queued"
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "scene_5",
+      "order": 5,
+      "duration_seconds": 5,
+      "narration": {
+        "text": "And the story is far from over."
+      },
+      "layout_template": "single_focus",
+      "transition": "wipe_up",
+      "style": {
+        "variant": "editorial",
+        "kicker": "WHAT'S NEXT",
+        "highlight": [
+          "Expanding"
+        ]
+      },
+      "slots": {
+        "slot_main": {
+          "content_type": "text_block",
+          "heading": "Egypt Is Expanding It",
+          "bullets": [
+            "Second lane underway",
+            "Capacity nearly doubles",
+            "Finished by 2027"
+          ]
+        }
+      }
+    }
+  ],
+  "chapters": {
+    "version": 1,
+    "chapters": [
+      {
+        "id": "ch_1",
+        "mode": "slides",
+        "scene_ids": [
+          "scene_1",
+          "scene_5"
+        ],
+        "transition_in": "none"
+      },
+      {
+        "id": "ch_2",
+        "mode": "volumetric",
+        "scene_ids": [
+          "scene_2"
+        ],
+        "transition_in": "zoom_through"
+      },
+      {
+        "id": "ch_3",
+        "mode": "canvas",
+        "scene_ids": [
+          "scene_4"
+        ],
+        "transition_in": "fade"
+      }
+    ]
+  }
+}

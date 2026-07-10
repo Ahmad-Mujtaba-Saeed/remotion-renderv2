@@ -14,9 +14,13 @@ export type CameraMove =
   | 'pan_up'
   | 'pan_down'
   | 'ken_burns'
+  | 'ken_burns_reverse'
   | 'push_in'
   | 'pull_out'
-  | 'tilt_zoom';
+  | 'tilt_zoom'
+  | 'zoom_in_snap'
+  | 'pan_up_zoom_in'
+  | 'hover';
 
 export type TransitionType =
   | 'none'
@@ -24,8 +28,12 @@ export type TransitionType =
   | 'push_left'
   | 'push_right'
   | 'push_up'
+  | 'push_down'
   | 'wipe'
-  | 'zoom_through';
+  | 'wipe_up'
+  | 'zoom_through'
+  | 'zoom_out_in'
+  | 'whip_pan';
 
 /**
  * A pre-extracted JPEG frame sequence for a slot video. Rendering stills via
@@ -166,9 +174,9 @@ export interface Music {
 // Mirrors the PHP CanvasPlanValidator output — that validator is the contract.
 // ---------------------------------------------------------------------------
 
-export type CompositionMode = 'canvas_journey' | 'slides';
+export type CompositionMode = 'canvas_journey' | 'slides' | 'hybrid';
 
-export type HoldMove = 'breathe' | 'push_in' | 'drift' | 'orbit' | 'rise';
+export type HoldMove = 'breathe' | 'push_in' | 'drift' | 'orbit' | 'rise' | 'sway' | 'settle_back';
 
 /** How the camera reaches (and treats) a scene — the motion language. */
 export type Treatment =
@@ -248,6 +256,30 @@ export interface CanvasPlan {
   connectors: CanvasConnector[];
 }
 
+// ---------------------------------------------------------------------------
+// Hybrid chapters: the video is a sequence of chapters, each rendered as its
+// own canvas journey (with its OWN world plan) or its own slides run, joined
+// by ordinary scene transitions. Mirrors the PHP ChapterPlanValidator output.
+// ---------------------------------------------------------------------------
+
+export type ChapterMode = 'canvas' | 'slides';
+
+export interface Chapter {
+  id?: string;
+  mode: ChapterMode;
+  /** Scene ids this chapter covers — a contiguous run in storyboard order. */
+  scene_ids: string[];
+  /** Transition INTO this chapter (ignored on the first chapter). */
+  transition_in?: TransitionType;
+  /** Canvas chapters: this chapter's own world plan. */
+  canvas?: CanvasPlan | null;
+}
+
+export interface ChapterPlan {
+  version?: number;
+  chapters: Chapter[];
+}
+
 export interface ShotList {
   project_id: string;
   aspect_ratio?: string;
@@ -258,20 +290,23 @@ export interface ShotList {
   sfx?: { enabled?: boolean; volume?: number } | null;
   /** Optional single narration track (one TTS request) spanning the whole video. */
   narration_audio_url?: string | null;
-  /** How to compose: one continuous camera journey vs. classic slide transitions. */
+  /** How to compose: canvas journey, classic slides, or chaptered hybrid. */
   composition_mode?: CompositionMode;
   /** The Canvas Director's world plan (canvas_journey mode). */
   canvas?: CanvasPlan | null;
+  /** The Composition Director's chapter plan (hybrid mode). */
+  chapters?: ChapterPlan | null;
   scenes: Scene[];
 }
 
 /**
- * Old payloads carry neither field — they keep the classic slides behaviour.
- * New payloads always carry composition_mode from Laravel.
+ * Old payloads carry none of these fields — they keep the classic slides
+ * behaviour. New payloads always carry composition_mode from Laravel.
  */
 export const resolveCompositionMode = (shotList?: ShotList | null): CompositionMode => {
   if (!shotList) return 'slides';
   if (shotList.composition_mode) return shotList.composition_mode;
+  if (shotList.chapters?.chapters?.length) return 'hybrid';
   return shotList.canvas ? 'canvas_journey' : 'slides';
 };
 

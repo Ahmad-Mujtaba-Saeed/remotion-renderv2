@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { AbsoluteFill, Audio, Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
-import { CanvasItem, Scene, ShotList } from '../types';
+import { CanvasItem, CanvasPlan, Scene } from '../types';
 import { useTheme, isLightTheme } from '../theme';
 import { AmbientBackground } from '../components/AmbientBackground';
 import { PunchLine } from '../components/PunchLine';
@@ -16,6 +16,7 @@ import { SfxCue, SfxName, sfxDuration } from '../sfx';
 const flightSound = (item: CanvasItem | undefined): { name: SfxName; volume: number } => {
   const treatment = item?.treatment ?? 'canvas_hop';
   const relation = item?.relation ?? 'continues';
+  if (treatment === 'kinetic_break') return { name: 'whoosh_impact', volume: 1 };
   if (treatment === 'zoom_nest') return { name: 'whoosh_deep', volume: 1 };
   if (relation === 'consequence') return { name: 'whoosh_impact', volume: 1 };
   if (treatment === 'pull_reveal' || relation === 'new_chapter') return { name: 'whoosh_rise', volume: 0.95 };
@@ -33,20 +34,23 @@ const flightSound = (item: CanvasItem | undefined): { name: SfxName; volume: num
  * (zoom_nest) keep their parent visible as surrounding context, and the
  * journey ENDS on the final scene — there is no closing overview.
  */
-export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) => {
+export const CanvasJourney: React.FC<{
+  /** Scenes this journey covers (the whole video, or one hybrid chapter). */
+  scenes: Scene[];
+  /** This journey's world plan; normalized/auto-laid-out when absent. */
+  plan?: CanvasPlan | null;
+  aspect?: string;
+}> = ({ scenes: scenesProp, plan: planProp, aspect }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
   const { fps, width: vw, height: vh } = useVideoConfig();
 
   const scenes = useMemo(
-    () => [...(shotList.scenes ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
-    [shotList.scenes]
+    () => [...(scenesProp ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [scenesProp]
   );
 
-  const plan = useMemo(
-    () => normalizePlan(shotList.canvas, scenes, shotList.aspect_ratio),
-    [shotList.canvas, scenes, shotList.aspect_ratio]
-  );
+  const plan = useMemo(() => normalizePlan(planProp, scenes, aspect), [planProp, scenes, aspect]);
 
   const camera = useMemo(() => buildCamera(plan, scenes, fps, vw, vh), [plan, scenes, fps, vw, vh]);
 
@@ -296,10 +300,19 @@ export const CanvasJourney: React.FC<{ shotList: ShotList }> = ({ shotList }) =>
         if (i === 0) return null;
         const w = camera.windows[i];
         if (!w || w.travel <= 0) return null;
-        const { name, volume } = flightSound(itemByScene.get(scene.scene_id));
+        const item = itemByScene.get(scene.scene_id);
+        const { name, volume } = flightSound(item);
         const travelSec = w.travel / fps;
         const rate = Math.max(0.8, Math.min(1.45, sfxDuration(name) / Math.max(0.5, travelSec)));
-        return <SfxCue key={`w-${scene.scene_id}`} name={name} at={w.start} volume={volume} playbackRate={rate} />;
+        return (
+          <React.Fragment key={`w-${scene.scene_id}`}>
+            <SfxCue name={name} at={w.start} volume={volume} playbackRate={rate} />
+            {/* kinetic_break lands like a cut — a stamp thump on touchdown. */}
+            {(item?.treatment ?? '') === 'kinetic_break' ? (
+              <SfxCue name="stamp" at={w.start + w.travel} volume={0.85} />
+            ) : null}
+          </React.Fragment>
+        );
       })}
 
       {/* PUNCHLINES in screen space: outside the camera transform they stay

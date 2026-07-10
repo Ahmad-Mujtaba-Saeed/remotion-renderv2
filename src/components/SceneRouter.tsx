@@ -6,6 +6,8 @@ import { SplitSideBySide } from '../layouts/SplitSideBySide';
 import { SplitTopBottom } from '../layouts/SplitTopBottom';
 import { FullBleedWithSidePanel } from '../layouts/FullBleedWithSidePanel';
 import { FullBleedWithBanner } from '../layouts/FullBleedWithBanner';
+import { StatSpotlight } from '../layouts/StatSpotlight';
+import { QuoteCard } from '../layouts/QuoteCard';
 import { AmbientBackground } from './AmbientBackground';
 import { PunchLine } from './PunchLine';
 import { SceneMetaProvider } from './SceneMeta';
@@ -34,6 +36,10 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <FullBleedWithSidePanel scene={scene} />;
     case 'full_bleed_with_banner':
       return <FullBleedWithBanner scene={scene} />;
+    case 'stat_spotlight':
+      return <StatSpotlight scene={scene} />;
+    case 'quote_card':
+      return <QuoteCard scene={scene} />;
     case 'single_focus':
     default:
       return <SingleFocus scene={scene} />;

@@ -2,7 +2,8 @@ import React from 'react';
 import { Composition } from 'remotion';
 import { ExplainerVideo } from '../ExplainerVideo';
 import { ExplainerProps, ShotList, resolveCompositionMode } from '../types';
-import { totalCanvasFrames, totalDurationInFrames } from '../timing';
+import { totalCanvasFrames, totalDurationInFrames, totalHybridFrames } from '../timing';
+import { normalizeChapters } from '../chapters';
 
 const EMPTY_SHOT_LIST: ShotList = { project_id: 'preview', scenes: [] };
 
@@ -29,11 +30,15 @@ export const RemotionRoot: React.FC = () => {
         const p = props as unknown as ExplainerProps;
         const fps = p.fps || 30;
         const scenes = p.shotList?.scenes ?? [];
-        const canvasMode = resolveCompositionMode(p.shotList) === 'canvas_journey';
+        const mode = resolveCompositionMode(p.shotList);
+        const durationInFrames =
+          mode === 'hybrid'
+            ? totalHybridFrames(normalizeChapters(p.shotList), fps)
+            : mode === 'canvas_journey'
+              ? totalCanvasFrames(scenes, fps)
+              : totalDurationInFrames(scenes, fps);
         return {
-          durationInFrames: canvasMode
-            ? totalCanvasFrames(scenes, fps)
-            : totalDurationInFrames(scenes, fps),
+          durationInFrames,
           fps,
           width: p.width || 1920,
           height: p.height || 1080,

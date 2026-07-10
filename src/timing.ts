@@ -1,4 +1,5 @@
 import { Scene, TRANSITION_SECONDS } from './types';
+import type { ResolvedChapter } from './chapters';
 
 export const sceneFrames = (scene: Scene, fps: number): number =>
   Math.max(1, Math.round((scene.duration_seconds || 6) * fps));
@@ -67,4 +68,65 @@ export const totalDurationInFrames = (scenes: Scene[], fps: number): number => {
     }
   });
   return Math.max(1, total);
+};
+
+// ---------------------------------------------------------------------------
+// Hybrid chapters
+// ---------------------------------------------------------------------------
+
+/** Frames a chapter occupies on its own clock (canvas: back-to-back scenes;
+ *  slides: internal transition overlaps already subtracted). */
+export const chapterFrames = (ch: ResolvedChapter, fps: number): number =>
+  ch.chapter.mode === 'canvas'
+    ? totalCanvasFrames(ch.scenes, fps)
+    : totalDurationInFrames(ch.scenes, fps);
+
+export interface ChapterWindow {
+  /** Global frame the chapter's own clock starts at (overlaps subtracted). */
+  start: number;
+  frames: number;
+  /** Whether the chapter-level transition INTO this chapter is active. */
+  hasTransition: boolean;
+}
+
+/**
+ * Global start frames for each chapter, mirroring TransitionSeries math: an
+ * active chapter transition overlaps the two chapters it joins, pulling every
+ * later chapter earlier by one transition length.
+ */
+export const chapterWindows = (chapters: ResolvedChapter[], fps: number): ChapterWindow[] => {
+  const tf = transitionFrames(fps);
+  const windows: ChapterWindow[] = [];
+  let cursor = 0;
+  chapters.forEach((ch, i) => {
+    const hasTransition = i > 0 && (ch.chapter.transition_in ?? 'fade') !== 'none';
+    if (hasTransition) cursor -= tf;
+    const frames = chapterFrames(ch, fps);
+    windows.push({ start: cursor, frames, hasTransition });
+    cursor += frames;
+  });
+  return windows;
+};
+
+export const totalHybridFrames = (chapters: ResolvedChapter[], fps: number): number => {
+  if (!chapters.length) return fps;
+  const windows = chapterWindows(chapters, fps);
+  const last = windows[windows.length - 1];
+  return Math.max(1, last.start + last.frames);
+};
+
+/** Music-duck windows across all chapters, offset to the global clock. */
+export const narrationWindowsHybrid = (
+  chapters: ResolvedChapter[],
+  fps: number
+): NarrationWindow[] => {
+  const windows = chapterWindows(chapters, fps);
+  const out: NarrationWindow[] = [];
+  chapters.forEach((ch, i) => {
+    const local = narrationWindows(ch.scenes, fps, ch.chapter.mode === 'canvas' ? 'canvas' : 'slides');
+    for (const w of local) {
+      out.push({ start: windows[i].start + w.start, end: windows[i].start + w.end });
+    }
+  });
+  return out;
 };

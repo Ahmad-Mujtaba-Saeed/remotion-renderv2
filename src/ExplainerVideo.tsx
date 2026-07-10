@@ -1,20 +1,23 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AbsoluteFill, Audio, useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { TransitionSeries, linearTiming } from '@remotion/transitions';
 import { ExplainerProps, resolveCompositionMode } from './types';
 import {
-  sceneFrames,
   transitionFrames,
-  hasIncomingTransition,
   narrationWindows,
+  narrationWindowsHybrid,
   totalCanvasFrames,
   totalDurationInFrames,
+  totalHybridFrames,
+  chapterFrames,
+  chapterWindows,
   NarrationWindow,
 } from './timing';
-import { SceneRouter } from './components/SceneRouter';
+import { normalizeChapters } from './chapters';
 import { ThemeProvider, useTheme, hairline } from './theme';
 import { presentationFor } from './transitions';
 import { CanvasJourney } from './canvas/CanvasJourney';
+import { SlidesChapter } from './components/SlidesChapter';
 import { SfxProvider, SfxCue } from './sfx';
 import { FontLoader } from './fonts';
 
@@ -65,36 +68,55 @@ const musicVolumeCurve = (
 };
 
 /**
- * Root composition. Theme-wrapped TransitionSeries with per-scene transition
- * types, plus global overlays. Scene durations come straight from the shot list.
+ * Root composition, three shapes picked by composition_mode:
+ *  - canvas_journey: one continuous camera flight across every scene;
+ *  - slides:         a TransitionSeries of full-screen scenes;
+ *  - hybrid:         a TransitionSeries of CHAPTERS, each itself a canvas
+ *    journey (with its own world) or a slides run — the Composition Director
+ *    on the PHP side decides where the boundaries fall.
+ * The music bed always lives OUTSIDE any TransitionSeries so it never
+ * remounts (an audible restart) at a boundary.
  */
 export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   const scenes = shotList?.scenes ?? [];
   const tf = transitionFrames(fps);
   const music = shotList?.music;
-  const canvasMode = resolveCompositionMode(shotList) === 'canvas_journey';
+  const mode = resolveCompositionMode(shotList);
+
+  const chapters = useMemo(
+    () => (mode === 'hybrid' && shotList ? normalizeChapters(shotList) : []),
+    [mode, shotList]
+  );
+
   // Narration: canvas mode plays it per-station inside CanvasJourney; slides
   // mode plays it per-scene inside SceneRouter (Kokoro, one clip per scene).
 
-  const musicVolume = music?.url
-    ? musicVolumeCurve(
-        music.volume ?? 0.12,
-        narrationWindows(scenes, fps, canvasMode ? 'canvas' : 'slides'),
-        fps,
-        canvasMode ? totalCanvasFrames(scenes, fps) : totalDurationInFrames(scenes, fps)
-      )
-    : null;
+  const duckWindows =
+    mode === 'hybrid'
+      ? narrationWindowsHybrid(chapters, fps)
+      : narrationWindows(scenes, fps, mode === 'canvas_journey' ? 'canvas' : 'slides');
+  const total =
+    mode === 'hybrid'
+      ? totalHybridFrames(chapters, fps)
+      : mode === 'canvas_journey'
+        ? totalCanvasFrames(scenes, fps)
+        : totalDurationInFrames(scenes, fps);
 
-  if (canvasMode) {
+  const musicVolume = music?.url ? musicVolumeCurve(music.volume ?? 0.12, duckWindows, fps, total) : null;
+
+  const musicBed =
+    music?.url && musicVolume ? (
+      <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
+    ) : null;
+
+  if (mode === 'canvas_journey') {
     return (
       <ThemeProvider theme={shotList?.theme}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
             <FontLoader />
-            {music?.url && musicVolume ? (
-              <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
-            ) : null}
-            <CanvasJourney shotList={shotList} />
+            {musicBed}
+            <CanvasJourney scenes={scenes} plan={shotList?.canvas} aspect={shotList?.aspect_ratio} />
             <GlobalOverlays />
           </AbsoluteFill>
         </SfxProvider>
@@ -102,25 +124,83 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     );
   }
 
-  // Slides mode: a whoosh under every scene transition (the cut itself).
-  const transitionCues: React.ReactNode[] = [];
-  {
-    let cursor = 0;
-    scenes.forEach((scene, i) => {
-      if (hasIncomingTransition(scenes, i)) {
-        cursor -= tf;
-        transitionCues.push(
-          <SfxCue
-            key={`ts-${scene.scene_id}`}
-            name={scene.transition === 'zoom_through' ? 'whoosh_deep' : 'whoosh_soft'}
-            at={cursor}
-            volume={0.85}
-            playbackRate={1.2}
-          />
-        );
-      }
-      cursor += sceneFrames(scene, fps);
-    });
+  if (mode === 'hybrid') {
+    const windows = chapterWindows(chapters, fps);
+
+    // A deep whoosh under every chapter boundary — the act break.
+    const chapterCues: React.ReactNode[] = chapters.flatMap((ch, i) =>
+      windows[i].hasTransition
+        ? [
+            <SfxCue
+              key={`ct-${ch.chapter.id ?? i}`}
+              name={
+                ch.chapter.transition_in === 'zoom_through' || ch.chapter.transition_in === 'whip_pan'
+                  ? 'whoosh_deep'
+                  : 'whoosh_rise'
+              }
+              at={windows[i].start}
+              volume={0.9}
+            />,
+          ]
+        : []
+    );
+
+    let sceneCursor = 0;
+
+    return (
+      <ThemeProvider theme={shotList?.theme}>
+        <SfxProvider config={shotList?.sfx}>
+          <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+            <FontLoader />
+            {musicBed}
+            <TransitionSeries>
+              {chapters.flatMap((ch, i) => {
+                const nodes: React.ReactNode[] = [];
+
+                if (windows[i].hasTransition) {
+                  nodes.push(
+                    <TransitionSeries.Transition
+                      key={`t-${ch.chapter.id ?? i}`}
+                      presentation={presentationFor(ch.chapter.transition_in)}
+                      timing={linearTiming({ durationInFrames: tf })}
+                    />
+                  );
+                }
+
+                const indexOffset = sceneCursor;
+                sceneCursor += ch.scenes.length;
+
+                nodes.push(
+                  <TransitionSeries.Sequence
+                    key={ch.chapter.id ?? `ch-${i}`}
+                    durationInFrames={chapterFrames(ch, fps)}
+                  >
+                    {ch.chapter.mode === 'canvas' ? (
+                      <CanvasJourney
+                        scenes={ch.scenes}
+                        plan={ch.chapter.canvas}
+                        aspect={shotList?.aspect_ratio}
+                      />
+                    ) : (
+                      <SlidesChapter
+                        scenes={ch.scenes}
+                        fps={fps}
+                        indexOffset={indexOffset}
+                        totalCount={scenes.length}
+                      />
+                    )}
+                  </TransitionSeries.Sequence>
+                );
+
+                return nodes;
+              })}
+            </TransitionSeries>
+            {chapterCues}
+            <GlobalOverlays />
+          </AbsoluteFill>
+        </SfxProvider>
+      </ThemeProvider>
+    );
   }
 
   return (
@@ -128,36 +208,8 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
       <SfxProvider config={shotList?.sfx}>
         <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
           <FontLoader />
-          {music?.url && musicVolume ? (
-            <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
-          ) : null}
-          {scenes.length ? (
-            <TransitionSeries>
-              {scenes.flatMap((scene, i) => {
-                const nodes: React.ReactNode[] = [];
-
-                if (hasIncomingTransition(scenes, i)) {
-                  nodes.push(
-                    <TransitionSeries.Transition
-                      key={`t-${scene.scene_id}`}
-                      presentation={presentationFor(scene.transition)}
-                      timing={linearTiming({ durationInFrames: tf })}
-                    />
-                  );
-                }
-
-                nodes.push(
-                  <TransitionSeries.Sequence key={scene.scene_id} durationInFrames={sceneFrames(scene, fps)}>
-                    <SceneRouter scene={scene} index={i} count={scenes.length} />
-                  </TransitionSeries.Sequence>
-                );
-
-                return nodes;
-              })}
-            </TransitionSeries>
-          ) : null}
-          {transitionCues}
-
+          {musicBed}
+          <SlidesChapter scenes={scenes} fps={fps} />
           <GlobalOverlays />
         </AbsoluteFill>
       </SfxProvider>
