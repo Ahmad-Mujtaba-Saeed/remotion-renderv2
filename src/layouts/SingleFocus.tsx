@@ -127,8 +127,36 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { width, height } = useVideoConfig();
   const isText = slot?.content_type === 'text_block' || slot?.content_type === 'explanation_box';
 
-  // Slides mode: the classic behaviour, untouched.
+  // Slides mode. A text-only scene WITH an AI illustration composes the same
+  // editorial split as the canvas journey — the generated image was invisible
+  // in slides before, which made the whole illustration budget look wasted.
   if (!region.frameless) {
+    if (isText && scene.illustration_url) {
+      const slidePortrait = height > width;
+      return (
+        <AbsoluteFill style={{ padding: '7%', boxSizing: 'border-box' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: slidePortrait ? 'column-reverse' : 'row',
+              width: '100%',
+              height: '100%',
+              gap: '5%',
+              alignItems: 'stretch',
+            }}
+          >
+            <div style={{ flex: 1.05, minWidth: 0, minHeight: 0, display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: '100%' }}>
+                <SlotRenderer slot={slot} />
+              </div>
+            </div>
+            <div style={{ flex: 0.85, minWidth: 0, minHeight: 0 }}>
+              <Illustration url={scene.illustration_url} />
+            </div>
+          </div>
+        </AbsoluteFill>
+      );
+    }
     if (isText) {
       return (
         <AbsoluteFill style={{ padding: '7%' }}>

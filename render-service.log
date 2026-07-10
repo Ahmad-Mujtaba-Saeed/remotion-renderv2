@@ -1,0 +1,5 @@
+
+> remotion-render@0.1.0 start
+> tsx src/server.ts
+
+remotion-render listening on http://localhost:3020
