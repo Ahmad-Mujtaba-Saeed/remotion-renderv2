@@ -77,6 +77,7 @@ export const normalizeChapters = (shotList: ShotList): ResolvedChapter[] => {
         scene_ids: run.scenes.map((s) => s.scene_id),
         transition_in: i === 0 ? 'none' : source?.transition_in ?? 'fade',
         canvas: mode === 'canvas' ? source?.canvas ?? null : null,
+        accent: source?.accent ?? null,
       },
       scenes: run.scenes,
     };

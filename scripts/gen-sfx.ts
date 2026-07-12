@@ -405,4 +405,104 @@ writeWav('pop_c.wav', (() => { const b = sinePop({ seconds: 0.3, f0: 760, f1: 39
   writeWav('tick.wav', b);
 }
 
+// ---------------------------------------------------------------------------
+// M2 cue sounds (copilot.md §6.5) — landmarks only, never per-text-beat.
+// ---------------------------------------------------------------------------
+
+// Riser: leads INTO a chapter boundary — noise band climbing t² with a rising
+// tone underneath, peaking right at the end so the boundary lands on the top.
+{
+  const b = whoosh({
+    seconds: 1.6,
+    seed: 53,
+    fcOf: (t) => 300 + 3200 * clamp01(t * t * 1.05),
+    q: 1.2,
+    peak: 0.88,
+    panFrom: -0.15,
+    panTo: 0.15,
+  });
+  const tone = buf(1.6);
+  let ph = 0;
+  for (let i = 0; i < tone.l.length; i++) {
+    const t = i / tone.l.length;
+    ph += (2 * Math.PI * (110 + 130 * t * t)) / SR;
+    const env = swell(t, 0.92) * 0.6;
+    tone.l[i] = Math.sin(ph) * env;
+    tone.r[i] = Math.sin(ph) * env;
+  }
+  mixInto(b, tone, 0, 0.55);
+  normalize(b, -9.5);
+  deClick(b);
+  writeWav('riser.wav', b);
+}
+
+// Sub boom: the chapter title lands — deep sub drop, dark, roomy, no click.
+{
+  const b = impact({ seconds: 0.9, seed: 61, sub0: 92, sub1: 38, tau: 0.24, burst: 0.018 });
+  normalize(b, -6);
+  deClick(b, 4);
+  writeWav('sub_boom.wav', b);
+}
+
+// Paper slide: a short dry swish for photo-stack slides and print moves.
+{
+  const b = whoosh({
+    seconds: 0.35,
+    seed: 67,
+    fcOf: (t) => 2100 - 1150 * clamp01(t * 1.2),
+    q: 0.7,
+    peak: 0.3,
+    panFrom: -0.3,
+    panTo: 0.4,
+    dark: 5200,
+  });
+  normalize(b, -12);
+  deClick(b, 3);
+  writeWav('paper_slide.wav', b);
+}
+
+// Tick loop: 1s of soft 12Hz ticks for counter rollups — loopable (both ends
+// silent), alternating pitch so it reads mechanical, not musical.
+{
+  const b = buf(1.0);
+  for (let k = 0; k < 12; k++) {
+    const tickPop = sinePop({
+      seconds: 0.05,
+      f0: k % 2 === 0 ? 2100 : 1800,
+      f1: 1400,
+      tau: 0.012,
+      seed: 70 + k,
+      harmonic: 0.05,
+    });
+    mixInto(b, tickPop, 0.01 + k / 12, 0.8);
+  }
+  normalize(b, -14);
+  deClick(b, 4);
+  writeWav('tick_loop.wav', b);
+}
+
+// Chime: a warm two-partial bell for completions (charts filled, meters full).
+{
+  const b = buf(0.9);
+  const partials = [
+    { f: 880.0, a: 1.0, d: 0.34 }, // A5
+    { f: 1318.5, a: 0.55, d: 0.44 }, // E6
+  ];
+  for (let i = 0; i < b.l.length; i++) {
+    const t = i / SR;
+    let s = 0;
+    partials.forEach((p, k) => {
+      const attack = clamp01(t / 0.02);
+      s += Math.sin(2 * Math.PI * (p.f + k * 1.1) * t) * p.a * attack * Math.exp(-t / p.d);
+    });
+    const drift = Math.sin(2 * Math.PI * 0.7 * t) * 0.25;
+    const [gl, gr] = panLR(drift);
+    b.l[i] = s * gl;
+    b.r[i] = s * gr;
+  }
+  normalize(b, -12);
+  deClick(b, 3);
+  writeWav('chime.wav', b);
+}
+
 console.log('Done.');

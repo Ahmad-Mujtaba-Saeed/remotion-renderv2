@@ -4,6 +4,7 @@ import { CanvasItem, CanvasPlan, Scene } from '../types';
 import { useTheme, isLightTheme } from '../theme';
 import { AmbientBackground } from '../components/AmbientBackground';
 import { PunchLine } from '../components/PunchLine';
+import { CaptionTrack } from '../components/CaptionTrack';
 import { normalizePlan } from './autoLayout';
 import { buildCamera } from './camera';
 import { Connector } from './Connector';
@@ -40,7 +41,9 @@ export const CanvasJourney: React.FC<{
   /** This journey's world plan; normalized/auto-laid-out when absent. */
   plan?: CanvasPlan | null;
   aspect?: string;
-}> = ({ scenes: scenesProp, plan: planProp, aspect }) => {
+  /** Karaoke caption track (§4.4) — screen-space, like punchlines. */
+  captions?: boolean;
+}> = ({ scenes: scenesProp, plan: planProp, aspect, captions = false }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
   const { fps, width: vw, height: vh } = useVideoConfig();
@@ -330,6 +333,23 @@ export const CanvasJourney: React.FC<{
           </SceneClockProvider>
         );
       })}
+
+      {/* KARAOKE CAPTIONS in the same screen-space layer — word timestamps
+          re-base to each scene's narration start exactly like punchlines. */}
+      {captions
+        ? scenes.map((scene: Scene, i) => {
+            if (!scene.narration_words?.length) return null;
+            const w = camera.windows[i];
+            return (
+              <SceneClockProvider
+                key={`cap-${scene.scene_id}`}
+                window={{ start: w.start, end: w.start + w.frames, narrationStart: w.start }}
+              >
+                <CaptionTrack scene={scene} />
+              </SceneClockProvider>
+            );
+          })
+        : null}
 
       {/* Per-scene narration, timed to each region's window. Boosted above
           the music bed so the voice always leads the mix. */}

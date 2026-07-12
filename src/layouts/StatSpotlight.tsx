@@ -65,6 +65,9 @@ export const StatSpotlight: React.FC<{ scene: Scene }> = ({ scene }) => {
         <KineticText
           text={heading}
           highlight={highlight}
+          // The stat IS the story: its number rolls with the landmark tick
+          // (ordinary headings roll silently — §6.5).
+          tickOnCount
           style={{
             fontFamily: displayFont,
             fontWeight: 800,

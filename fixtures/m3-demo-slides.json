@@ -1,0 +1,375 @@
+{
+  "project_id": "m3-demo",
+  "aspect_ratio": "16:9",
+  "composition_mode": "slides",
+  "captions": {
+    "enabled": true
+  },
+  "font_pack": "classic",
+  "sfx": {
+    "enabled": true,
+    "volume": 1,
+    "pack": "procedural"
+  },
+  "theme": {
+    "name": "ink",
+    "label": "Ink",
+    "bg_from": "#101013",
+    "bg_to": "#101013",
+    "accent": "#FF5A36",
+    "accent2": "#FF9E45",
+    "text": "#F4F2EE",
+    "muted": "#94918C",
+    "panel": "#1A1A1F"
+  },
+  "scenes": [
+    {
+      "scene_id": "s1",
+      "order": 1,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "Narration for s1"
+      },
+      "layout_template": "stat_spotlight",
+      "slots": {
+        "slot_stat": {
+          "content_type": "text_block",
+          "heading": "$4,200,000,000 In 90 Days",
+          "bullets": [],
+          "reveal": "sequential"
+        }
+      },
+      "transition": "none",
+      "relation": "opening",
+      "style": {
+        "variant": "statement",
+        "kicker": "THE HOOK",
+        "highlight": [
+          "90"
+        ]
+      },
+      "narration_words": [
+        {
+          "word": "Four",
+          "start": 0.2,
+          "end": 0.48000000000000004
+        },
+        {
+          "word": "point",
+          "start": 0.54,
+          "end": 0.8200000000000001
+        },
+        {
+          "word": "two",
+          "start": 0.8800000000000001,
+          "end": 1.1600000000000001
+        },
+        {
+          "word": "billion",
+          "start": 1.2200000000000002,
+          "end": 1.5000000000000002
+        },
+        {
+          "word": "dollars",
+          "start": 1.5600000000000003,
+          "end": 1.8400000000000003
+        },
+        {
+          "word": "in",
+          "start": 1.9000000000000004,
+          "end": 2.1800000000000006
+        },
+        {
+          "word": "just",
+          "start": 2.24,
+          "end": 2.5200000000000005
+        },
+        {
+          "word": "ninety",
+          "start": 2.58,
+          "end": 2.8600000000000003
+        },
+        {
+          "word": "days",
+          "start": 2.92,
+          "end": 3.2
+        },
+        {
+          "word": "flat",
+          "start": 3.26,
+          "end": 3.54
+        }
+      ]
+    },
+    {
+      "scene_id": "s2",
+      "order": 2,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "Narration for s2"
+      },
+      "layout_template": "single_focus",
+      "slots": {
+        "slot_main": {
+          "content_type": "text_block",
+          "heading": "The Next Step Forward",
+          "bullets": [
+            "The first point lands here",
+            "A second point follows on",
+            "Then a third one closes"
+          ],
+          "reveal": "sequential"
+        }
+      },
+      "transition": "stack_push",
+      "relation": "continues",
+      "style": {
+        "variant": "editorial",
+        "kicker": "STEP ONE",
+        "highlight": [
+          "Forward"
+        ]
+      },
+      "narration_words": [
+        {
+          "word": "The",
+          "start": 0.2,
+          "end": 0.48000000000000004
+        },
+        {
+          "word": "next",
+          "start": 0.54,
+          "end": 0.8200000000000001
+        },
+        {
+          "word": "step",
+          "start": 0.8800000000000001,
+          "end": 1.1600000000000001
+        },
+        {
+          "word": "forward",
+          "start": 1.2200000000000002,
+          "end": 1.5000000000000002
+        },
+        {
+          "word": "follows",
+          "start": 1.5600000000000003,
+          "end": 1.8400000000000003
+        },
+        {
+          "word": "the",
+          "start": 1.9000000000000004,
+          "end": 2.1800000000000006
+        },
+        {
+          "word": "money",
+          "start": 2.24,
+          "end": 2.5200000000000005
+        },
+        {
+          "word": "into",
+          "start": 2.58,
+          "end": 2.8600000000000003
+        },
+        {
+          "word": "the",
+          "start": 2.92,
+          "end": 3.2
+        },
+        {
+          "word": "grid",
+          "start": 3.26,
+          "end": 3.54
+        },
+        {
+          "word": "below",
+          "start": 3.5999999999999996,
+          "end": 3.88
+        }
+      ]
+    },
+    {
+      "scene_id": "s3",
+      "order": 3,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "Narration for s3"
+      },
+      "layout_template": "single_focus",
+      "slots": {
+        "slot_main": {
+          "content_type": "text_block",
+          "heading": "Inside The Machine",
+          "bullets": [
+            "A close look at the core",
+            "The hidden part that matters"
+          ],
+          "reveal": "sequential"
+        }
+      },
+      "transition": "mask_wipe_circle",
+      "relation": "elaborates",
+      "style": {
+        "variant": "editorial",
+        "kicker": "A CLOSER LOOK",
+        "highlight": [
+          "Machine"
+        ]
+      }
+    },
+    {
+      "scene_id": "s4",
+      "order": 4,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "Narration for s4"
+      },
+      "layout_template": "split_side_by_side",
+      "slots": {
+        "slot_left": {
+          "content_type": "text_block",
+          "heading": "Old Way",
+          "bullets": [
+            "Slow and manual",
+            "Costly to run"
+          ],
+          "reveal": "sequential"
+        },
+        "slot_right": {
+          "content_type": "text_block",
+          "heading": "New Way",
+          "bullets": [
+            "Fast and automated",
+            "Cheap at scale"
+          ],
+          "reveal": "sequential"
+        }
+      },
+      "transition": "split_slide",
+      "relation": "contrast"
+    },
+    {
+      "scene_id": "s5",
+      "order": 5,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "Narration for s5"
+      },
+      "layout_template": "quote_card",
+      "slots": {
+        "slot_quote": {
+          "content_type": "explanation_box",
+          "heading": "The Founder",
+          "body": "We were wrong about everything except the timing."
+        }
+      },
+      "transition": "match_dissolve",
+      "relation": "callback"
+    },
+    {
+      "scene_id": "s6",
+      "order": 6,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "Narration for s6"
+      },
+      "layout_template": "single_focus",
+      "slots": {
+        "slot_main": {
+          "content_type": "text_block",
+          "heading": "Act Two Begins",
+          "bullets": [
+            "Everything changes now"
+          ],
+          "reveal": "sequential"
+        }
+      },
+      "transition": "line_sweep",
+      "relation": "new_chapter",
+      "style": {
+        "variant": "statement",
+        "kicker": "CHAPTER 2",
+        "highlight": [
+          "Two"
+        ]
+      }
+    },
+    {
+      "scene_id": "s7",
+      "order": 7,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "Narration for s7"
+      },
+      "layout_template": "single_focus",
+      "slots": {
+        "slot_main": {
+          "content_type": "text_block",
+          "heading": "A Crisp Neutral Cut",
+          "bullets": [
+            "The diagonal edge sweeps",
+            "An accent hairline rides it"
+          ],
+          "reveal": "sequential"
+        }
+      },
+      "transition": "mask_wipe_diagonal"
+    },
+    {
+      "scene_id": "s8",
+      "order": 8,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "Narration for s8"
+      },
+      "layout_template": "full_bleed_with_side_panel",
+      "slots": {
+        "slot_background": {
+          "content_type": "image",
+          "camera_move": "slow_zoom_in",
+          "asset_ref": {
+            "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAB4CAIAAAD6wG44AAABLklEQVR4nO3RAQkAIBDAwA9mEnMa0BQijIMLMNicvQib7wU8ZXCcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEXl9azodq6OP0AAAAASUVORK5CYII=",
+            "type": "image",
+            "width": 160,
+            "height": 120
+          }
+        },
+        "slot_panel": {
+          "content_type": "explanation_box",
+          "heading": "The Quiet Part",
+          "body": "Someone knew about this three weeks before it happened.",
+          "dock": "right",
+          "width_pct": 33
+        }
+      },
+      "transition": "column_reveal",
+      "mood": "tense",
+      "style": {
+        "variant": "typewriter",
+        "kicker": "UNEASY",
+        "highlight": []
+      }
+    },
+    {
+      "scene_id": "s9",
+      "order": 9,
+      "duration_seconds": 3.2,
+      "narration": {
+        "text": ""
+      },
+      "layout_template": "outro_card",
+      "slots": {
+        "slot_outro": {
+          "content_type": "text_block",
+          "heading": "The Test Video",
+          "bullets": [
+            "Follow for more",
+            "@m3demo"
+          ],
+          "reveal": "sequential"
+        }
+      },
+      "transition": "fade"
+    }
+  ]
+}

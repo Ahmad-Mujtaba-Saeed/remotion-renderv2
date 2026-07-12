@@ -1,7 +1,43 @@
 // Shape of the shot list Laravel sends. Mirrors the PHP ExplainerRegistry /
 // ShotListValidator output, so the validator on the PHP side is the contract.
 
-export type ContentType = 'image' | 'video' | 'text_block' | 'explanation_box';
+export type ContentType =
+  | 'image'
+  | 'video'
+  | 'text_block'
+  | 'explanation_box'
+  // Structured Tier A card contents (copilot.md §5, M4):
+  | 'versus'
+  | 'chart'
+  | 'proscons'
+  | 'icons'
+  // Tier B (M5):
+  | 'timeline_nodes'
+  | 'steps'
+  | 'ranking'
+  | 'meter';
+
+/** One dated stop on a timeline_card. */
+export interface TimelineNode {
+  date?: string;
+  label?: string;
+}
+
+/** One side of a versus_card head-to-head. */
+export interface VersusSide {
+  label?: string;
+  /** Up to 3 very short stat lines; numeric tokens count up. */
+  stats?: string[];
+}
+
+export type ChartType = 'bar' | 'line' | 'donut' | 'counter';
+
+/** One cell of an icon_grid. `icon` must be a LUCIDE_ICONS name (the PHP
+ *  validator whitelists; unknown names render as a generic dot). */
+export interface IconItem {
+  icon?: string;
+  label?: string;
+}
 
 export type Dock = 'left' | 'right' | 'top' | 'bottom';
 
@@ -33,7 +69,15 @@ export type TransitionType =
   | 'wipe_up'
   | 'zoom_through'
   | 'zoom_out_in'
-  | 'whip_pan';
+  | 'whip_pan'
+  // Transitions 2.0 (copilot.md §3.1) — flat-safe, clip-path/transform only.
+  | 'mask_wipe_circle'
+  | 'mask_wipe_diagonal'
+  | 'column_reveal'
+  | 'split_slide'
+  | 'stack_push'
+  | 'line_sweep'
+  | 'match_dissolve';
 
 /**
  * A pre-extracted JPEG frame sequence for a slot video. Rendering stills via
@@ -82,9 +126,36 @@ export interface Slot {
   reveal?: 'sequential' | 'all_at_once';
   // explanation_box
   body?: string;
+  // versus (versus_card slot_versus)
+  left?: VersusSide;
+  right?: VersusSide;
+  verdict?: string;
+  // chart (animated_chart / big_counter)
+  chart_type?: ChartType;
+  labels?: string[];
+  values?: number[];
+  unit?: string;
+  caption?: string;
+  highlight_index?: number | null;
+  source?: string;
+  // proscons (checklist_card)
+  pros?: string[];
+  cons?: string[];
+  pros_label?: string;
+  cons_label?: string;
+  // icons (icon_grid), steps (step_flow: {label, icon?}), ranking (strings)
+  items?: (IconItem | string)[];
+  // timeline_nodes (timeline_card)
+  nodes?: TimelineNode[];
+  // meter (progress_meter)
+  value_pct?: number;
   // floating panel / banner config
   dock?: Dock;
   width_pct?: number;
+  /** Split-layout balance (validator, copilot.md §7.3): when the paired slot
+      is sparse text, the media slot is promoted to this share of the axis
+      (e.g. 65) so the frame never sits mostly empty. */
+  emphasis_pct?: number;
 }
 
 /** One spoken word with its real timestamps (seconds, relative to the scene's
@@ -117,7 +188,14 @@ export interface Punchline {
  * side, seeded fallback otherwise) hands every scene a personality so a long
  * video never repeats one look.
  */
-export type TextStyleVariant = 'editorial' | 'statement' | 'numbered' | 'checklist' | 'cards';
+export type TextStyleVariant =
+  | 'editorial'
+  | 'statement'
+  | 'numbered'
+  | 'checklist'
+  | 'cards'
+  /** explanation_box only: per-character reveal with a block caret (§4.5). */
+  | 'typewriter';
 
 export interface SceneStyle {
   variant?: TextStyleVariant;
@@ -134,6 +212,9 @@ export interface Scene {
   narration?: { text?: string };
   layout_template: string;
   transition?: TransitionType;
+  /** Story relation to the previous scene (analyzer, validator-normalised).
+      Drives the signature transition + the flavour of the cut's SFX. */
+  relation?: SceneRelation;
   /** Per-scene presentation personality (variant, kicker, highlights). */
   style?: SceneStyle | null;
   slots: Record<string, Slot>;
@@ -273,6 +354,9 @@ export interface Chapter {
   transition_in?: TransitionType;
   /** Canvas chapters: this chapter's own world plan. */
   canvas?: CanvasPlan | null;
+  /** Optional per-chapter accent override (§11.4 accent shift) — a hue-
+      rotated accent computed server-side; no runtime filters. */
+  accent?: string | null;
 }
 
 export interface ChapterPlan {
@@ -286,10 +370,23 @@ export interface ShotList {
   theme?: Theme;
   /** Optional curated background music for the whole video. */
   music?: Music | null;
-  /** Sound-effects layer config (whooshes/pops/impacts). Defaults to on. */
-  sfx?: { enabled?: boolean; volume?: number } | null;
+  /** Sound-effects layer config (whooshes/pops/impacts). Defaults to on.
+      `pack` is resolved by render.ts against the filesystem — 'studio' only
+      survives when public/sfx/studio/ carries the complete manifest. */
+  sfx?: { enabled?: boolean; volume?: number; pack?: string } | null;
   /** Optional single narration track (one TTS request) spanning the whole video. */
   narration_audio_url?: string | null;
+  /** Karaoke caption track (copilot.md §4.4) — screen-space word chips synced
+      to narration_words. Laravel defaults it on for 9:16, off for 16:9. */
+  captions?: { enabled?: boolean } | null;
+  /** Active font pack name ('editorial' | 'classic' | 'tech'); resolved by
+      Laravel ('auto' never reaches the renderer). Missing = editorial. */
+  font_pack?: string | null;
+  /** Motion style preset (§2.5): crisp | classic | bounce | elegant | swiss.
+      Resolved by Laravel ('auto' never ships). Missing = crisp. */
+  motion_style?: string | null;
+  /** Surface skin (§11.2): flat | outline | print. Missing = flat. */
+  skin?: string | null;
   /** How to compose: canvas journey, classic slides, or chaptered hybrid. */
   composition_mode?: CompositionMode;
   /** The Canvas Director's world plan (canvas_journey mode). */

@@ -1,0 +1,80 @@
+{
+  "project_id": "m5-swiss",
+  "aspect_ratio": "16:9",
+  "composition_mode": "slides",
+  "captions": {
+    "enabled": false
+  },
+  "font_pack": "tech",
+  "motion_style": "swiss",
+  "skin": "outline",
+  "sfx": {
+    "enabled": false
+  },
+  "theme": {
+    "name": "glacier",
+    "label": "Glacier",
+    "bg_from": "#F4F8FB",
+    "bg_to": "#F4F8FB",
+    "accent": "#3E8FD8",
+    "accent2": "#2C6FB0",
+    "text": "#14202B",
+    "muted": "#7C8B98",
+    "panel": "#E9F0F6"
+  },
+  "scenes": [
+    {
+      "scene_id": "a1",
+      "order": 1,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "The same cut three different ways."
+      },
+      "layout_template": "single_focus",
+      "transition": "none",
+      "style": {
+        "variant": "editorial",
+        "kicker": "THE TEST",
+        "highlight": [
+          "Editors"
+        ]
+      },
+      "slots": {
+        "slot_main": {
+          "content_type": "text_block",
+          "heading": "Three Different Editors",
+          "bullets": [
+            "The first point lands",
+            "A second one follows",
+            "Then a third closes"
+          ],
+          "reveal": "sequential"
+        }
+      }
+    },
+    {
+      "scene_id": "a2",
+      "order": 2,
+      "duration_seconds": 5,
+      "narration": {
+        "text": "And a second scene to cut to."
+      },
+      "layout_template": "stat_spotlight",
+      "transition": "stack_push",
+      "relation": "continues",
+      "style": {
+        "kicker": "THE NUMBER",
+        "highlight": [
+          "42"
+        ]
+      },
+      "slots": {
+        "slot_stat": {
+          "content_type": "text_block",
+          "heading": "42 Reasons Why",
+          "bullets": []
+        }
+      }
+    }
+  ]
+}

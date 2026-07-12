@@ -11,6 +11,30 @@ export const ThemeProvider: React.FC<{ theme?: Theme; children: React.ReactNode 
 
 export const useTheme = (): Theme => useContext(ThemeContext);
 
+// ---------------------------------------------------------------------------
+// Skins (copilot.md §11.2): one value that flavours every SURFACE while the
+// scheme supplies the colours. `flat` is the house look (opaque panels);
+// `outline` empties the panels and draws 1px hairlines instead (technical
+// feel); `print` empties them too and leans on rules + the serif font pack
+// (Laravel maps `font_pack: auto` to classic under this skin). No textures —
+// grain is banned; the print feel comes from type and rules only.
+// ---------------------------------------------------------------------------
+
+export type Skin = 'flat' | 'outline' | 'print';
+
+const SkinContext = createContext<Skin>('flat');
+
+export const SkinProvider: React.FC<{ skin?: string | null; children: React.ReactNode }> = ({
+  skin,
+  children,
+}) => (
+  <SkinContext.Provider value={skin === 'outline' || skin === 'print' ? skin : 'flat'}>
+    {children}
+  </SkinContext.Provider>
+);
+
+export const useSkin = (): Skin => useContext(SkinContext);
+
 /**
  * The editorial type system: one confident display face (headings,
  * punchlines, big numerals), one clean body face, one mono face for

@@ -1,0 +1,351 @@
+{
+  "project_id": "m4-demo",
+  "aspect_ratio": "16:9",
+  "composition_mode": "hybrid",
+  "captions": {
+    "enabled": false
+  },
+  "font_pack": "editorial",
+  "sfx": {
+    "enabled": true,
+    "volume": 1,
+    "pack": "procedural"
+  },
+  "theme": {
+    "name": "carbon",
+    "label": "Carbon",
+    "bg_from": "#0D0D0F",
+    "bg_to": "#0D0D0F",
+    "accent": "#C8F02E",
+    "accent2": "#96C21F",
+    "text": "#F2F1EE",
+    "muted": "#8E8D89",
+    "panel": "#17171A"
+  },
+  "chapters": {
+    "version": 1,
+    "chapters": [
+      {
+        "id": "ch_1",
+        "mode": "slides",
+        "scene_ids": [
+          "s1",
+          "s2",
+          "s3"
+        ],
+        "transition_in": "none"
+      },
+      {
+        "id": "ch_2",
+        "mode": "slides",
+        "scene_ids": [
+          "scene_cover_2"
+        ],
+        "transition_in": "line_sweep"
+      },
+      {
+        "id": "ch_3",
+        "mode": "slides",
+        "scene_ids": [
+          "s4",
+          "s5",
+          "s6",
+          "s7"
+        ],
+        "transition_in": "fade"
+      }
+    ]
+  },
+  "scenes": [
+    {
+      "scene_id": "s1",
+      "order": 1,
+      "duration_seconds": 4,
+      "narration": {
+        "text": "PlayStation versus Xbox, decided by the numbers."
+      },
+      "layout_template": "single_focus",
+      "relation": "opening",
+      "transition": "none",
+      "style": {
+        "variant": "statement",
+        "kicker": "THE MATCHUP",
+        "highlight": [
+          "Numbers"
+        ]
+      },
+      "slots": {
+        "slot_main": {
+          "content_type": "text_block",
+          "heading": "Decided By The Numbers",
+          "bullets": [],
+          "reveal": "sequential"
+        }
+      }
+    },
+    {
+      "scene_id": "s2",
+      "order": 2,
+      "duration_seconds": 8,
+      "narration": {
+        "text": "Head to head the consoles could not be further apart."
+      },
+      "layout_template": "versus_card",
+      "relation": "contrast",
+      "transition": "split_slide",
+      "slots": {
+        "slot_left": {
+          "content_type": "image",
+          "camera_move": "slow_zoom_in",
+          "asset_request": {
+            "description": "PS5 console studio shot"
+          },
+          "asset_ref": {
+            "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAB4CAIAAAD6wG44AAABLklEQVR4nO3RAQkAIBDAwA9mEnMa0BQijIMLMNicvQib7wU8ZXCcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEXl9azodq6OP0AAAAASUVORK5CYII=",
+            "type": "image",
+            "width": 160,
+            "height": 120
+          }
+        },
+        "slot_right": {
+          "content_type": "image",
+          "camera_move": "slow_zoom_in",
+          "asset_request": {
+            "description": "Xbox Series X studio shot"
+          },
+          "asset_ref": {
+            "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAB4CAIAAAD6wG44AAABLklEQVR4nO3RAQkAIBDAwA9mEnMa0BQijIMLMNicvQib7wU8ZXCcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEXl9azodq6OP0AAAAASUVORK5CYII=",
+            "type": "image",
+            "width": 160,
+            "height": 120
+          }
+        },
+        "slot_versus": {
+          "content_type": "versus",
+          "left": {
+            "label": "PS5",
+            "stats": [
+              "62 million sold",
+              "34 exclusives",
+              "$499 launch price"
+            ]
+          },
+          "right": {
+            "label": "Xbox",
+            "stats": [
+              "21 million sold",
+              "12 exclusives",
+              "$499 launch price"
+            ]
+          },
+          "verdict": "PlayStation takes the generation"
+        }
+      }
+    },
+    {
+      "scene_id": "s3",
+      "order": 3,
+      "duration_seconds": 8,
+      "narration": {
+        "text": "Market share tells the same story across five regions."
+      },
+      "layout_template": "animated_chart",
+      "relation": "elaborates",
+      "transition": "mask_wipe_diagonal",
+      "style": {
+        "kicker": "MARKET SHARE"
+      },
+      "slots": {
+        "slot_chart": {
+          "content_type": "chart",
+          "chart_type": "bar",
+          "values": [
+            68,
+            55,
+            71,
+            48,
+            62
+          ],
+          "labels": [
+            "EU",
+            "US",
+            "JP",
+            "UK",
+            "BR"
+          ],
+          "unit": "%",
+          "highlight_index": 2,
+          "caption": "PlayStation share by region",
+          "source": "Source: Ampere Analysis"
+        }
+      }
+    },
+    {
+      "scene_id": "scene_cover_2",
+      "order": 4,
+      "duration_seconds": 3,
+      "narration": {
+        "text": ""
+      },
+      "layout_template": "chapter_cover",
+      "relation": "new_chapter",
+      "transition": "none",
+      "slots": {
+        "slot_cover": {
+          "content_type": "text_block",
+          "heading": "The Money Story",
+          "bullets": [],
+          "label": "Chapter 02",
+          "reveal": "all_at_once"
+        }
+      }
+    },
+    {
+      "scene_id": "s4",
+      "order": 5,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "Nine billion dollars in software revenue in one year."
+      },
+      "layout_template": "big_counter",
+      "relation": "continues",
+      "transition": "fade",
+      "style": {
+        "kicker": "THE RECORD"
+      },
+      "slots": {
+        "slot_counter": {
+          "content_type": "chart",
+          "chart_type": "counter",
+          "values": [
+            6.1,
+            7.4,
+            8.2,
+            8.8,
+            9
+          ],
+          "labels": [],
+          "unit": "B",
+          "caption": "Software revenue in a single year",
+          "highlight_index": 4
+        }
+      }
+    },
+    {
+      "scene_id": "s5",
+      "order": 6,
+      "duration_seconds": 8,
+      "narration": {
+        "text": "The trade offs are real on both sides of the aisle."
+      },
+      "layout_template": "checklist_card",
+      "relation": "contrast",
+      "transition": "split_slide",
+      "style": {
+        "kicker": "THE TRADE-OFFS"
+      },
+      "slots": {
+        "slot_checklist": {
+          "content_type": "proscons",
+          "heading": "Worth The Switch?",
+          "pros": [
+            "Bigger exclusive library",
+            "Faster load times",
+            "PSVR2 support"
+          ],
+          "cons": [
+            "Pricier subscriptions",
+            "Heavier console",
+            "No Game Pass"
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "s6",
+      "order": 7,
+      "duration_seconds": 8,
+      "narration": {
+        "text": "Five pillars carry the whole ecosystem forward."
+      },
+      "layout_template": "icon_grid",
+      "relation": "continues",
+      "transition": "stack_push",
+      "style": {
+        "kicker": "THE PILLARS"
+      },
+      "slots": {
+        "slot_icons": {
+          "content_type": "icons",
+          "heading": "What Carries It",
+          "items": [
+            {
+              "icon": "gamepad-2",
+              "label": "Games"
+            },
+            {
+              "icon": "users",
+              "label": "Community"
+            },
+            {
+              "icon": "cloud",
+              "label": "Cloud"
+            },
+            {
+              "icon": "trophy",
+              "label": "Esports"
+            },
+            {
+              "icon": "wallet",
+              "label": "Store"
+            },
+            {
+              "icon": "shield",
+              "label": "Trust"
+            }
+          ],
+          "highlight_index": 0
+        }
+      }
+    },
+    {
+      "scene_id": "s7",
+      "order": 8,
+      "duration_seconds": 8,
+      "narration": {
+        "text": "And the install base keeps climbing quarter after quarter."
+      },
+      "layout_template": "animated_chart",
+      "relation": "consequence",
+      "transition": "whip_pan",
+      "style": {
+        "kicker": "INSTALL BASE"
+      },
+      "slots": {
+        "slot_chart": {
+          "content_type": "chart",
+          "chart_type": "line",
+          "values": [
+            12,
+            19,
+            28,
+            41,
+            50,
+            62
+          ],
+          "labels": [
+            "2020",
+            "2021",
+            "2022",
+            "2023",
+            "2024",
+            "2025"
+          ],
+          "unit": "M",
+          "caption": "Consoles in homes",
+          "source": "Source: company filings"
+        }
+      }
+    }
+  ]
+}

@@ -29,11 +29,17 @@ export interface NarrationWindow {
   end: number;
 }
 
+/** Intra-scene speech gaps shorter than this merge into one duck window —
+ *  the music must breathe between THOUGHTS, not pump between words. */
+const SPEECH_MERGE_GAP_S = 1.2;
+
 /**
- * Frame ranges where narration is speaking, used to duck the music bed.
- * Scene pacing gives each narrated scene ~0.6s of tail after the voice ends,
- * so the window stops short of the scene boundary — the music swells back up
- * in the gaps between thoughts.
+ * Frame ranges where narration is actually SPEAKING, used to duck the music
+ * bed (copilot.md §6.2). When a scene ships word-level timings (Kokoro /
+ * Whisper sidecar) the windows follow the voice itself — merged across gaps
+ * under 1.2s so only real pauses let the music swell. Scenes without timings
+ * fall back to the old whole-scene window (which already stops ~0.6s short of
+ * the boundary thanks to pacing tails).
  */
 export const narrationWindows = (
   scenes: Scene[],
@@ -41,6 +47,7 @@ export const narrationWindows = (
   mode: 'canvas' | 'slides'
 ): NarrationWindow[] => {
   const tf = transitionFrames(fps);
+  const mergeGap = Math.round(SPEECH_MERGE_GAP_S * fps);
   const windows: NarrationWindow[] = [];
   let cursor = 0;
   scenes.forEach((scene, i) => {
@@ -49,8 +56,28 @@ export const narrationWindows = (
     }
     const frames = sceneFrames(scene, fps);
     if (scene.narration_audio_url) {
-      const tail = Math.round(0.6 * fps);
-      windows.push({ start: cursor, end: cursor + Math.max(Math.round(frames * 0.4), frames - tail) });
+      const words = scene.narration_words ?? [];
+      if (words.length > 0) {
+        // Word timings are seconds relative to the narration audio, which
+        // plays from the scene start in every mode.
+        let start = cursor + Math.round(words[0].start * fps);
+        let end = cursor + Math.round(words[0].end * fps);
+        for (let k = 1; k < words.length; k++) {
+          const ws = cursor + Math.round(words[k].start * fps);
+          const we = cursor + Math.round(words[k].end * fps);
+          if (ws - end < mergeGap) {
+            end = Math.max(end, we);
+          } else {
+            windows.push({ start, end });
+            start = ws;
+            end = we;
+          }
+        }
+        windows.push({ start, end });
+      } else {
+        const tail = Math.round(0.6 * fps);
+        windows.push({ start: cursor, end: cursor + Math.max(Math.round(frames * 0.4), frames - tail) });
+      }
     }
     cursor += frames;
   });

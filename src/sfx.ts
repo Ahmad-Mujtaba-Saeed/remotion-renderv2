@@ -29,7 +29,12 @@ export type SfxName =
   | 'pop_c'
   | 'stamp'
   | 'shimmer'
-  | 'tick';
+  | 'tick'
+  | 'riser'
+  | 'sub_boom'
+  | 'paper_slide'
+  | 'tick_loop'
+  | 'chime';
 
 /** File durations in seconds — keep in sync with scripts/gen-sfx.ts. */
 const DURATIONS: Record<SfxName, number> = {
@@ -43,6 +48,11 @@ const DURATIONS: Record<SfxName, number> = {
   stamp: 0.7,
   shimmer: 1.0,
   tick: 0.14,
+  riser: 1.6,
+  sub_boom: 0.9,
+  paper_slide: 0.35,
+  tick_loop: 1.0,
+  chime: 0.9,
 };
 
 /** Per-sound base gain (its place in the mix); scaled by the global volume. */
@@ -57,7 +67,15 @@ const GAINS: Record<SfxName, number> = {
   stamp: 0.52,
   shimmer: 0.42,
   tick: 0.32,
+  riser: 0.4,
+  sub_boom: 0.5,
+  paper_slide: 0.28,
+  tick_loop: 0.14,
+  chime: 0.3,
 };
+
+/** Every file a pack must provide (used by render.ts to vet a studio pack). */
+export const SFX_NAMES = Object.keys(DURATIONS) as SfxName[];
 
 /** Rotating pop pool so a run of bullets doesn't machine-gun one pitch. */
 export const POPS: SfxName[] = ['pop_a', 'pop_b', 'pop_c'];
@@ -65,23 +83,34 @@ export const POPS: SfxName[] = ['pop_a', 'pop_b', 'pop_c'];
 /** A sound's natural length in seconds (for fitting cues to flight windows). */
 export const sfxDuration = (name: SfxName): number => DURATIONS[name];
 
+/**
+ * Which sound library plays: 'procedural' = the synthesized set in
+ * public/sfx/, 'studio' = a curated drop-in pack in public/sfx/studio/ with
+ * the same file names (see SFX_CREDITS.md). The render entry point vets a
+ * studio pack for completeness BEFORE the browser ever mounts an <Audio>, so
+ * a missing file can never 404 a render — components just trust this value.
+ */
+export type SfxPack = 'procedural' | 'studio';
+
 export interface SfxConfig {
   enabled: boolean;
   volume: number;
+  pack: SfxPack;
 }
 
-const SfxContext = createContext<SfxConfig>({ enabled: true, volume: 1 });
+const SfxContext = createContext<SfxConfig>({ enabled: true, volume: 1, pack: 'procedural' });
 
-export const SfxProvider: React.FC<{ config?: { enabled?: boolean; volume?: number } | null; children: React.ReactNode }> = ({
-  config,
-  children,
-}) =>
+export const SfxProvider: React.FC<{
+  config?: { enabled?: boolean; volume?: number; pack?: string } | null;
+  children: React.ReactNode;
+}> = ({ config, children }) =>
   React.createElement(
     SfxContext.Provider,
     {
       value: {
         enabled: config?.enabled !== false,
         volume: Math.max(0, Math.min(2, config?.volume ?? 1)),
+        pack: config?.pack === 'studio' ? 'studio' : 'procedural',
       },
     },
     children
@@ -115,7 +144,7 @@ export const SfxCue: React.FC<{
     Sequence,
     { from, durationInFrames: frames, layout: 'none' },
     React.createElement(Audio, {
-      src: staticFile(`sfx/${name}.wav`),
+      src: staticFile(cfg.pack === 'studio' ? `sfx/studio/${name}.wav` : `sfx/${name}.wav`),
       volume: GAINS[name] * volume * cfg.volume,
       playbackRate: rate,
     })

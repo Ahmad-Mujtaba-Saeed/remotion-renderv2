@@ -1,7 +1,11 @@
 import React from 'react';
 import { useVideoConfig, spring, interpolate } from 'remotion';
 import { Slot, TextStyleVariant } from '../types';
-import { useTheme, useDisplayFont, BODY_FONT, MONO_FONT, hairline } from '../theme';
+import { useTheme, useDisplayFont, useSkin, BODY_FONT, MONO_FONT, hairline } from '../theme';
+import { surfaceStyle } from './Surface';
+import { clamp01, easeOutCubic } from '../motion/easing';
+import { f30 } from '../motion/choreo';
+import { useMotionStyle } from '../motion/styles';
 import { KineticText } from './KineticText';
 import { useScaleUnit } from '../responsive';
 import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
@@ -50,6 +54,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
   const u = useScaleUnit();
   const region = useRegionStyle();
   const meta = useSceneMeta();
+  const skin = useSkin();
   const bullets = slot.bullets ?? [];
   const sequential = (slot.reveal ?? 'sequential') === 'sequential';
   /** Canvas regions and explicit overlays paint straight onto the field. */
@@ -141,16 +146,25 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
     </div>
   ) : null;
 
-  /** Enter spring for point i. */
+  /** Entrance progress for point i — pace and curve come from the motion
+      style (§2.5), so bullets land snappy in `swiss` and glide in `classic`.
+      A back-eased style may briefly exceed 1 (the overshoot). */
+  const motion = useMotionStyle();
   const pointEnter = (i: number): number => {
-    const appearFrame = Math.round(sequential ? startAt + step * i : startAt);
-    const enter = spring({
-      frame: frame - appearFrame,
-      fps,
-      config: { damping: 200 },
-      durationInFrames: Math.round(fps * 0.5),
-    });
-    return sequential ? enter : 1;
+    if (!sequential) return 1;
+    const appearFrame = Math.round(startAt + step * i);
+    return motion.ease(clamp01((frame - appearFrame) / f30(fps, motion.baseF + 4)));
+  };
+
+  /**
+   * Progress dimming (copilot.md §4.6): once the NEXT bullet arrives, this
+   * one eases back to the muted tone at 45% presence over 8 frames — the eye
+   * stays locked to the point the voice is on. The last bullet never dims.
+   */
+  const pointDim = (i: number): number => {
+    if (!sequential || i >= bullets.length - 1) return 0;
+    const nextAppear = Math.round(startAt + step * (i + 1));
+    return easeOutCubic(clamp01((frame - nextAppear) / f30(fps, 8)));
   };
 
   // ---- Compact banner strip: heading + bullets as a rule-separated row ------
@@ -213,6 +227,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
     <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
       {bullets.map((bullet, i) => {
         const enter = pointEnter(i);
+        const dim = pointDim(i);
         return (
           <li
             key={i}
@@ -224,7 +239,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
               fontSize: 44 * u,
               lineHeight: 1.32,
               padding: `${26 * u}px 0`,
-              opacity: enter,
+              opacity: enter * (1 - 0.55 * dim),
               transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
             }}
           >
@@ -256,7 +271,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
             >
               {String(i + 1).padStart(2, '0')}
             </span>
-            <span style={{ flex: 1 }}>{bullet}</span>
+            <span style={{ flex: 1, color: dim > 0.35 ? theme.muted : undefined }}>{bullet}</span>
           </li>
         );
       })}
@@ -268,6 +283,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
     <div style={{ width: '100%', maxWidth: 1180 * u }}>
       {bullets.map((bullet, i) => {
         const enter = pointEnter(i);
+        const dim = pointDim(i);
         return (
           <div
             key={i}
@@ -278,7 +294,8 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
               fontSize: 38 * u,
               lineHeight: 1.3,
               fontWeight: 600,
-              opacity: enter,
+              opacity: enter * (1 - 0.55 * dim),
+              color: dim > 0.35 ? theme.muted : undefined,
               transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
             }}
           >
@@ -323,7 +340,13 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
         alignItems: centered ? 'center' : 'stretch',
         padding: bare ? '7%' : '8%',
         boxSizing: 'border-box',
-        background: bare ? 'transparent' : theme.panel,
+        // The slide's own field. flat keeps the opaque panel (byte-identical
+        // to before); outline/print skins (§11.2) empty it and edge it.
+        ...(bare
+          ? { background: 'transparent' }
+          : skin === 'flat'
+            ? { background: theme.panel }
+            : surfaceStyle(theme, skin, false)),
         fontFamily: BODY_FONT,
         color: theme.text,
       }}

@@ -1,8 +1,10 @@
 import path from 'path';
 import os from 'os';
+import * as fsSync from 'fs';
 import { bundle } from '@remotion/bundler';
 import { selectComposition, renderMedia } from '@remotion/renderer';
 import type { ShotList } from './types';
+import { SFX_NAMES } from './sfx';
 
 export interface RenderRequest {
   shotList: ShotList;
@@ -33,12 +35,36 @@ const getServeUrl = (): Promise<string> => {
   return bundlePromise;
 };
 
+/**
+ * Resolve which SFX library this render uses (copilot.md §6.1). The browser
+ * side cannot touch the filesystem, so the decision happens HERE, once, with
+ * fs access: 'studio' (or the default 'auto') only sticks when
+ * public/sfx/studio/ carries EVERY file in the manifest — a partial pack
+ * would 404 mid-render and kill it with an opaque delayRender timeout.
+ * Anything else falls back to the procedural set, which always exists.
+ */
+const resolveSfxPack = (requested: string | undefined): 'procedural' | 'studio' => {
+  if (requested === 'procedural') return 'procedural';
+  // 'studio', 'auto' or unset: use the studio pack when it is complete.
+  const dir = path.join(__dirname, '..', 'public', 'sfx', 'studio');
+  const complete = SFX_NAMES.every((name) => fsSync.existsSync(path.join(dir, `${name}.wav`)));
+  if (requested === 'studio' && !complete) {
+    console.warn('sfx: studio pack requested but incomplete — falling back to procedural');
+  }
+  return complete ? 'studio' : 'procedural';
+};
+
 export const renderExplainer = async (req: RenderRequest): Promise<string> => {
   const fps = req.fps ?? 30;
   const width = req.width ?? 1920;
   const height = req.height ?? 1080;
 
-  const inputProps = { shotList: req.shotList, fps, width, height };
+  const shotList: ShotList = {
+    ...req.shotList,
+    sfx: { ...(req.shotList.sfx ?? {}), pack: resolveSfxPack((req.shotList.sfx as { pack?: string } | undefined)?.pack) },
+  };
+
+  const inputProps = { shotList, fps, width, height };
 
   const serveUrl = await getServeUrl();
 

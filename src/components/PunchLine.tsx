@@ -2,7 +2,7 @@ import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { Scene, PunchlineStyle } from '../types';
 import { useTheme, useDisplayFont, inkOn } from '../theme';
-import { surfaceStyle } from './Surface';
+import { useSurfaceStyle } from './Surface';
 import { useScaleUnit } from '../responsive';
 import { useSceneWindow } from '../canvas/SceneClock';
 import { SfxCue } from '../sfx';
@@ -32,6 +32,7 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
   const u = useScaleUnit();
   const frame = useCurrentFrame();
   const win = useSceneWindow();
+  const surface = useSurfaceStyle();
 
   if (!p || !p.words?.length) return null;
 
@@ -203,7 +204,7 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
     inner = (
       <div
         style={{
-          ...surfaceStyle(theme),
+          ...surface,
           display: 'flex',
           alignItems: 'center',
           padding: `${30 * u}px ${48 * u}px`,

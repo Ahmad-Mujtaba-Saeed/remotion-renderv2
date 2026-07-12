@@ -1,11 +1,14 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { Img, Loop, Sequence, Video, useCurrentFrame, useVideoConfig } from 'remotion';
+import { Img, Loop, Sequence, Video, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { FrameSequence, Slot } from '../types';
 import { CameraMove } from './CameraMove';
 import { useTheme, inkOn, hairline, MONO_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { useRegionStyle } from '../canvas/RegionStyle';
-import { useSceneWindow } from '../canvas/SceneClock';
+import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
+import { SPRINGS } from '../motion/springs';
+import { clamp01, easeOutCubic } from '../motion/easing';
+import { f30 } from '../motion/choreo';
 
 /**
  * Renders an image (or video) slot with its camera move. If no asset has been
@@ -53,9 +56,20 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   const u = useScaleUnit();
   const region = useRegionStyle();
   const { fps } = useVideoConfig();
+  const { frame: clockFrame } = useSceneClock();
   const sceneWindow = useSceneWindow();
   const [boxRef, boxAspect] = useBoxAspect();
   const url = slot.asset_ref?.url;
+
+  // Media settle (Law 2: decisive arrivals): every asset LANDS with a small
+  // scale exhale over a fast fade instead of being baked into the frame —
+  // the cut reads "edited", not "assembled". Runs on the scene clock so
+  // canvas stations settle on camera arrival. Transform + opacity only.
+  const settle = spring({ frame: Math.max(0, clockFrame), fps, config: SPRINGS.settle });
+  const entrance: React.CSSProperties = {
+    opacity: easeOutCubic(clamp01(clockFrame / f30(fps, 10))),
+    transform: `scale(${1.025 - 0.025 * settle})`,
+  };
   // Decide image-vs-video from the ACTUAL file, not the slot's declared
   // content_type — users may upload a jpg into a slot the AI marked `video`
   // (and vice versa), and feeding an image to <Video> throws media error 4.
@@ -184,7 +198,7 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   }
 
   return (
-    <div ref={boxRef} style={{ width: '100%', height: '100%', position: 'relative', ...framelessWrap }}>
+    <div ref={boxRef} style={{ width: '100%', height: '100%', position: 'relative', ...framelessWrap, ...entrance }}>
       {containBackdrop}
       {/* Panning letterboxed media around looks broken — contained assets get
           a gentle push-in instead of their assigned pan. */}

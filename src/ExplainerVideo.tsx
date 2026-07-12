@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { AbsoluteFill, Audio, useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { TransitionSeries, linearTiming } from '@remotion/transitions';
-import { ExplainerProps, resolveCompositionMode } from './types';
+import { ExplainerProps, Scene, resolveCompositionMode } from './types';
 import {
   transitionFrames,
   narrationWindows,
@@ -14,7 +14,9 @@ import {
   NarrationWindow,
 } from './timing';
 import { normalizeChapters } from './chapters';
-import { ThemeProvider, useTheme, hairline } from './theme';
+import { ThemeProvider, SkinProvider, useTheme, hairline } from './theme';
+import { MotionStyleProvider } from './motion/styles';
+import { DEFAULT_THEME } from './types';
 import { presentationFor } from './transitions';
 import { CanvasJourney } from './canvas/CanvasJourney';
 import { SlidesChapter } from './components/SlidesChapter';
@@ -44,26 +46,53 @@ const GlobalOverlays: React.FC = () => {
 };
 
 /**
- * Sidechain-style music ducking: the bed sits at its base volume, dips under
- * the voice with a soft attack/release whenever narration speaks, swells back
- * in the beats between thoughts, and fades in/out at the video's edges.
+ * Sidechain-style music ducking (copilot.md §6.2). A real compressor
+ * envelope, not a symmetric ramp: a FAST attack (5f @30, starting a hair
+ * before the word onset so the voice is never fighting the bed) down to a
+ * 0.35× floor while words are active, and a SLOWER release (12f) so the
+ * swell back never pumps. Word-level windows (timing.ts) mean any real pause
+ * ≥1.2s inside a scene lets the music breathe. An optional swell window
+ * (the outro card) lifts the bed ~15% so the video RESOLVES, riding into a
+ * 2-second fade that reaches silence exactly on the last frame.
  */
-const musicVolumeCurve = (
+export const musicVolumeCurve = (
   base: number,
   windows: NarrationWindow[],
   fps: number,
-  total: number
+  total: number,
+  // One or many swell windows (chapter covers + the outro); a bare window is
+  // accepted for back-compat with the audio audit script.
+  swellWindow: NarrationWindow[] | NarrationWindow | null = null
 ): ((f: number) => number) => {
-  const ramp = Math.max(1, Math.round(0.35 * fps));
+  const attack = Math.max(1, Math.round((5 / 30) * fps));
+  const release = Math.max(1, Math.round((12 / 30) * fps));
+  const lead = Math.max(1, Math.round(attack * 0.6));
+  const swellRamp = Math.max(1, Math.round((24 / 30) * fps));
+  const swells: NarrationWindow[] =
+    swellWindow == null ? [] : Array.isArray(swellWindow) ? swellWindow : [swellWindow];
   return (f: number): number => {
     let duck = 0;
     for (const w of windows) {
-      const k = Math.min((f - w.start) / ramp, (w.end - f) / ramp, 1);
-      if (k > duck) duck = Math.min(1, Math.max(0, k));
+      let k = 0;
+      const attackStart = w.start - lead;
+      if (f >= attackStart && f <= w.end) {
+        k = Math.min(1, (f - attackStart) / attack);
+      } else if (f > w.end) {
+        k = Math.max(0, 1 - (f - w.end) / release);
+      }
+      if (k > duck) duck = k;
+      if (duck >= 1) break;
+    }
+    let swell = 1;
+    for (const sw of swells) {
+      if (f >= sw.start && f <= sw.end) {
+        swell = 1 + 0.15 * Math.min(1, (f - sw.start) / swellRamp);
+        break;
+      }
     }
     const fadeIn = Math.min(1, f / Math.round(0.8 * fps));
-    const fadeOut = Math.min(1, Math.max(0, (total - 1 - f) / Math.round(1.6 * fps)));
-    return Math.max(0, base * (1 - 0.6 * duck) * fadeIn * fadeOut);
+    const fadeOut = Math.min(1, Math.max(0, (total - 1 - f) / Math.round(2.0 * fps)));
+    return Math.max(0, base * (1 - 0.65 * duck) * swell * fadeIn * fadeOut);
   };
 };
 
@@ -82,6 +111,10 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   const tf = transitionFrames(fps);
   const music = shotList?.music;
   const mode = resolveCompositionMode(shotList);
+  // Karaoke captions (§4.4): Laravel resolves the default (on for 9:16, off
+  // for 16:9) — the renderer only obeys an explicit true.
+  const captions = shotList?.captions?.enabled === true;
+  const fontPack = shotList?.font_pack ?? undefined;
 
   const chapters = useMemo(
     () => (mode === 'hybrid' && shotList ? normalizeChapters(shotList) : []),
@@ -102,7 +135,37 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
         ? totalCanvasFrames(scenes, fps)
         : totalDurationInFrames(scenes, fps);
 
-  const musicVolume = music?.url ? musicVolumeCurve(music.volume ?? 0.12, duckWindows, fps, total) : null;
+  // The outro card carries no narration — the bed swells there so the video
+  // resolves musically instead of just stopping (its window is always the
+  // tail of the global clock: the outro is by construction the last scene).
+  const lastScene = scenes[scenes.length - 1];
+  const swellWindows: NarrationWindow[] = [];
+  if (lastScene?.layout_template === 'outro_card') {
+    swellWindows.push({
+      start: total - Math.round((lastScene.duration_seconds || 3.2) * fps),
+      end: total,
+    });
+  }
+
+  // Chapter covers (§5.5) are single-scene slides mini-chapters — the bed
+  // swells across each one so the act break lands musically too.
+  const isCoverChapter = (rc: { scenes: Scene[] }): boolean =>
+    rc.scenes.length === 1 && rc.scenes[0].layout_template === 'chapter_cover';
+  const hybridWindows = mode === 'hybrid' ? chapterWindows(chapters, fps) : [];
+  if (mode === 'hybrid') {
+    chapters.forEach((ch, i) => {
+      if (isCoverChapter(ch)) {
+        swellWindows.push({
+          start: hybridWindows[i].start,
+          end: hybridWindows[i].start + hybridWindows[i].frames,
+        });
+      }
+    });
+  }
+
+  const musicVolume = music?.url
+    ? musicVolumeCurve(music.volume ?? 0.12, duckWindows, fps, total, swellWindows)
+    : null;
 
   const musicBed =
     music?.url && musicVolume ? (
@@ -112,34 +175,51 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   if (mode === 'canvas_journey') {
     return (
       <ThemeProvider theme={shotList?.theme}>
+        <SkinProvider skin={shotList?.skin}>
+        <MotionStyleProvider style={shotList?.motion_style}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
-            <FontLoader />
+            <FontLoader pack={fontPack} />
             {musicBed}
-            <CanvasJourney scenes={scenes} plan={shotList?.canvas} aspect={shotList?.aspect_ratio} />
+            <CanvasJourney
+              scenes={scenes}
+              plan={shotList?.canvas}
+              aspect={shotList?.aspect_ratio}
+              captions={captions}
+            />
             <GlobalOverlays />
           </AbsoluteFill>
         </SfxProvider>
+        </MotionStyleProvider>
+        </SkinProvider>
       </ThemeProvider>
     );
   }
 
   if (mode === 'hybrid') {
-    const windows = chapterWindows(chapters, fps);
+    const windows = hybridWindows;
 
-    // A deep whoosh under every chapter boundary — the act break.
+    // The act break (copilot.md §6.5): a riser leads INTO every chapter
+    // boundary and a soft sub boom lands ON it — anticipation, then arrival,
+    // the way a trailer cuts. The riser peaks at its end, so it starts early
+    // enough to top out exactly on the boundary frame. A boundary OUT of a
+    // chapter cover stays silent: its act break already fired going in —
+    // cueing both sides would double-hit 3 seconds apart.
+    const riserLead = Math.round(1.4 * fps);
     const chapterCues: React.ReactNode[] = chapters.flatMap((ch, i) =>
-      windows[i].hasTransition
+      windows[i].hasTransition && !(i > 0 && isCoverChapter(chapters[i - 1]))
         ? [
             <SfxCue
-              key={`ct-${ch.chapter.id ?? i}`}
-              name={
-                ch.chapter.transition_in === 'zoom_through' || ch.chapter.transition_in === 'whip_pan'
-                  ? 'whoosh_deep'
-                  : 'whoosh_rise'
-              }
+              key={`ct-riser-${ch.chapter.id ?? i}`}
+              name="riser"
+              at={windows[i].start - riserLead}
+              volume={0.85}
+            />,
+            <SfxCue
+              key={`ct-boom-${ch.chapter.id ?? i}`}
+              name="sub_boom"
               at={windows[i].start}
-              volume={0.9}
+              volume={0.55}
             />,
           ]
         : []
@@ -149,9 +229,11 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
 
     return (
       <ThemeProvider theme={shotList?.theme}>
+        <SkinProvider skin={shotList?.skin}>
+        <MotionStyleProvider style={shotList?.motion_style}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
-            <FontLoader />
+            <FontLoader pack={fontPack} />
             {musicBed}
             <TransitionSeries>
               {chapters.flatMap((ch, i) => {
@@ -161,7 +243,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
                   nodes.push(
                     <TransitionSeries.Transition
                       key={`t-${ch.chapter.id ?? i}`}
-                      presentation={presentationFor(ch.chapter.transition_in)}
+                      presentation={presentationFor(ch.chapter.transition_in, shotList?.theme)}
                       timing={linearTiming({ durationInFrames: tf })}
                     />
                   );
@@ -170,24 +252,40 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
                 const indexOffset = sceneCursor;
                 sceneCursor += ch.scenes.length;
 
+                const body =
+                  ch.chapter.mode === 'canvas' ? (
+                    <CanvasJourney
+                      scenes={ch.scenes}
+                      plan={ch.chapter.canvas}
+                      aspect={shotList?.aspect_ratio}
+                      captions={captions}
+                    />
+                  ) : (
+                    <SlidesChapter
+                      scenes={ch.scenes}
+                      fps={fps}
+                      indexOffset={indexOffset}
+                      totalCount={scenes.length}
+                      captions={captions}
+                    />
+                  );
+
                 nodes.push(
                   <TransitionSeries.Sequence
                     key={ch.chapter.id ?? `ch-${i}`}
                     durationInFrames={chapterFrames(ch, fps)}
                   >
-                    {ch.chapter.mode === 'canvas' ? (
-                      <CanvasJourney
-                        scenes={ch.scenes}
-                        plan={ch.chapter.canvas}
-                        aspect={shotList?.aspect_ratio}
-                      />
+                    {/* §11.4 accent shift: a chapter may carry its own hue-
+                        rotated accent (computed server-side — no runtime
+                        filters). The rest of the scheme stays put. */}
+                    {ch.chapter.accent ? (
+                      <ThemeProvider
+                        theme={{ ...(shotList?.theme ?? DEFAULT_THEME), accent: ch.chapter.accent }}
+                      >
+                        {body}
+                      </ThemeProvider>
                     ) : (
-                      <SlidesChapter
-                        scenes={ch.scenes}
-                        fps={fps}
-                        indexOffset={indexOffset}
-                        totalCount={scenes.length}
-                      />
+                      body
                     )}
                   </TransitionSeries.Sequence>
                 );
@@ -199,20 +297,26 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
             <GlobalOverlays />
           </AbsoluteFill>
         </SfxProvider>
+        </MotionStyleProvider>
+        </SkinProvider>
       </ThemeProvider>
     );
   }
 
   return (
     <ThemeProvider theme={shotList?.theme}>
+      <SkinProvider skin={shotList?.skin}>
+      <MotionStyleProvider style={shotList?.motion_style}>
       <SfxProvider config={shotList?.sfx}>
         <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
-          <FontLoader />
+          <FontLoader pack={fontPack} />
           {musicBed}
-          <SlidesChapter scenes={scenes} fps={fps} />
+          <SlidesChapter scenes={scenes} fps={fps} captions={captions} />
           <GlobalOverlays />
         </AbsoluteFill>
       </SfxProvider>
+      </MotionStyleProvider>
+      </SkinProvider>
     </ThemeProvider>
   );
 };

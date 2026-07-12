@@ -192,7 +192,7 @@ export const buildCamera = (
   // at that same state with zero velocity too, so arrival→hold is seamless —
   // the old `drift` started offset from center at a different zoom, which
   // read as a visible snap ("camera shake") the instant the flight ended.
-  const holdState = (i: number, h: number): CamState => {
+  const holdPose = (i: number, h: number): CamState => {
     const item = items[i];
     const move = item.hold_move ?? 'breathe';
     const t = clamp(h, 0, 1);
@@ -272,8 +272,40 @@ export const buildCamera = (
     return { x: item.x, y: item.y, scale: fits[i] * (1 + amp * s), rot: 0 };
   };
 
+  /**
+   * Midpoint re-frame (copilot.md §2.8): a hold longer than 8 seconds earns a
+   * SECOND framing — at 55% of the hold the camera eases toward a seeded
+   * interior point and tightens ~6.5%, the way an editor cuts to a closer
+   * angle, except nothing cuts. The envelope completes by 85% and is flat
+   * afterwards, so the hand-off into the next flight still starts from zero
+   * velocity — the continuity contract above stays intact. overlay_focus
+   * scenes are exempt: their whole hold IS a guided survey already.
+   */
+  const REFRAME_HOLD_SECONDS = 8;
+
+  const holdFramesOf = (i: number): number => Math.max(1, windows[i].frames - windows[i].travel);
+
+  const holdState = (i: number, h: number, holdFrames = 0): CamState => {
+    const base = holdPose(i, h);
+    const item = items[i];
+    if (holdFrames <= REFRAME_HOLD_SECONDS * fps || (item.treatment ?? '') === 'overlay_focus') {
+      return base;
+    }
+    const t = clamp(h, 0, 1);
+    const s2 = easeInOutSine(clamp((t - 0.55) / 0.3, 0, 1));
+    if (s2 <= 0) {
+      return base;
+    }
+    return {
+      x: base.x + item.w * 0.06 * (seeded(i, 31) > 0.5 ? 1 : -1) * s2,
+      y: base.y + item.h * 0.05 * (seeded(i, 32) > 0.5 ? 1 : -1) * s2,
+      scale: base.scale * (1 + 0.065 * s2),
+      rot: base.rot,
+    };
+  };
+
   /** Where the camera is at the END of scene i (start point of the next flight). */
-  const sceneEndState = (i: number): CamState => holdState(i, 1);
+  const sceneEndState = (i: number): CamState => holdState(i, 1, holdFramesOf(i));
 
   /** Scale that frames scene i-1 and scene i together. */
   const duoScale = (i: number, margin: number): { scale: number; cx: number; cy: number } => {
@@ -406,7 +438,7 @@ export const buildCamera = (
     const holdFrames = Math.max(1, w.frames - w.travel);
     const h = (local - w.travel) / holdFrames;
 
-    return holdState(i, h);
+    return holdState(i, h, holdFrames);
   };
 
   const travelProgress = (sceneIndex: number, frame: number): number => {
