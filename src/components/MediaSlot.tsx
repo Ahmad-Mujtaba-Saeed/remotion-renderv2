@@ -127,10 +127,16 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   const mismatch =
     boxAspect && mediaAspect ? Math.max(boxAspect / mediaAspect, mediaAspect / boxAspect) : 1;
   const contained = mismatch > 1.25;
+  // Smart crop (§8): when covering, centre the crop on the image's saliency
+  // focal point instead of its geometric centre — the subject survives.
+  const focus = slot.asset_ref?.focus;
   const fitStyle: React.CSSProperties = {
     width: '100%',
     height: '100%',
     objectFit: contained ? 'contain' : 'cover',
+    ...(!contained && focus && (focus.fx !== undefined || focus.fy !== undefined)
+      ? { objectPosition: `${Math.round((focus.fx ?? 0.5) * 100)}% ${Math.round((focus.fy ?? 0.5) * 100)}%` }
+      : {}),
   };
 
   // Behind a contained image or clip: one flat panel colour. The old blurred,

@@ -23,8 +23,11 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/react": "^18.3.12",
+    "@types/topojson-client": "^3.1.5",
     "lucide-static": "^1.24.0",
+    "topojson-client": "^3.1.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "world-atlas": "^2.0.2"
   }
 }

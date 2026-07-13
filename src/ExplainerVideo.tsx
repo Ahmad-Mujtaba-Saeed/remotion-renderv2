@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
-import { AbsoluteFill, Audio, useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
+import { AbsoluteFill, Audio, Img, useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { TransitionSeries, linearTiming } from '@remotion/transitions';
 import { ExplainerProps, Scene, resolveCompositionMode } from './types';
+import { MONO_FONT } from './theme';
+import type { ChapterWindow } from './timing';
 import {
   transitionFrames,
   narrationWindows,
@@ -24,23 +26,75 @@ import { SfxProvider, SfxCue } from './sfx';
 import { FontLoader } from './fonts';
 
 /**
- * The only thing drawn above every scene: a hairline progress rule along the
- * bottom edge. The film-grain layer is gone — grain is a texture, and this
- * design has none.
+ * Screen-space chrome drawn above every scene: the hairline progress rule
+ * along the bottom edge, the optional brand-logo watermark (§10.4, 6%
+ * opacity bottom-right — outside every camera world so it never scales), and
+ * the optional `02 / 06` chapter chip (§10.3, mono, kicker position, hybrid
+ * only). The film-grain layer is gone — grain is a texture, and this design
+ * has none.
  */
-const GlobalOverlays: React.FC = () => {
+const GlobalOverlays: React.FC<{
+  logoUrl?: string | null;
+  chapterChip?: boolean;
+  chapterWindowList?: ChapterWindow[];
+}> = ({ logoUrl, chapterChip = false, chapterWindowList = [] }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
+  const { durationInFrames, width, height } = useVideoConfig();
+  const u = Math.min(width, height) / 1080;
   const pct = interpolate(frame, [0, Math.max(1, durationInFrames - 1)], [0, 100], {
     extrapolateRight: 'clamp',
   });
 
+  // Which chapter the playhead is inside (chip is hybrid-only by contract:
+  // no windows, no chip).
+  let chipText: string | null = null;
+  if (chapterChip && chapterWindowList.length > 1) {
+    let current = 0;
+    chapterWindowList.forEach((w, i) => {
+      if (frame >= w.start) current = i;
+    });
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    chipText = `${pad(current + 1)} / ${pad(chapterWindowList.length)}`;
+  }
+
   return (
-    <AbsoluteFill style={{ justifyContent: 'flex-end', pointerEvents: 'none' }}>
-      <div style={{ height: 4, width: '100%', background: hairline(theme, 0.08) }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: theme.accent }} />
-      </div>
+    <AbsoluteFill style={{ pointerEvents: 'none' }}>
+      {logoUrl ? (
+        <Img
+          src={logoUrl}
+          style={{
+            position: 'absolute',
+            right: 40 * u,
+            bottom: 40 * u,
+            maxWidth: 150 * u,
+            maxHeight: 76 * u,
+            objectFit: 'contain',
+            opacity: 0.06,
+          }}
+        />
+      ) : null}
+      {chipText ? (
+        <div
+          style={{
+            position: 'absolute',
+            top: 44 * u,
+            left: 48 * u,
+            fontFamily: MONO_FONT,
+            fontSize: 26 * u,
+            fontWeight: 700,
+            letterSpacing: 4 * u,
+            color: theme.muted,
+          }}
+        >
+          {chipText}
+        </div>
+      ) : null}
+      <AbsoluteFill style={{ justifyContent: 'flex-end' }}>
+        <div style={{ height: 4, width: '100%', background: hairline(theme, 0.08) }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: theme.accent }} />
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
@@ -187,7 +241,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
               aspect={shotList?.aspect_ratio}
               captions={captions}
             />
-            <GlobalOverlays />
+            <GlobalOverlays logoUrl={shotList?.brand?.logo_url} chapterChip={shotList?.chapter_chip?.enabled === true} chapterWindowList={hybridWindows} />
           </AbsoluteFill>
         </SfxProvider>
         </MotionStyleProvider>
@@ -294,7 +348,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
               })}
             </TransitionSeries>
             {chapterCues}
-            <GlobalOverlays />
+            <GlobalOverlays logoUrl={shotList?.brand?.logo_url} chapterChip={shotList?.chapter_chip?.enabled === true} chapterWindowList={hybridWindows} />
           </AbsoluteFill>
         </SfxProvider>
         </MotionStyleProvider>
@@ -312,7 +366,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
           <FontLoader pack={fontPack} />
           {musicBed}
           <SlidesChapter scenes={scenes} fps={fps} captions={captions} />
-          <GlobalOverlays />
+          <GlobalOverlays logoUrl={shotList?.brand?.logo_url} chapterChip={shotList?.chapter_chip?.enabled === true} chapterWindowList={hybridWindows} />
         </AbsoluteFill>
       </SfxProvider>
       </MotionStyleProvider>

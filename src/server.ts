@@ -2,8 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
-import { renderExplainer } from './render';
+import { renderExplainer, renderThumbnail } from './render';
 import type { ShotList } from './types';
+import type { ThumbnailProps } from './ThumbnailComp';
 
 const app = express();
 app.use(cors());
@@ -104,6 +105,30 @@ app.post('/render', async (req, res) => {
   } catch (err: any) {
     console.error('[render] failed:', err);
     return res.status(500).json({ success: false, error: err?.message || 'Render failed' });
+  }
+});
+
+/**
+ * POST /thumbnail
+ * Body: { output_path, props: { title, kicker?, theme?, hero_url?, font_pack?, width?, height? } }
+ * Renders the ExplainerThumbnail still to output_path (PNG). Fast: reuses the
+ * warm bundle from the preceding video render.
+ */
+app.post('/thumbnail', async (req, res) => {
+  const { output_path, props } = req.body || {};
+  if (!output_path || !props || typeof props !== 'object') {
+    return res.status(400).json({ success: false, error: 'output_path and props are required' });
+  }
+
+  const hostOutputPath = toHostPath(output_path);
+  try {
+    fs.mkdirSync(path.dirname(hostOutputPath), { recursive: true });
+    await renderThumbnail(props as ThumbnailProps, hostOutputPath);
+    console.log(`[thumbnail] -> ${hostOutputPath}`);
+    return res.json({ success: true, output_path });
+  } catch (err: any) {
+    console.error('[thumbnail] failed:', err);
+    return res.status(500).json({ success: false, error: err?.message || 'Thumbnail render failed' });
   }
 });
 

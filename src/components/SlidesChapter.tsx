@@ -107,7 +107,7 @@ export const SlidesChapter: React.FC<{
             nodes.push(
               <TransitionSeries.Transition
                 key={`t-${scene.scene_id}`}
-                presentation={presentationFor(scene.transition, theme)}
+                presentation={presentationFor(scene.transition, theme, scene.focus)}
                 timing={linearTiming({ durationInFrames: tf })}
               />
             );

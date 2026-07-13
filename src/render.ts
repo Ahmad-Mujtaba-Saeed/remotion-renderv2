@@ -2,8 +2,9 @@ import path from 'path';
 import os from 'os';
 import * as fsSync from 'fs';
 import { bundle } from '@remotion/bundler';
-import { selectComposition, renderMedia } from '@remotion/renderer';
+import { selectComposition, renderMedia, renderStill } from '@remotion/renderer';
 import type { ShotList } from './types';
+import type { ThumbnailProps } from './ThumbnailComp';
 import { SFX_NAMES } from './sfx';
 
 export interface RenderRequest {
@@ -99,6 +100,31 @@ export const renderExplainer = async (req: RenderRequest): Promise<string> => {
   });
 
   return req.outputPath;
+};
+
+/**
+ * Render the §10.5 thumbnail still (composition `ExplainerThumbnail`) to a
+ * PNG. Reuses the cached bundle, so after a video render this costs ~a second.
+ */
+export const renderThumbnail = async (props: ThumbnailProps, outputPath: string): Promise<string> => {
+  const serveUrl = await getServeUrl();
+  const inputProps = props as unknown as Record<string, unknown>;
+  const composition = await selectComposition({
+    serveUrl,
+    id: 'ExplainerThumbnail',
+    inputProps,
+  });
+  await renderStill({
+    serveUrl,
+    composition,
+    inputProps,
+    frame: 0,
+    output: outputPath,
+    imageFormat: 'png',
+    chromiumOptions: { gl: 'angle' },
+    timeoutInMilliseconds: 60000,
+  });
+  return outputPath;
 };
 
 // CLI helper: `tsx src/render.ts <shotlist.json> <out.mp4>`

@@ -21,6 +21,10 @@ import { BeforeAfter } from '../layouts/BeforeAfter';
 import { ListRanking } from '../layouts/ListRanking';
 import { ProgressMeter } from '../layouts/ProgressMeter';
 import { QuotePortrait } from '../layouts/QuotePortrait';
+import { PhoneMockup } from '../layouts/PhoneMockup';
+import { PhotoStack } from '../layouts/PhotoStack';
+import { MapCard } from '../layouts/MapCard';
+import { HeadlineTicker } from '../layouts/HeadlineTicker';
 import { AmbientBackground } from './AmbientBackground';
 import { PunchLine } from './PunchLine';
 import { CaptionTrack } from './CaptionTrack';
@@ -115,6 +119,14 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <ProgressMeter scene={scene} />;
     case 'quote_portrait':
       return <QuotePortrait scene={scene} />;
+    case 'phone_mockup':
+      return <PhoneMockup scene={scene} />;
+    case 'photo_stack':
+      return <PhotoStack scene={scene} />;
+    case 'map_card':
+      return <MapCard scene={scene} />;
+    case 'headline_ticker':
+      return <HeadlineTicker scene={scene} />;
     case 'single_focus':
     default:
       return <SingleFocus scene={scene} />;

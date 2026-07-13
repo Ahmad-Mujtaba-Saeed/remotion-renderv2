@@ -1,6 +1,7 @@
 import React from 'react';
 import { Composition } from 'remotion';
 import { ExplainerVideo } from '../ExplainerVideo';
+import { ThumbnailComp, ThumbnailProps } from '../ThumbnailComp';
 import { ExplainerProps, ShotList, resolveCompositionMode } from '../types';
 import { totalCanvasFrames, totalDurationInFrames, totalHybridFrames } from '../timing';
 import { normalizeChapters } from '../chapters';
@@ -13,6 +14,7 @@ const EMPTY_SHOT_LIST: ShotList = { project_id: 'preview', scenes: [] };
  */
 export const RemotionRoot: React.FC = () => {
   return (
+    <>
     <Composition
       id="Explainer"
       component={ExplainerVideo}
@@ -45,5 +47,25 @@ export const RemotionRoot: React.FC = () => {
         };
       }}
     />
+    {/* One-frame still for the §10.5 thumbnail generator (renderStill only). */}
+    <Composition
+      id="ExplainerThumbnail"
+      component={ThumbnailComp}
+      durationInFrames={1}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={{ title: 'Explainer' } as ThumbnailProps}
+      calculateMetadata={({ props }) => {
+        const p = props as unknown as ThumbnailProps;
+        return {
+          durationInFrames: 1,
+          fps: 30,
+          width: p.width || 1280,
+          height: p.height || 720,
+        };
+      }}
+    />
+    </>
   );
 };

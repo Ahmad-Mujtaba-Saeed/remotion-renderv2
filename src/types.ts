@@ -15,7 +15,10 @@ export type ContentType =
   | 'timeline_nodes'
   | 'steps'
   | 'ranking'
-  | 'meter';
+  | 'meter'
+  // Tier C (M6):
+  | 'map'
+  | 'headlines';
 
 /** One dated stop on a timeline_card. */
 export interface TimelineNode {
@@ -37,6 +40,21 @@ export type ChartType = 'bar' | 'line' | 'donut' | 'counter';
 export interface IconItem {
   icon?: string;
   label?: string;
+}
+
+/** One press/reaction chip of a headline_ticker (§5.16). */
+export interface HeadlineItem {
+  text?: string;
+  source?: string;
+}
+
+/** One labelled pin on a map_card (§5.15). Coordinates are real lat/lon;
+ *  the renderer projects them with the same equirectangular projection the
+ *  bundled world geometry was generated with. */
+export interface MapPin {
+  label?: string;
+  lat?: number;
+  lon?: number;
 }
 
 export type Dock = 'left' | 'right' | 'top' | 'bottom';
@@ -102,6 +120,9 @@ export interface AssetRef {
   height?: number | null;
   /** Optional extracted frame sequence (preferred over <Video> when present). */
   frames?: FrameSequence | null;
+  /** Saliency focal point (§8 smart crop), 0..1 of the image — steers
+      object-position when the slot covers so a crop never loses the subject. */
+  focus?: { fx?: number; fy?: number } | null;
 }
 
 export interface Callout {
@@ -143,12 +164,19 @@ export interface Slot {
   cons?: string[];
   pros_label?: string;
   cons_label?: string;
-  // icons (icon_grid), steps (step_flow: {label, icon?}), ranking (strings)
-  items?: (IconItem | string)[];
+  // icons (icon_grid), steps (step_flow: {label, icon?}), ranking (strings),
+  // headlines (headline_ticker: {text, source?})
+  items?: (IconItem | HeadlineItem | string)[];
   // timeline_nodes (timeline_card)
   nodes?: TimelineNode[];
   // meter (progress_meter)
   value_pct?: number;
+  // map (map_card)
+  pins?: MapPin[];
+  region?: string;
+  route?: boolean;
+  // phone_mockup: which flat CSS device frame wraps the screen media
+  frame?: 'phone' | 'browser';
   // floating panel / banner config
   dock?: Dock;
   width_pct?: number;
@@ -229,6 +257,8 @@ export interface Scene {
   narration_words?: NarrationWord[];
   /** Optional narration-synced punchline overlay. */
   punchline?: Punchline | null;
+  /** First media slot's saliency focus — the mask_wipe_circle reveal origin. */
+  focus?: { fx?: number; fy?: number } | null;
 }
 
 export interface Theme {
@@ -387,6 +417,13 @@ export interface ShotList {
   motion_style?: string | null;
   /** Surface skin (§11.2): flat | outline | print. Missing = flat. */
   skin?: string | null;
+  /** Chapter progress chip (§10.3): a mono `02 / 06` at the kicker position,
+      screen-space, hybrid mode only. Laravel defaults it off. */
+  chapter_chip?: { enabled?: boolean } | null;
+  /** Brand kit (§10.4): logo watermark bottom-right at 6% opacity, screen
+      space, outside every camera world. The brand COLOUR never reaches the
+      renderer — Laravel folds it into theme.accent when it passes contrast. */
+  brand?: { logo_url?: string | null } | null;
   /** How to compose: canvas journey, classic slides, or chaptered hybrid. */
   composition_mode?: CompositionMode;
   /** The Canvas Director's world plan (canvas_journey mode). */

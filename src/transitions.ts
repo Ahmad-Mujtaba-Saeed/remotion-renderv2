@@ -28,7 +28,14 @@ import { seamColors } from './presentations/seam';
  * seam helper falls back to ink when the accent fails contrast.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const presentationFor = (t?: TransitionType, theme?: Theme | null): TransitionPresentation<any> => {
+export const presentationFor = (
+  t?: TransitionType,
+  theme?: Theme | null,
+  /** Entering scene's media focal point (§8 smart crop) — the circle wipe
+      opens from the subject instead of dead centre when known. */
+  focus?: { fx?: number; fy?: number } | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): TransitionPresentation<any> => {
   switch (t) {
     case 'push_left':
       return slide({ direction: 'from-right' });
@@ -49,7 +56,7 @@ export const presentationFor = (t?: TransitionType, theme?: Theme | null): Trans
     case 'whip_pan':
       return whipPan();
     case 'mask_wipe_circle':
-      return maskWipeCircle();
+      return maskWipeCircle(focus ? { fx: focus.fx, fy: focus.fy } : {});
     case 'mask_wipe_diagonal':
       return maskWipeDiagonal({ edgeColor: seamColors(theme).edge });
     case 'column_reveal':
