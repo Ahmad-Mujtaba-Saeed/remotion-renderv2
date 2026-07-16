@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, useVideoConfig, spring } from 'remotion';
+import { AbsoluteFill, Img, useVideoConfig, spring } from 'remotion';
 import { Scene, ScenarioEntity, ScenarioConnector } from '../types';
 import { useSceneClock } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
@@ -69,6 +69,17 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
     const iconP = clamp01((frame - boxAt(i) - f30(fps, 2)) / f30(fps, 12));
     const valueP = easeOutQuint(clamp01((frame - boxAt(i) - f30(fps, 6)) / f30(fps, 9)));
     const value = (e.value ?? '').trim();
+
+    // A cut-out sprite sits ON the diagram as a free object (the whole point
+    // of the alpha channel) — no box around it. The FIRST entity drifts a
+    // little toward its connector once the arrow is drawn: the car pulls
+    // away toward the destination. Transform-only, flat-law safe.
+    const sprite = (e.sprite_url ?? '').trim();
+    const drift =
+      sprite && i === 0 && n > 1 && !portrait
+        ? easeInOutQuint(clamp01((frame - connAt(0) - f30(fps, 10)) / f30(fps, 70))) * 22 * u
+        : 0;
+
     return (
       <div
         key={`e${i}`}
@@ -78,39 +89,74 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
           alignItems: 'center',
           gap: 14 * u,
           opacity: Math.min(1, pop * 1.3),
-          transform: `scale(${0.92 + 0.08 * Math.min(1.04, pop)})`,
+          transform: `scale(${0.92 + 0.08 * Math.min(1.04, pop)}) translateX(${drift}px)`,
         }}
       >
-        <div
-          style={{
-            width: boxW,
-            height: boxH,
-            border: `${Math.max(2.5, 4 * u)}px solid ${theme.text}`,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10 * u,
-            // Transparent so a board render keeps its graph paper showing
-            // through — the box reads as drawn ON the surface, not stuck over
-            // it. Full-frame renders sit on the ambient background anyway.
-            background: 'transparent',
-          }}
-        >
-          {e.icon ? <IconStroke name={e.icon} progress={iconP} size={64 * u} color={theme.accent} strokeWidth={2} /> : null}
+        {sprite ? (
           <div
             style={{
-              fontFamily: displayFont,
-              fontWeight: 800,
-              fontSize: 34 * u,
-              color: theme.text,
-              textAlign: 'center',
-              padding: `0 ${16 * u}px`,
+              width: boxW,
+              height: boxH,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 8 * u,
             }}
           >
-            {e.label}
+            <Img
+              src={sprite}
+              style={{
+                maxWidth: '92%',
+                maxHeight: boxH - 44 * u,
+                objectFit: 'contain',
+                opacity: Math.min(1, iconP * 1.6),
+              }}
+            />
+            <div
+              style={{
+                fontFamily: displayFont,
+                fontWeight: 800,
+                fontSize: 30 * u,
+                color: theme.text,
+                textAlign: 'center',
+              }}
+            >
+              {e.label}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div
+            style={{
+              width: boxW,
+              height: boxH,
+              border: `${Math.max(2.5, 4 * u)}px solid ${theme.text}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10 * u,
+              // Transparent so a board render keeps its graph paper showing
+              // through — the box reads as drawn ON the surface, not stuck over
+              // it. Full-frame renders sit on the ambient background anyway.
+              background: 'transparent',
+            }}
+          >
+            {e.icon ? <IconStroke name={e.icon} progress={iconP} size={64 * u} color={theme.accent} strokeWidth={2} /> : null}
+            <div
+              style={{
+                fontFamily: displayFont,
+                fontWeight: 800,
+                fontSize: 34 * u,
+                color: theme.text,
+                textAlign: 'center',
+                padding: `0 ${16 * u}px`,
+              }}
+            >
+              {e.label}
+            </div>
+          </div>
+        )}
         {value ? (
           <div
             style={{

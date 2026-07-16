@@ -255,7 +255,9 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
               />
             ) : null}
           </div>
-          {rule ? <RulePanel rule={rule} frame={frame} fps={fps} portrait={portrait} u={u} /> : null}
+          {rule ? (
+            <RulePanel rule={rule} frame={frame} fps={fps} portrait={portrait} u={u} at={Math.max(0, firstAt - f30(fps, 6))} />
+          ) : null}
         </div>
       </div>
     </AbsoluteFill>
@@ -274,12 +276,15 @@ const RulePanel: React.FC<{
   fps: number;
   portrait: boolean;
   u: number;
-}> = ({ rule, frame, fps, portrait, u }) => {
+  /** The frame the panel lands at — BEFORE the first step: the viewer reads
+   *  why the move is legal, then watches it happen (a teacher's order). */
+  at: number;
+}> = ({ rule, frame, fps, portrait, u, at }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
-  const inP = easeOutQuint(clamp01((frame - f30(fps, 16)) / f30(fps, 12)));
-  const formulaP = easeOutQuint(clamp01((frame - f30(fps, 22)) / f30(fps, 10)));
-  const whyP = easeOutQuint(clamp01((frame - f30(fps, 30)) / f30(fps, 12)));
+  const inP = easeOutQuint(clamp01((frame - at) / f30(fps, 12)));
+  const formulaP = easeOutQuint(clamp01((frame - at - f30(fps, 6)) / f30(fps, 10)));
+  const whyP = easeOutQuint(clamp01((frame - at - f30(fps, 14)) / f30(fps, 12)));
 
   const formula = (rule.formula ?? '').trim();
   const why = (rule.why ?? '').trim();

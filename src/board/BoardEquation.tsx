@@ -21,11 +21,17 @@ import { StepArrows } from '../math/StepArrows';
  * Everything is sized off the box (never useVideoConfig) so it stays correct
  * at whatever scale the board camera views it.
  */
-export const BoardEquation: React.FC<{ scene: Scene; boxW: number; boxH: number }> = ({
-  scene,
-  boxW,
-  boxH,
-}) => {
+export const BoardEquation: React.FC<{
+  scene: Scene;
+  boxW: number;
+  boxH: number;
+  /**
+   * Width units of the LONGEST line anywhere on the board (MathBoard computes
+   * it once). Real handwriting has ONE size for the whole working — a card
+   * that sizes its own type turns a short line like "5 - 1" into a headline.
+   */
+  globalMaxUnits?: number;
+}> = ({ scene, boxW, boxH, globalMaxUnits }) => {
   const slot = scene.slots?.['slot_math'] ?? Object.values(scene.slots ?? {})[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -55,9 +61,12 @@ export const BoardEquation: React.FC<{ scene: Scene; boxW: number; boxH: number 
   const rowGap = boxH * 0.03;
   const rowZone = boxH - headH - kickH - ruleH;
   const rowH = rowZone / (steps.length + 0.3);
-  const maxUnits = Math.max(...steps.map((s) => mathWidthUnits(parseMath(s.expr))), 6);
+  const ownMaxUnits = Math.max(...steps.map((s) => mathWidthUnits(parseMath(s.expr))), 6);
+  // Board-wide size: every card measures against the LONGEST line on the
+  // whole board (min 14 units so a board of short lines still isn't shouted).
+  const maxUnits = Math.max(globalMaxUnits ?? ownMaxUnits, 14);
   const byWidth = (boxW * 0.9) / (maxUnits * 0.6);
-  const exprSize = Math.max(boxH * 0.05, Math.min(rowH * 0.46, byWidth, boxH * 0.13));
+  const exprSize = Math.max(boxH * 0.04, Math.min(rowH * 0.5, byWidth));
   const rule = Math.max(1, boxW * 0.0016);
 
   // ---- Pacing: land each line where its share of the narration begins ------
@@ -86,7 +95,9 @@ export const BoardEquation: React.FC<{ scene: Scene; boxW: number; boxH: number 
   }
   const answerIdx = steps.length - 1;
   const headIn = easeOutQuint(clamp01(frame / f(12)));
-  const ruleIn = easeOutQuint(clamp01((frame - f(14)) / f(12)));
+  // The rule lands just BEFORE the first line — why the move is legal, then
+  // the move.
+  const ruleIn = easeOutQuint(clamp01((frame - Math.max(0, firstAt - f(6))) / f(12)));
   const rowDim = (i: number): number =>
     i < answerIdx ? 1 - 0.45 * easeOutQuint(clamp01((frame - landAt[i + 1]) / f(8))) : 1;
 
@@ -137,33 +148,52 @@ export const BoardEquation: React.FC<{ scene: Scene; boxW: number; boxH: number 
     );
 
     return (
-      <div
-        key={i}
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: boxW * 0.03,
-          minHeight: rowH,
-          opacity: inP === 0 ? 0 : dim,
-          transform: `translateY(${(1 - inP) * boxH * 0.02}px)`,
-          clipPath: `inset(0 ${(1 - inP) * 100}% 0 0)`,
-        }}
-      >
-        <span
+      <div key={i} style={{ position: 'relative', minHeight: rowH, display: 'flex', alignItems: 'center' }}>
+        <div
           style={{
-            fontFamily: MONO_FONT,
-            fontSize: exprSize * 0.42,
-            color: theme.muted,
-            opacity: 0.6,
-            minWidth: exprSize * 0.9,
-            fontVariantNumeric: 'tabular-nums',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: boxW * 0.03,
+            width: '100%',
+            opacity: inP === 0 ? 0 : dim,
+            transform: `translateY(${(1 - inP) * boxH * 0.02}px)`,
+            clipPath: `inset(0 ${(1 - inP) * 100}% 0 0)`,
           }}
         >
-          {String(i + 1).padStart(2, '0')}
-        </span>
-        {exprEl}
-        {noteEl}
+          <span
+            style={{
+              fontFamily: MONO_FONT,
+              fontSize: exprSize * 0.42,
+              color: theme.muted,
+              opacity: 0.6,
+              minWidth: exprSize * 0.9,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {String(i + 1).padStart(2, '0')}
+          </span>
+          {exprEl}
+          {noteEl}
+        </div>
+        {/* The pen tip: a small accent dot riding the write-on edge — the
+            attention cue the whiteboard-lecture research keeps finding (the
+            eye follows the hand). Sits OUTSIDE the clipped layer so it leads
+            the reveal rather than being eaten by it. */}
+        {inP > 0.02 && inP < 0.99 ? (
+          <span
+            style={{
+              position: 'absolute',
+              left: `${inP * 92}%`,
+              top: '50%',
+              width: exprSize * 0.16,
+              height: exprSize * 0.16,
+              borderRadius: '50%',
+              background: theme.accent,
+              transform: 'translateY(-50%)',
+            }}
+          />
+        ) : null}
       </div>
     );
   };

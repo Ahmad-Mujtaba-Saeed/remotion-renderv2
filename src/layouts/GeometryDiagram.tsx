@@ -905,6 +905,7 @@ const CoordinatePlaneFigure: React.FC<{
   slot: {
     coords?: Array<{ x: number; y: number; label?: string }>;
     line_through?: number[];
+    rise_run?: boolean;
   };
   frame: number;
   fps: number;
@@ -963,6 +964,11 @@ const CoordinatePlaneFigure: React.FC<{
   const lineAt = drawDone + coords.length * f30(fps, 4) + f30(fps, 4);
   const lineP = easeInOutQuint(clamp01((frame - lineAt) / f30(fps, 14)));
 
+  // The slope triangle: dashed legs from A across to (xB, yA), then up to B,
+  // labelled Δx / Δy — the picture "rise over run" IS. Drawn after the line.
+  const rr = slot.rise_run && lt.length >= 2 ? { a: lt[0]!, b: lt[1]! } : null;
+  const rrP = rr ? easeInOutQuint(clamp01((frame - lineAt - f30(fps, 12)) / f30(fps, 14))) : 0;
+
   return (
     <>
       <g opacity={axisP}>
@@ -983,6 +989,67 @@ const CoordinatePlaneFigure: React.FC<{
           opacity={0.85}
         />
       ) : null}
+      {rr && rrP > 0.01
+        ? (() => {
+            const A = rr.a;
+            const B = rr.b;
+            const corner = { x: px(B.x), y: py(A.y) };
+            const runP = clamp01(rrP * 2);
+            const riseP = clamp01((rrP - 0.5) * 2);
+            const labelP = clamp01((rrP - 0.8) / 0.2);
+            const dx = fmtNum(B.x - A.x);
+            const dy = fmtNum(B.y - A.y);
+            const runMidX = (px(A.x) + corner.x) / 2;
+            const riseMidY = (corner.y + py(B.y)) / 2;
+            const below = py(A.y) <= py(B.y);
+            return (
+              <g>
+                <line
+                  x1={px(A.x)}
+                  y1={py(A.y)}
+                  x2={px(A.x) + (corner.x - px(A.x)) * runP}
+                  y2={py(A.y)}
+                  stroke={ink}
+                  strokeWidth={3.5}
+                  strokeDasharray="10 8"
+                />
+                {riseP > 0 ? (
+                  <line
+                    x1={corner.x}
+                    y1={corner.y}
+                    x2={corner.x}
+                    y2={corner.y + (py(B.y) - corner.y) * riseP}
+                    stroke={ink}
+                    strokeWidth={3.5}
+                    strokeDasharray="10 8"
+                  />
+                ) : null}
+                <text
+                  x={runMidX}
+                  y={py(A.y) + (below ? -16 : 34)}
+                  textAnchor="middle"
+                  fontFamily={MONO_FONT}
+                  fontSize={26}
+                  fill={ink}
+                  opacity={labelP}
+                >
+                  {`Δx = ${dx}`}
+                </text>
+                <text
+                  x={corner.x + 16}
+                  y={riseMidY}
+                  dominantBaseline="middle"
+                  fontFamily={MONO_FONT}
+                  fontSize={26}
+                  fill={ink}
+                  opacity={labelP}
+                >
+                  {`Δy = ${dy}`}
+                </text>
+              </g>
+            );
+          })()
+        : null}
       {coords.map((c, i) => {
         const pop = spring({
           frame: Math.max(0, frame - drawDone - i * f30(fps, 4)),

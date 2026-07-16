@@ -1,0 +1,122 @@
+{
+  "project_id": 9031,
+  "aspect_ratio": "16:9",
+  "composition_mode": "math_board",
+  "captions": { "enabled": false },
+  "font_pack": "tech",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "bg_from": "#0B1620",
+    "bg_to": "#0B1620",
+    "text": "#E8F1F7",
+    "muted": "#8FA9BC",
+    "accent": "#4FC3E8",
+    "paper": "#0B1620",
+    "panel": "#12222F"
+  },
+  "scenes": [
+    {
+      "scene_id": "v1",
+      "order": 1,
+      "duration_seconds": 8,
+      "narration": { "text": "Two points on the plane, and the line through them. The slope triangle shows the rise and the run." },
+      "layout_template": "geometry_diagram",
+      "style": { "kicker": "THE PICTURE" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "coordinate_plane",
+          "heading": "Two Points, One Line",
+          "coords": [
+            { "x": 1, "y": 2, "label": "A" },
+            { "x": 5, "y": 6, "label": "B" }
+          ],
+          "line_through": [0, 1],
+          "rise_run": true
+        }
+      }
+    },
+    {
+      "scene_id": "v2",
+      "order": 2,
+      "duration_seconds": 16,
+      "narration": { "text": "Slope is change in y over change in x. Six minus two makes four. Five minus one makes four. Four over four is exactly one." },
+      "layout_template": "math_steps",
+      "style": { "kicker": "THE SLOPE" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "One continuous working",
+          "rule": {
+            "name": "Slope formula",
+            "formula": "m = frac{y_2 - y_1}{x_2 - x_1}",
+            "why": "Rise over run: how much the line climbs per unit across."
+          },
+          "steps": [
+            { "expr": "m = frac{6 - 2}{5 - 1}", "note": "plug in both points" },
+            { "expr": "Delta y = 6 - 2 = 4" },
+            { "expr": "Delta x = 5 - 1 = 4" },
+            { "expr": "m = frac{4}{4}" },
+            { "expr": "m = 1" }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "v3",
+      "order": 3,
+      "duration_seconds": 12,
+      "narration": { "text": "The parabola, its tangent at one, and the area under the tangent from zero to two, all on the same picture." },
+      "layout_template": "function_plot",
+      "style": { "kicker": "SEE IT EVOLVE" },
+      "slots": {
+        "slot_plot": {
+          "content_type": "function_plot",
+          "heading": "y = x² and its tangent",
+          "expression": "x^2",
+          "x_min": -1,
+          "x_max": 3,
+          "tangent_at": 1,
+          "shade": { "from": 0, "to": 2 },
+          "marks": [{ "x": 1, "label": "(1, 1)" }]
+        }
+      }
+    },
+    {
+      "scene_id": "v4",
+      "order": 4,
+      "duration_seconds": 10,
+      "narration": { "text": "Check it. Substitute x equals one back in, and both sides agree, so the tangent slope really is two." },
+      "layout_template": "math_steps",
+      "style": { "kicker": "CHECK" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Substitute back",
+          "steps": [
+            { "expr": "y' = 2x", "note": "the derivative" },
+            { "expr": "y'(1) = 2 * 1 = 2" },
+            { "expr": "slope = 2" }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "scene_outro",
+      "order": 5,
+      "duration_seconds": 4,
+      "narration": { "text": "And that is the whole working, on one board." },
+      "layout_template": "outro_card",
+      "slots": {
+        "slot_outro": {
+          "content_type": "text_block",
+          "heading": "Slope, tangent, area",
+          "bullets": ["Follow for more"]
+        }
+      }
+    }
+  ]
+}

@@ -3,7 +3,6 @@ import { AbsoluteFill, Audio, Sequence, useCurrentFrame, useVideoConfig } from '
 import { Scene } from '../types';
 import { useTheme, isLightTheme } from '../theme';
 import { AmbientBackground } from '../components/AmbientBackground';
-import { PunchLine } from '../components/PunchLine';
 import { CaptionTrack } from '../components/CaptionTrack';
 import { SceneClockProvider } from '../canvas/SceneClock';
 import { SfxCue } from '../sfx';
@@ -12,6 +11,8 @@ import { buildBoard } from './boardLayout';
 import { BoardEquation } from './BoardEquation';
 import { BoardNote } from './BoardNote';
 import { BoardFigure } from './BoardFigure';
+import { parseMath, mathWidthUnits } from '../math/mathText';
+import { MathStep } from '../types';
 
 /**
  * MathBoard — the worked-math composition mode.
@@ -38,6 +39,22 @@ export const MathBoard: React.FC<{ scenes: Scene[]; captions?: boolean }> = ({
   );
 
   const plan = useMemo(() => buildBoard(scenes, fps, vw, vh), [scenes, fps, vw, vh]);
+
+  // ONE handwriting size for the entire board: the widest line anywhere sets
+  // it, so a two-character line never renders as a headline.
+  const globalMaxUnits = useMemo(() => {
+    let max = 0;
+    for (const scene of scenes) {
+      if (scene.layout_template !== 'math_steps') continue;
+      const slot = scene.slots?.['slot_math'] ?? Object.values(scene.slots ?? {})[0];
+      for (const s of (slot?.steps as MathStep[] | undefined) ?? []) {
+        if (s && typeof s.expr === 'string' && s.expr.trim() !== '') {
+          max = Math.max(max, mathWidthUnits(parseMath(s.expr)));
+        }
+      }
+    }
+    return max;
+  }, [scenes]);
 
   if (!scenes.length) return null;
 
@@ -115,7 +132,7 @@ export const MathBoard: React.FC<{ scenes: Scene[]; captions?: boolean }> = ({
             >
               <SceneClockProvider window={clock}>
                 {card.kind === 'equation' ? (
-                  <BoardEquation scene={scene} boxW={card.w} boxH={card.h} />
+                  <BoardEquation scene={scene} boxW={card.w} boxH={card.h} globalMaxUnits={globalMaxUnits} />
                 ) : card.kind === 'figure' ? (
                   <BoardFigure scene={scene} boxW={card.w} boxH={card.h} index={card.sceneIndex} count={scenes.length} />
                 ) : (
@@ -138,20 +155,12 @@ export const MathBoard: React.FC<{ scenes: Scene[]; captions?: boolean }> = ({
         return <SfxCue key={`w-${card.sceneIndex}`} name="whoosh_soft" at={w.start} volume={0.5} />;
       })}
 
-      {/* PUNCHLINES + CAPTIONS in screen space (crisp at any zoom), re-based to
-          each scene's narration start exactly like the canvas journey. */}
-      {scenes.map((scene, i) => {
-        if (!scene.punchline) return null;
-        const w = plan.windows[i];
-        return (
-          <SceneClockProvider
-            key={`p-${scene.scene_id}`}
-            window={{ start: w.start, end: w.start + w.frames, narrationStart: w.start }}
-          >
-            <PunchLine scene={scene} />
-          </SceneClockProvider>
-        );
-      })}
+      {/* CAPTIONS in screen space (crisp at any zoom), re-based to each
+          scene's narration start exactly like the canvas journey.
+
+          NO karaoke punchlines on the board: under a written working they are
+          a THIRD rendition of the same fact (the line shows it, the narration
+          says it) — pure noise on the least noisy mode we have. */}
 
       {captions
         ? scenes.map((scene, i) => {

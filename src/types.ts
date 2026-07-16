@@ -45,6 +45,10 @@ export interface ScenarioEntity {
   label: string;
   icon?: string;
   value?: string;
+  /** Drawable subject for an AI cut-out sprite ("a red hatchback car"). */
+  sprite?: string;
+  /** Resolved alpha-PNG URL — when present the sprite replaces the icon box. */
+  sprite_url?: string;
 }
 
 /** The relationship riding the gap between two adjacent entities. Positional:
@@ -297,6 +301,8 @@ export interface Slot {
   /** coordinate_plane: real-value points + optional line through two of them. */
   coords?: PlanePoint[];
   line_through?: number[];
+  /** Slope triangle: dashed Δx/Δy legs between the two line_through points. */
+  rise_run?: boolean;
   /** number_line: accent segment between two values. */
   segment?: { from?: number; to?: number } | null;
   /** fraction_bar: numerator/denominator cells. */

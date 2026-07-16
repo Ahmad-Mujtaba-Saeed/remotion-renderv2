@@ -19,6 +19,10 @@ import { clamp01, easeInOutSine } from '../motion/easing';
 
 export type BoardKind = 'equation' | 'figure' | 'note' | 'concept';
 
+/** One written line's height as a fraction of the frame — shared with
+ *  BoardEquation so type sizing and card sizing agree. */
+export const LINE_H_FRAC = 0.15;
+
 export interface CamState {
   x: number;
   y: number;
@@ -129,7 +133,10 @@ export const buildBoard = (
   const CONCEPT_W = vw * 0.66;
   const CONCEPT_H = vh * 0.52;
   const NOTE_H = vh * 0.42;
-  const LINE_H = vh * 0.19; // one written equation line
+  // One written equation line. 0.15 (was 0.19): with phase consolidation a
+  // section carries 4-8 lines, and at width-fit reading zoom a smaller line
+  // height IS smaller handwriting — the "giant text on an empty board" fix.
+  const LINE_H = vh * LINE_H_FRAC;
   const HEAD_H = vh * 0.14; // heading zone in an equation card
   const GAP = vh * 0.11; // vertical air between spine cards
   const CONCEPT_LANE_X = -vw * 0.94; // left margin (pre-shift)
@@ -227,7 +234,33 @@ export const buildBoard = (
   const poseFor = (sceneIndex: number): BoardCard =>
     cardByScene.get(sceneIndex) ?? cards[cards.length - 1];
 
+  // The payoff shot: the outro pulls back to frame the ENTIRE finished board —
+  // the whole working visible at once, the thing the accumulating surface has
+  // been earning the whole video.
+  const lastIsOutro =
+    scenes.length > 0 && scenes[scenes.length - 1].layout_template === 'outro_card';
+  const bbox = cards.reduce(
+    (b, c) => ({
+      minX: Math.min(b.minX, c.cx - c.w / 2),
+      maxX: Math.max(b.maxX, c.cx + c.w / 2),
+      minY: Math.min(b.minY, c.top),
+      maxY: Math.max(b.maxY, c.top + c.h),
+    }),
+    { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
+  );
+  const pullbackPose: CamState = isFinite(bbox.minX)
+    ? {
+        x: (bbox.minX + bbox.maxX) / 2,
+        y: (bbox.minY + bbox.maxY) / 2,
+        scale: frameScale(bbox.maxX - bbox.minX, bbox.maxY - bbox.minY, 0.88, 0.84),
+        rot: 0,
+      }
+    : { x: vw / 2, y: vh / 2, scale: 1, rot: 0 };
+
   const restPose = (sceneIndex: number, h: number): CamState => {
+    if (lastIsOutro && sceneIndex === scenes.length - 1) {
+      return pullbackPose;
+    }
     const card = poseFor(sceneIndex);
     if (card.kind === 'equation') {
       let cyTop = card.cy;

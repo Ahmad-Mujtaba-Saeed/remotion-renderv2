@@ -48,7 +48,8 @@ const SYMBOLS: Array<[RegExp, string]> = [
   [W('theta'), 'θ'],
   [W('alpha'), 'α'],
   [W('beta'), 'β'],
-  [W('delta'), 'Δ'],
+  // Models write both "delta y" and "Delta y" — Δ either way.
+  [W('[Dd]elta'), 'Δ'],
   [W('lambda'), 'λ'],
   [W('mu'), 'μ'],
   [W('sigma'), 'σ'],
