@@ -26,7 +26,15 @@ export type MathNode =
   | { kind: 'sub'; body: MathNode[] };
 
 /** Word/operator → glyph substitutions applied to plain text runs. Order
- *  matters: multi-char operators must run before their single-char prefixes. */
+ *  matters: multi-char operators must run before their single-char prefixes.
+ *
+ *  The greek/word names are bounded by LETTERS, not by \b: maths writes a
+ *  coefficient straight onto the symbol ("2pi", "3theta", "n theta"), and \b
+ *  sees no boundary between a digit and a letter, so \btheta\b left "3theta"
+ *  as literal source on screen. A letter on either side still blocks it, so
+ *  "thetax" and "alpha" inside a word are untouched. */
+const W = (word: string): RegExp => new RegExp(`(?<![A-Za-z])${word}(?![A-Za-z])`, 'g');
+
 const SYMBOLS: Array<[RegExp, string]> = [
   [/\+-/g, '±'],
   [/<=/g, '≤'],
@@ -35,17 +43,18 @@ const SYMBOLS: Array<[RegExp, string]> = [
   [/~=/g, '≈'],
   [/->/g, '→'],
   [/\*/g, '×'],
-  [/\bpi\b/g, 'π'],
-  [/\btheta\b/g, 'θ'],
-  [/\balpha\b/g, 'α'],
-  [/\bbeta\b/g, 'β'],
-  [/\bdelta\b/g, 'Δ'],
-  [/\blambda\b/g, 'λ'],
-  [/\bmu\b/g, 'μ'],
-  [/\bsigma\b/g, 'σ'],
-  [/\bomega\b/g, 'ω'],
-  [/\binf\b/g, '∞'],
-  [/\bdeg\b/g, '°'],
+  [W('pm'), '±'],
+  [W('pi'), 'π'],
+  [W('theta'), 'θ'],
+  [W('alpha'), 'α'],
+  [W('beta'), 'β'],
+  [W('delta'), 'Δ'],
+  [W('lambda'), 'λ'],
+  [W('mu'), 'μ'],
+  [W('sigma'), 'σ'],
+  [W('omega'), 'ω'],
+  [W('inf'), '∞'],
+  [W('deg'), '°'],
 ];
 
 const substituteSymbols = (s: string): string => {

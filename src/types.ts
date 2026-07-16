@@ -32,6 +32,16 @@ export interface MathStep {
   note?: string;
 }
 
+/** The named rule a math_steps card is applying, shown in a panel beside the
+ *  working: what it is called, the rule STATED generally, and one plain line
+ *  on what it does. The steps show what happened; this says why it was
+ *  allowed. */
+export interface MathRule {
+  name: string;
+  formula?: string;
+  why?: string;
+}
+
 /** One vertex of a geometry_diagram figure. Normalized 0..1, y UP (math
  *  convention — the renderer flips into screen space). */
 export interface GeoPoint {
@@ -236,6 +246,8 @@ export interface Slot {
   route?: boolean;
   // math_steps (math_steps card)
   steps?: MathStep[];
+  /** The named rule/law/identity these steps apply, shown in a side panel. */
+  rule?: MathRule | null;
   // geometry (geometry_diagram): triangle | right_triangle | rectangle |
   // square | polygon | circle | angle | number_line | coordinate_plane |
   // fraction_bar
@@ -267,6 +279,14 @@ export interface Slot {
   /** fraction_bar: numerator/denominator cells. */
   numerator?: number;
   denominator?: number;
+  /** unit_circle: a radius swung to angle_deg, optionally a second at
+   *  angle2_deg (one angle becoming another — rotations, De Moivre). */
+  angle_deg?: number;
+  angle2_deg?: number;
+  angle_label?: string;
+  angle2_label?: string;
+  point_label?: string;
+  show_coords?: boolean;
   // function_plot: y = f(x) in calculator syntax; marks sit on the curve
   expression?: string;
   /** Optional second curve (comparisons/intersections), drawn in ink. */

@@ -1,9 +1,9 @@
 import React from 'react';
 import { AbsoluteFill, useVideoConfig, spring } from 'remotion';
-import { Scene, MathStep } from '../types';
+import { Scene, MathStep, MathRule } from '../types';
 import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
-import { useTheme, useDisplayFont, inkOn, MONO_FONT } from '../theme';
+import { useTheme, useDisplayFont, inkOn, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
@@ -44,11 +44,15 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
 
+  // The rule panel takes a column beside the working (a band under it in
+  // portrait), so the steps have less room to typeset into.
+  const rule = slot.rule && (slot.rule.name ?? '').trim() !== '' ? slot.rule : null;
+
   // ---- Type size: fit the widest expression AND the row count -------------
   const maxUnits = Math.max(...steps.map((s) => mathWidthUnits(parseMath(s.expr))), 6);
-  const colWidth = (portrait ? 900 : 1240) * u;
+  const colWidth = (portrait ? 900 : rule ? 900 : 1240) * u;
   const byWidth = colWidth / (maxUnits * 0.6);
-  const byHeight = ((portrait ? 1150 : 660) * u) / (steps.length * 2.05);
+  const byHeight = ((portrait ? (rule ? 900 : 1150) : 660) * u) / (steps.length * 2.05);
   const exprSize = Math.max(30 * u, Math.min(60 * u, byWidth, byHeight));
 
   // ---- Pacing --------------------------------------------------------------
@@ -206,11 +210,129 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
           </h1>
         ) : null}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: Math.max(18 * u, exprSize * 0.55) }}>
-          {steps.map((s, i) => row(s, i))}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: portrait ? 'column' : 'row',
+            alignItems: portrait ? 'stretch' : 'flex-start',
+            gap: (portrait ? 40 : 56) * u,
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: Math.max(18 * u, exprSize * 0.55),
+            }}
+          >
+            {steps.map((s, i) => row(s, i))}
+          </div>
+          {rule ? <RulePanel rule={rule} frame={frame} fps={fps} portrait={portrait} u={u} /> : null}
         </div>
       </div>
     </AbsoluteFill>
+  );
+};
+
+/**
+ * The rule panel: what the move is CALLED, the rule stated generally, and one
+ * line on what it does. It lands after the first step so the viewer reads the
+ * working first and the justification second — the order a teacher speaks in.
+ * An accent rule bar ties it to the column; flat surfaces only.
+ */
+const RulePanel: React.FC<{
+  rule: MathRule;
+  frame: number;
+  fps: number;
+  portrait: boolean;
+  u: number;
+}> = ({ rule, frame, fps, portrait, u }) => {
+  const theme = useTheme();
+  const displayFont = useDisplayFont();
+  const inP = easeOutQuint(clamp01((frame - f30(fps, 16)) / f30(fps, 12)));
+  const formulaP = easeOutQuint(clamp01((frame - f30(fps, 22)) / f30(fps, 10)));
+  const whyP = easeOutQuint(clamp01((frame - f30(fps, 30)) / f30(fps, 12)));
+
+  const formula = (rule.formula ?? '').trim();
+  const why = (rule.why ?? '').trim();
+
+  // The formula is stated in full and must not wrap mid-expression ("log_b"
+  // on one line and "(mn)" on the next reads as two things). Size it to the
+  // panel the way the working sizes itself to its column.
+  const panelW = (portrait ? 820 : 332) * u;
+  const formulaSize = formula
+    ? Math.max(19 * u, Math.min(32 * u, panelW / (mathWidthUnits(parseMath(formula)) * 0.56)))
+    : 0;
+
+  return (
+    <div
+      style={{
+        width: portrait ? '100%' : 360 * u,
+        flexShrink: 0,
+        borderLeft: portrait ? undefined : `${3 * u}px solid ${theme.accent}`,
+        borderTop: portrait ? `${3 * u}px solid ${theme.accent}` : undefined,
+        paddingLeft: portrait ? 0 : 28 * u,
+        paddingTop: portrait ? 22 * u : 0,
+        opacity: inP,
+        transform: `translateX(${(1 - inP) * (portrait ? 0 : 16) * u}px) translateY(${(1 - inP) * (portrait ? 12 : 0) * u}px)`,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: MONO_FONT,
+          fontSize: 20 * u,
+          letterSpacing: 3.5 * u,
+          textTransform: 'uppercase',
+          color: theme.accent,
+          marginBottom: 12 * u,
+        }}
+      >
+        The rule
+      </div>
+      <div
+        style={{
+          fontFamily: displayFont,
+          fontWeight: 800,
+          fontSize: 30 * u,
+          lineHeight: 1.15,
+          color: theme.text,
+          marginBottom: formula ? 20 * u : 14 * u,
+        }}
+      >
+        {rule.name}
+      </div>
+      {formula ? (
+        <div
+          style={{
+            opacity: formulaP,
+            transform: `translateY(${(1 - formulaP) * 8 * u}px)`,
+            marginBottom: why ? 20 * u : 0,
+          }}
+        >
+          <MathText
+            expr={formula}
+            color={theme.accent}
+            style={{ fontFamily: displayFont, fontWeight: 800, fontSize: formulaSize, lineHeight: 1.25 }}
+          />
+        </div>
+      ) : null}
+      {why ? (
+        <div
+          style={{
+            fontFamily: BODY_FONT,
+            fontSize: 23 * u,
+            lineHeight: 1.4,
+            color: theme.muted,
+            opacity: whyP,
+            transform: `translateY(${(1 - whyP) * 8 * u}px)`,
+          }}
+        >
+          {why}
+        </div>
+      ) : null}
+    </div>
   );
 };
 

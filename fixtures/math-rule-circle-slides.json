@@ -1,0 +1,152 @@
+{
+  "project_id": 9028,
+  "aspect_ratio": "16:9",
+  "composition_mode": "slides",
+  "captions": { "enabled": false },
+  "font_pack": "editorial",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "bg_from": "#0B1620",
+    "bg_to": "#0B1620",
+    "text": "#E8F1F7",
+    "muted": "#8FA9BC",
+    "accent": "#4FC3E8",
+    "paper": "#0B1620",
+    "panel": "#12222F"
+  },
+  "scenes": [
+    {
+      "scene_id": "r1",
+      "order": 1,
+      "duration_seconds": 9,
+      "narration": { "text": "Two logs with the same base add up. The product rule lets us combine them into one log of the product." },
+      "layout_template": "math_steps",
+      "transition": "none",
+      "style": { "kicker": "COMBINE" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Combine the logs",
+          "steps": [
+            { "expr": "log_2(x - 1) + log_2(x + 3) = 3" },
+            { "expr": "log_2((x - 1)(x + 3)) = 3", "note": "product rule" }
+          ],
+          "rule": {
+            "name": "Product rule of logarithms",
+            "formula": "log_b(m) + log_b(n) = log_b(mn)",
+            "why": "Adding two logs of the same base multiplies what is inside."
+          }
+        }
+      }
+    },
+    {
+      "scene_id": "r2",
+      "order": 2,
+      "duration_seconds": 9,
+      "narration": { "text": "A log equals three means two cubed equals the inside. Expand and you get a quadratic." },
+      "layout_template": "math_steps",
+      "transition": "fade",
+      "style": { "kicker": "UNWRAP" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Undo the logarithm",
+          "steps": [
+            { "expr": "log_2((x - 1)(x + 3)) = 3" },
+            { "expr": "(x - 1)(x + 3) = 2^3", "note": "exponential form" },
+            { "expr": "x^2 + 2x - 3 = 8", "note": "expand" },
+            { "expr": "x^2 + 2x - 11 = 0" }
+          ],
+          "rule": {
+            "name": "Definition of a logarithm",
+            "formula": "log_b(y) = k  ->  b^k = y",
+            "why": "A log just asks: what power of the base gives this number?"
+          }
+        }
+      }
+    },
+    {
+      "scene_id": "r3",
+      "order": 3,
+      "duration_seconds": 7,
+      "narration": { "text": "No rule here, just the quadratic formula doing its job." },
+      "layout_template": "math_steps",
+      "transition": "fade",
+      "style": { "kicker": "NO RULE PANEL" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Solve it",
+          "steps": [
+            { "expr": "x^2 + 2x - 11 = 0" },
+            { "expr": "x = frac{-2 pm sqrt{48}}{2}", "note": "quadratic formula" },
+            { "expr": "x = sqrt{12} - 1" }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "u1",
+      "order": 4,
+      "duration_seconds": 7,
+      "narration": { "text": "Here is our complex number on the unit circle, at angle theta." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "POLAR FORM" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "unit_circle",
+          "heading": "One Angle",
+          "angle_deg": 40,
+          "angle_label": "theta",
+          "point_label": "cos(theta) + i sin(theta)"
+        }
+      }
+    },
+    {
+      "scene_id": "u2",
+      "order": 5,
+      "duration_seconds": 9,
+      "narration": { "text": "Raise it to the third power and the angle triples. The length never changes." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "DE MOIVRE" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "unit_circle",
+          "heading": "The Angle Triples",
+          "angle_deg": 40,
+          "angle2_deg": 120,
+          "angle_label": "theta",
+          "angle2_label": "3theta",
+          "point_label": "cos(3theta) + i sin(3theta)",
+          "caption": "the radius stays 1"
+        }
+      }
+    },
+    {
+      "scene_id": "u3",
+      "order": 6,
+      "duration_seconds": 6,
+      "narration": { "text": "A right angle, with its real coordinates." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "COORDS" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "unit_circle",
+          "heading": "Quarter Turn",
+          "angle_deg": 90,
+          "angle_label": "90deg",
+          "show_coords": true
+        }
+      }
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import { clamp01, easeInOutQuint, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
 import { KineticText } from '../components/KineticText';
+import { parseMath, mathToPlain } from '../math/mathText';
 
 /**
  * geometry_diagram — a native, fully dynamic geometry figure. The analyzer
@@ -50,6 +51,14 @@ const toSuperscripts = (s: string): string =>
     [...g].map((c) => SUPERSCRIPTS[c] ?? c).join('')
   );
 
+/**
+ * A figure label written in the linear notation, projected into real glyphs:
+ * "3theta" → "3θ", "a^2" → "a²", "cos(theta)" → "cos(θ)". SVG <text> cannot
+ * host the HTML typesetter, so the plain projection plus unicode scripts is
+ * the whole toolkit here — enough for the short labels a figure carries.
+ */
+const mathLabel = (s: string): string => toSuperscripts(mathToPlain(parseMath(s)));
+
 /** `nx`/`ny` is the edge's OUTWARD unit normal — the direction the square was
  *  stood up in. It is a direction, not a point, so the reframe never touches
  *  it (a uniform scale leaves directions alone). */
@@ -87,7 +96,7 @@ const erectSquares = (base: Pt[], labels: string[]): Square[] => {
 
     out.push({
       edge: i,
-      label: toSuperscripts(label),
+      label: mathLabel(label),
       nx,
       ny,
       pts: [
@@ -219,6 +228,10 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
     figure = (
       <FractionBarFigure slot={slot} frame={frame} fps={fps} ink={ink} theme={theme} displayFont={displayFont} />
     );
+  } else if (shape === 'unit_circle') {
+    figure = (
+      <UnitCircleFigure slot={slot} frame={frame} fps={fps} drawP={drawP} drawDone={drawDone} ink={ink} theme={theme} displayFont={displayFont} />
+    );
   } else {
     const raw =
       Array.isArray(slot.points) && slot.points.length >= 3
@@ -257,7 +270,8 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
       const len = Math.hypot(dx, dy) || 1;
       return { x: px + (dx / len) * dist * oScale, y: py + (dy / len) * dist * oScale };
     };
-    const sideLabels = (slot.side_labels ?? []).map((s) => String(s ?? '').trim());
+    // Measurements carry maths as often as plain numbers ("x + 2", "r^2").
+    const sideLabels = (slot.side_labels ?? []).map((s) => mathLabel(String(s ?? '').trim()));
     const marks: AngleMark[] = (slot.angle_marks ?? []).filter(
       (m): m is AngleMark => typeof m === 'object' && m !== null && typeof m.at === 'number' && m.at >= 0 && m.at < n
     );
@@ -995,6 +1009,174 @@ const CoordinatePlaneFigure: React.FC<{
           </g>
         );
       })}
+    </>
+  );
+};
+
+/**
+ * unit_circle: the trig / complex-number figure. Axes, the unit circle, then a
+ * radius SWINGS from 0 to its angle (the arc sweeping with it) and the point
+ * lands on the circumference. A second angle can swing after the first, so a
+ * beat can show one angle turning into another — which is what "raising to the
+ * n multiplies the angle" actually looks like. Angles arrive in degrees
+ * (what a model writes reliably) and are drawn counter-clockwise from the
+ * positive x-axis, the maths convention — so the y term is NEGATED into
+ * screen space, where y grows downward.
+ */
+const UnitCircleFigure: React.FC<{
+  slot: {
+    angle_deg?: number;
+    angle2_deg?: number;
+    angle_label?: string;
+    angle2_label?: string;
+    point_label?: string;
+    show_coords?: boolean;
+  };
+  frame: number;
+  fps: number;
+  drawP: number;
+  drawDone: number;
+  ink: string;
+  theme: Theme;
+  displayFont: string;
+}> = ({ slot, frame, fps, drawP, drawDone, ink, theme, displayFont }) => {
+  const cx = W / 2;
+  const cy = H / 2;
+  const R = Math.min(W, H) * 0.34;
+  const C = 2 * Math.PI * R;
+
+  const a1 = Number.isFinite(slot.angle_deg as number) ? (slot.angle_deg as number) : null;
+  const a2 = Number.isFinite(slot.angle2_deg as number) ? (slot.angle2_deg as number) : null;
+
+  // Screen space: y grows downward, so a maths angle is negated.
+  const at = (deg: number, r: number): { x: number; y: number } => ({
+    x: cx + Math.cos((deg * Math.PI) / 180) * r,
+    y: cy - Math.sin((deg * Math.PI) / 180) * r,
+  });
+
+  const axisP = easeOutQuint(clamp01((frame - f30(fps, 2)) / f30(fps, 8)));
+  const swing1 = easeInOutQuint(clamp01((frame - drawDone) / f30(fps, 16)));
+  const swing2 = easeInOutQuint(clamp01((frame - drawDone - f30(fps, 22)) / f30(fps, 16)));
+
+  // Two angles share a vertex, so their arcs are concentric at DIFFERENT radii
+  // and each label sits in the clear ring between its own arc and the next —
+  // one radius for both would stack the arcs and collide the labels.
+  const solo = a2 == null;
+  const ARC_R = { a1: R * (solo ? 0.26 : 0.2), a2: R * 0.46 };
+  const LABEL_R = { a1: solo ? R * 0.26 + 42 : R * 0.32, a2: R * 0.46 + 44 };
+
+  /** One radius + its swept arc + the point where it meets the circle. */
+  const ray = (deg: number, p: number, color: string, label: string, showPoint: boolean, key: 'a1' | 'a2') => {
+    if (p <= 0) return null;
+    const cur = deg * p;
+    const tip = at(cur, R);
+    const arcR = ARC_R[key];
+    const arcEnd = at(cur, arcR);
+    const arcStart = at(0, arcR);
+    // >180° needs the large-arc flag or SVG takes the short way round.
+    const large = Math.abs(cur) > 180 ? 1 : 0;
+    const labelPos = at(cur / 2, LABEL_R[key]);
+    const pop = spring({
+      frame: Math.max(0, frame - drawDone - (key === 'a2' ? f30(fps, 38) : f30(fps, 16))),
+      fps,
+      config: SPRINGS.pop,
+      durationInFrames: Math.round(fps * 0.4),
+    });
+
+    return (
+      <g key={key}>
+        {cur > 0.5 ? (
+          <path
+            d={`M ${arcStart.x} ${arcStart.y} A ${arcR} ${arcR} 0 ${large} 0 ${arcEnd.x} ${arcEnd.y}`}
+            fill="none"
+            stroke={color}
+            strokeWidth={4}
+            strokeLinecap="round"
+            opacity={0.9}
+          />
+        ) : null}
+        <line x1={cx} y1={cy} x2={tip.x} y2={tip.y} stroke={color} strokeWidth={5} strokeLinecap="round" />
+        {showPoint ? <circle cx={tip.x} cy={tip.y} r={11 * Math.min(1.05, Math.max(0, pop))} fill={color} /> : null}
+        {label && p > 0.6 ? (
+          <text
+            x={labelPos.x}
+            y={labelPos.y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontFamily={displayFont}
+            fontWeight={800}
+            fontSize={32}
+            fill={color}
+            opacity={clamp01((p - 0.6) / 0.4)}
+          >
+            {mathLabel(label)}
+          </text>
+        ) : null}
+      </g>
+    );
+  };
+
+  const pointLabel = (slot.point_label ?? '').trim();
+  const showCoords = !!slot.show_coords;
+  // The point names itself off the LAST angle drawn — that is the one the beat
+  // is about.
+  const nameAngle = a2 ?? a1;
+  const namePos = nameAngle != null ? at(nameAngle, R + 66) : null;
+  const nameP = easeOutQuint(clamp01((frame - drawDone - f30(fps, a2 != null ? 40 : 20)) / f30(fps, 10)));
+  const nameText =
+    pointLabel !== ''
+      ? pointLabel
+      : showCoords && nameAngle != null
+        ? `(${fmtNum(Math.cos((nameAngle * Math.PI) / 180))}, ${fmtNum(Math.sin((nameAngle * Math.PI) / 180))})`
+        : '';
+
+  return (
+    <>
+      <g opacity={axisP}>
+        <line x1={cx - R * 1.45} y1={cy} x2={cx + R * 1.45} y2={cy} stroke={hairline(theme, 0.4)} strokeWidth={2.5} />
+        <line x1={cx} y1={cy - R * 1.45} x2={cx} y2={cy + R * 1.45} stroke={hairline(theme, 0.4)} strokeWidth={2.5} />
+        <text x={cx + R * 1.45 - 4} y={cy - 14} textAnchor="end" fontFamily={MONO_FONT} fontSize={22} fill={theme.muted}>
+          Re
+        </text>
+        <text x={cx + 14} y={cy - R * 1.45 + 18} fontFamily={MONO_FONT} fontSize={22} fill={theme.muted}>
+          Im
+        </text>
+        <text x={cx + R + 10} y={cy + 30} fontFamily={MONO_FONT} fontSize={20} fill={theme.muted}>
+          1
+        </text>
+      </g>
+      <circle
+        cx={cx}
+        cy={cy}
+        r={R}
+        fill="none"
+        stroke={ink}
+        strokeWidth={4}
+        strokeDasharray={`${C * drawP} ${C}`}
+        transform={`rotate(-90 ${cx} ${cy})`}
+      />
+      {/* The first angle stays visible in ink once the second swings past it —
+          the comparison IS the point. */}
+      {a1 != null
+        ? ray(a1, swing1, a2 != null ? ink : theme.accent, (slot.angle_label ?? '').trim(), a2 == null, 'a1')
+        : null}
+      {a2 != null ? ray(a2, swing2, theme.accent, (slot.angle2_label ?? '').trim(), true, 'a2') : null}
+      <circle cx={cx} cy={cy} r={6} fill={ink} opacity={axisP} />
+      {nameText && namePos ? (
+        <text
+          x={namePos.x}
+          y={namePos.y}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontFamily={displayFont}
+          fontWeight={800}
+          fontSize={30}
+          fill={theme.accent}
+          opacity={nameP}
+        >
+          {mathLabel(nameText)}
+        </text>
+      ) : null}
     </>
   );
 };
