@@ -1,0 +1,183 @@
+{
+  "project_id": "math-v15",
+  "aspect_ratio": "16:9",
+  "composition_mode": "slides",
+  "captions": { "enabled": false },
+  "font_pack": "editorial",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "enabled": true, "volume": 1, "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "label": "Glacier",
+    "bg_from": "#F4F8FB",
+    "bg_to": "#F4F8FB",
+    "accent": "#3E8FD8",
+    "accent2": "#2C6FB0",
+    "text": "#14202B",
+    "muted": "#7C8B98",
+    "panel": "#E9F0F6"
+  },
+  "scenes": [
+    {
+      "scene_id": "m1",
+      "order": 1,
+      "duration_seconds": 8,
+      "narration": { "text": "Start with the quadratic. Factor it into two brackets, then read off the two roots." },
+      "layout_template": "math_steps",
+      "transition": "none",
+      "style": { "kicker": "STEP DIFF" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Factor the quadratic",
+          "steps": [
+            { "expr": "x^2 + 5x - 24 = 0", "note": "the problem" },
+            { "expr": "(x + 8)(x - 3) = 0", "note": "factor" },
+            { "expr": "x = -8 or x = 3" }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "g1",
+      "order": 2,
+      "duration_seconds": 7,
+      "narration": { "text": "An isosceles triangle: two sides equal, the base marked with a single tick, midpoint M." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "TICKS" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "triangle",
+          "points": [
+            { "x": 0.5, "y": 0.92, "label": "A" },
+            { "x": 0.08, "y": 0.08, "label": "B" },
+            { "x": 0.92, "y": 0.08, "label": "C" }
+          ],
+          "side_ticks": [2, 0, 2],
+          "extra_points": [{ "on_side": 1, "t": 0.5, "label": "M" }],
+          "heading": "Isosceles triangle"
+        }
+      }
+    },
+    {
+      "scene_id": "g2",
+      "order": 3,
+      "duration_seconds": 6,
+      "narration": { "text": "The solution set: all values greater than two, shown on the number line." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "INEQUALITY" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "number_line",
+          "x_min": -4,
+          "x_max": 10,
+          "marks": [{ "x": 2, "label": "2" }],
+          "segment": { "from": 2, "to": 10 },
+          "heading": "x > 2"
+        }
+      }
+    },
+    {
+      "scene_id": "g3",
+      "order": 4,
+      "duration_seconds": 6,
+      "narration": { "text": "Plot the two points and draw the line through them to find the slope." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "SLOPE" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "coordinate_plane",
+          "coords": [
+            { "x": 1, "y": 2, "label": "A" },
+            { "x": 5, "y": 6, "label": "B" }
+          ],
+          "line_through": [0, 1],
+          "heading": "Line through A and B"
+        }
+      }
+    },
+    {
+      "scene_id": "g4",
+      "order": 5,
+      "duration_seconds": 5,
+      "narration": { "text": "Three quarters of the bar is filled." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "FRACTION" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "fraction_bar",
+          "numerator": 3,
+          "denominator": 4,
+          "heading": "Three quarters"
+        }
+      }
+    },
+    {
+      "scene_id": "f1",
+      "order": 6,
+      "duration_seconds": 8,
+      "narration": { "text": "Where the parabola meets the line, that's the solution to the system." },
+      "layout_template": "function_plot",
+      "transition": "fade",
+      "style": { "kicker": "INTERSECTION" },
+      "slots": {
+        "slot_plot": {
+          "content_type": "function_plot",
+          "expression": "x^2",
+          "expression2": "2x + 3",
+          "x_min": -3,
+          "x_max": 4,
+          "marks": [{ "x": 3, "label": "(3, 9)" }],
+          "heading": "Parabola meets line"
+        }
+      }
+    },
+    {
+      "scene_id": "f2",
+      "order": 7,
+      "duration_seconds": 7,
+      "narration": { "text": "The tangent line touches the curve at x equals one, and its slope is the derivative." },
+      "layout_template": "function_plot",
+      "transition": "fade",
+      "style": { "kicker": "TANGENT" },
+      "slots": {
+        "slot_plot": {
+          "content_type": "function_plot",
+          "expression": "x^2",
+          "x_min": -3,
+          "x_max": 3,
+          "tangent_at": 1,
+          "heading": "Tangent at x = 1"
+        }
+      }
+    },
+    {
+      "scene_id": "f3",
+      "order": 8,
+      "duration_seconds": 7,
+      "narration": { "text": "The shaded area under the curve between zero and two is the integral." },
+      "layout_template": "function_plot",
+      "transition": "fade",
+      "style": { "kicker": "INTEGRAL" },
+      "slots": {
+        "slot_plot": {
+          "content_type": "function_plot",
+          "expression": "x^2 + 1",
+          "x_min": -1,
+          "x_max": 3,
+          "shade": { "from": 0, "to": 2 },
+          "heading": "Area under the curve"
+        }
+      }
+    }
+  ]
+}

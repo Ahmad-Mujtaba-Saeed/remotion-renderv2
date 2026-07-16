@@ -1,0 +1,153 @@
+{
+  "project_id": "math-board",
+  "aspect_ratio": "16:9",
+  "composition_mode": "math_board",
+  "captions": { "enabled": false },
+  "font_pack": "editorial",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "enabled": true, "volume": 1, "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "label": "Glacier",
+    "bg_from": "#F4F8FB",
+    "bg_to": "#F4F8FB",
+    "accent": "#3E8FD8",
+    "accent2": "#2C6FB0",
+    "text": "#14202B",
+    "muted": "#7C8B98",
+    "panel": "#E9F0F6"
+  },
+  "scenes": [
+    {
+      "scene_id": "s1",
+      "order": 1,
+      "duration_seconds": 5,
+      "narration": { "text": "Two questions on one board. First, the slope of the line through these two points. Then, the tangent to the parabola." },
+      "layout_template": "single_focus",
+      "transition": "none",
+      "style": { "kicker": "The problem" },
+      "slots": {
+        "slot_text": {
+          "content_type": "text_block",
+          "heading": "Slope through (1, 2) and (5, 6), then the tangent to y = x^2 at x = 1",
+          "bullets": ["Find the slope of the line", "Then the slope of the curve at a point"]
+        }
+      }
+    },
+    {
+      "scene_id": "s2",
+      "order": 2,
+      "duration_seconds": 9,
+      "narration": { "text": "Slope is rise over run. Subtract the y values, subtract the x values, and divide. Six minus two is four, five minus one is four, so the slope is one." },
+      "layout_template": "math_steps",
+      "transition": "none",
+      "style": { "kicker": "Step 1 — slope" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Slope of the line",
+          "steps": [
+            { "expr": "m = frac{y_2 - y_1}{x_2 - x_1}", "note": "rise over run" },
+            { "expr": "m = frac{6 - 2}{5 - 1}", "note": "substitute" },
+            { "expr": "m = frac{4}{4}", "note": "simplify" },
+            { "expr": "m = 1" }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "s3",
+      "order": 3,
+      "duration_seconds": 6,
+      "narration": { "text": "On the grid, plot the two points and draw the line. It rises one for every one across — a slope of one." },
+      "layout_template": "geometry_diagram",
+      "transition": "none",
+      "style": { "kicker": "See it" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "coordinate_plane",
+          "coords": [
+            { "x": 1, "y": 2, "label": "A" },
+            { "x": 5, "y": 6, "label": "B" }
+          ],
+          "line_through": [0, 1],
+          "heading": "Line through A and B"
+        }
+      }
+    },
+    {
+      "scene_id": "s4",
+      "order": 4,
+      "duration_seconds": 6,
+      "narration": { "text": "Before the second part, one idea. The tangent's slope is the derivative — how fast the curve is changing at exactly that point." },
+      "layout_template": "single_focus",
+      "transition": "none",
+      "style": { "kicker": "Concept" },
+      "slots": {
+        "slot_text": {
+          "content_type": "text_block",
+          "heading": "The tangent's slope is the derivative",
+          "body": "The derivative measures how steep the curve is at a single point. For y = x^2 the derivative is 2x."
+        }
+      }
+    },
+    {
+      "scene_id": "s5",
+      "order": 5,
+      "duration_seconds": 9,
+      "narration": { "text": "Differentiate x squared to get two x. Put in x equals one, and the slope of the tangent is two." },
+      "layout_template": "math_steps",
+      "transition": "none",
+      "style": { "kicker": "Step 2 — tangent" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Slope of the tangent at x = 1",
+          "steps": [
+            { "expr": "y = x^2", "note": "the curve" },
+            { "expr": "frac{dy}{dx} = 2x", "note": "differentiate" },
+            { "expr": "frac{dy}{dx} = 2(1)", "note": "at x = 1" },
+            { "expr": "slope = 2" }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "s6",
+      "order": 6,
+      "duration_seconds": 7,
+      "narration": { "text": "Here is the parabola with its tangent at x equals one, touching the curve and climbing with slope two." },
+      "layout_template": "function_plot",
+      "transition": "none",
+      "style": { "kicker": "See it" },
+      "slots": {
+        "slot_plot": {
+          "content_type": "function_plot",
+          "expression": "x^2",
+          "x_min": -3,
+          "x_max": 3,
+          "tangent_at": 1,
+          "heading": "Tangent at x = 1"
+        }
+      }
+    },
+    {
+      "scene_id": "s7",
+      "order": 7,
+      "duration_seconds": 4,
+      "narration": { "text": "Line slope one, curve slope two. Same idea, two kinds of slope." },
+      "layout_template": "outro_card",
+      "transition": "none",
+      "style": { "kicker": "Recap" },
+      "slots": {
+        "slot_text": {
+          "content_type": "text_block",
+          "heading": "Line: slope 1. Curve at x = 1: slope 2.",
+          "body": "Same idea — rise over run — applied to a straight line and to a single point on a curve."
+        }
+      }
+    }
+  ]
+}

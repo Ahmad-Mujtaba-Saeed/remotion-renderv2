@@ -25,6 +25,9 @@ import { PhoneMockup } from '../layouts/PhoneMockup';
 import { PhotoStack } from '../layouts/PhotoStack';
 import { MapCard } from '../layouts/MapCard';
 import { HeadlineTicker } from '../layouts/HeadlineTicker';
+import { MathSteps } from '../layouts/MathSteps';
+import { GeometryDiagram } from '../layouts/GeometryDiagram';
+import { FunctionPlot } from '../layouts/FunctionPlot';
 import { AmbientBackground } from './AmbientBackground';
 import { PunchLine } from './PunchLine';
 import { CaptionTrack } from './CaptionTrack';
@@ -127,6 +130,12 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <MapCard scene={scene} />;
     case 'headline_ticker':
       return <HeadlineTicker scene={scene} />;
+    case 'math_steps':
+      return <MathSteps scene={scene} />;
+    case 'geometry_diagram':
+      return <GeometryDiagram scene={scene} />;
+    case 'function_plot':
+      return <FunctionPlot scene={scene} />;
     case 'single_focus':
     default:
       return <SingleFocus scene={scene} />;

@@ -36,7 +36,7 @@ export const RemotionRoot: React.FC = () => {
         const durationInFrames =
           mode === 'hybrid'
             ? totalHybridFrames(normalizeChapters(p.shotList), fps)
-            : mode === 'canvas_journey'
+            : mode === 'canvas_journey' || mode === 'math_board'
               ? totalCanvasFrames(scenes, fps)
               : totalDurationInFrames(scenes, fps);
         return {

@@ -3,6 +3,7 @@ import { AbsoluteFill, Img } from 'remotion';
 import { Theme, DEFAULT_THEME } from './types';
 import { ThemeProvider, DISPLAY_FONT, MONO_FONT, inkOn, hairline } from './theme';
 import { FontLoader } from './fonts';
+import { MathText } from './math/mathText';
 
 export interface ThumbnailProps {
   title?: string;
@@ -10,6 +11,9 @@ export interface ThumbnailProps {
   theme?: Theme | null;
   /** Hero image (an uploaded slot asset or a scene illustration). */
   hero_url?: string | null;
+  /** Math videos: the problem equation, typeset in the hero block instead of
+   *  an image — the thumbnail leads with the problem itself. */
+  equation?: string | null;
   font_pack?: string | null;
   width?: number;
   height?: number;
@@ -26,6 +30,7 @@ export const ThumbnailComp: React.FC<ThumbnailProps> = ({
   kicker = '',
   theme,
   hero_url,
+  equation,
   font_pack,
   width = 1280,
   height = 720,
@@ -109,7 +114,34 @@ export const ThumbnailComp: React.FC<ThumbnailProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          {hero_url ? (
+          {equation && equation.trim() !== '' ? (
+            // Math thumbnail: the problem itself on the accent field, typeset.
+            <div
+              style={{
+                width: '100%',
+                height: '78%',
+                background: t.accent,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 40 * u,
+                boxSizing: 'border-box',
+              }}
+            >
+              <MathText
+                expr={equation}
+                color={inkOn(t.accent)}
+                style={{
+                  fontFamily: DISPLAY_FONT,
+                  fontWeight: 900,
+                  fontSize: (portrait ? 84 : 96) * u * (equation.length > 14 ? 0.7 : 1),
+                  lineHeight: 1.1,
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                }}
+              />
+            </div>
+          ) : hero_url ? (
             <div style={{ position: 'relative', width: '100%', height: '78%' }}>
               <div
                 style={{

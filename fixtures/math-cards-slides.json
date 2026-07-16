@@ -1,0 +1,229 @@
+{
+  "project_id": "math-cards",
+  "aspect_ratio": "16:9",
+  "composition_mode": "slides",
+  "captions": { "enabled": false },
+  "font_pack": "editorial",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "enabled": true, "volume": 1, "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "label": "Glacier",
+    "bg_from": "#F4F8FB",
+    "bg_to": "#F4F8FB",
+    "accent": "#3E8FD8",
+    "accent2": "#2C6FB0",
+    "text": "#14202B",
+    "muted": "#7C8B98",
+    "panel": "#E9F0F6"
+  },
+  "scenes": [
+    {
+      "scene_id": "m1",
+      "order": 1,
+      "duration_seconds": 8,
+      "narration": { "text": "Start with the quadratic and factor it into two brackets that multiply back to the original." },
+      "layout_template": "math_steps",
+      "transition": "none",
+      "style": { "kicker": "THE WORKING" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Factor the quadratic",
+          "steps": [
+            { "expr": "x^2 + 5x - 24 = 0", "note": "the problem" },
+            { "expr": "(x + 8)(x - 3) = 0", "note": "factor" },
+            { "expr": "x + 8 = 0 or x - 3 = 0", "note": "zero product" },
+            { "expr": "x = -8 or x = 3" }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "m2",
+      "order": 2,
+      "duration_seconds": 6,
+      "narration": { "text": "The quadratic formula confirms it, square root and all." },
+      "layout_template": "math_steps",
+      "transition": "fade",
+      "style": { "kicker": "THE CHECK" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Check with the formula",
+          "steps": [
+            { "expr": "x = frac{-5 +- sqrt{25 + 96}}{2}", "note": "plug in" },
+            { "expr": "x = frac{-5 +- 11}{2}", "note": "sqrt{121} = 11" },
+            { "expr": "x = 3" }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "g1",
+      "order": 3,
+      "duration_seconds": 7,
+      "narration": { "text": "A right triangle with legs six and eight hides its hypotenuse until Pythagoras speaks." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "THE FIGURE" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "right_triangle",
+          "points": [
+            { "x": 0.08, "y": 0.85, "label": "A" },
+            { "x": 0.08, "y": 0.1, "label": "B" },
+            { "x": 0.9, "y": 0.1, "label": "C" }
+          ],
+          "side_labels": ["6 cm", "8 cm", "c = ?"],
+          "angle_marks": [
+            { "at": 1, "right": true },
+            { "at": 2, "label": "37°" }
+          ],
+          "highlight_side": 2,
+          "heading": "Find the hypotenuse",
+          "caption": "a² + b² = c²"
+        }
+      }
+    },
+    {
+      "scene_id": "g2",
+      "order": 4,
+      "duration_seconds": 6,
+      "narration": { "text": "A circle gives its whole area away the moment you know one radius." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "THE CIRCLE" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "circle",
+          "radius_label": "r = 5 cm",
+          "center_label": "O",
+          "fill": true,
+          "heading": "Area of a circle",
+          "caption": "A = πr²"
+        }
+      }
+    },
+    {
+      "scene_id": "f1",
+      "order": 5,
+      "duration_seconds": 8,
+      "narration": { "text": "Plot the parabola and the two roots appear exactly where it crosses the axis." },
+      "layout_template": "function_plot",
+      "transition": "fade",
+      "style": { "kicker": "THE GRAPH" },
+      "slots": {
+        "slot_plot": {
+          "content_type": "function_plot",
+          "expression": "x^2 + 5x - 24",
+          "x_min": -12,
+          "x_max": 8,
+          "marks": [
+            { "x": -8, "label": "x = -8" },
+            { "x": 3, "label": "x = 3" }
+          ],
+          "heading": "Where the parabola crosses zero",
+          "caption": "roots = the answers"
+        }
+      }
+    },
+    {
+      "scene_id": "f2",
+      "order": 6,
+      "duration_seconds": 6,
+      "narration": { "text": "One over x refuses to touch zero — the graph breaks honestly at the asymptote." },
+      "layout_template": "function_plot",
+      "transition": "fade",
+      "style": { "kicker": "THE ASYMPTOTE" },
+      "slots": {
+        "slot_plot": {
+          "content_type": "function_plot",
+          "expression": "1/x",
+          "x_min": -4,
+          "x_max": 4,
+          "heading": "y = 1/x never meets zero"
+        }
+      }
+    },
+    {
+      "scene_id": "c1",
+      "order": 7,
+      "duration_seconds": 6,
+      "narration": { "text": "Forty percent of study time goes to practice problems, and it earns every minute." },
+      "layout_template": "animated_chart",
+      "transition": "fade",
+      "style": { "kicker": "THE SPLIT" },
+      "slots": {
+        "slot_chart": {
+          "content_type": "chart",
+          "chart_type": "pie",
+          "values": [40, 30, 20, 10],
+          "labels": ["Practice", "Reading", "Review", "Breaks"],
+          "unit": "%",
+          "highlight_index": 0,
+          "caption": "Where an hour of study goes"
+        }
+      }
+    },
+    {
+      "scene_id": "c2",
+      "order": 8,
+      "duration_seconds": 6,
+      "narration": { "text": "Skill compounds — every week stacks on the last one." },
+      "layout_template": "animated_chart",
+      "transition": "fade",
+      "style": { "kicker": "THE CLIMB" },
+      "slots": {
+        "slot_chart": {
+          "content_type": "chart",
+          "chart_type": "area",
+          "values": [5, 12, 22, 38, 61, 90],
+          "labels": ["W1", "W2", "W3", "W4", "W5", "W6"],
+          "caption": "Problems solved, cumulative"
+        }
+      }
+    },
+    {
+      "scene_id": "c3",
+      "order": 9,
+      "duration_seconds": 6,
+      "narration": { "text": "More practice sessions line up with higher scores — the trend is not subtle." },
+      "layout_template": "animated_chart",
+      "transition": "fade",
+      "style": { "kicker": "THE PATTERN" },
+      "slots": {
+        "slot_chart": {
+          "content_type": "chart",
+          "chart_type": "scatter",
+          "values": [52, 58, 55, 67, 74, 79, 88],
+          "labels": ["Mon", "", "", "", "", "", "Sun"],
+          "highlight_index": 6,
+          "caption": "Sessions vs score"
+        }
+      }
+    },
+    {
+      "scene_id": "c4",
+      "order": 10,
+      "duration_seconds": 6,
+      "narration": { "text": "Algebra strong, geometry solid, probability still catching up — the shape tells the study plan." },
+      "layout_template": "animated_chart",
+      "transition": "fade",
+      "style": { "kicker": "THE PROFILE" },
+      "slots": {
+        "slot_chart": {
+          "content_type": "chart",
+          "chart_type": "radar",
+          "values": [85, 78, 62, 45, 70],
+          "labels": ["Algebra", "Geometry", "Trig", "Probability", "Calculus"],
+          "highlight_index": 3,
+          "caption": "Topic mastery"
+        }
+      }
+    }
+  ]
+}

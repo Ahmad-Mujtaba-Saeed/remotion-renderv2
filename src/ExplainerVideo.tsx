@@ -21,6 +21,7 @@ import { MotionStyleProvider } from './motion/styles';
 import { DEFAULT_THEME } from './types';
 import { presentationFor } from './transitions';
 import { CanvasJourney } from './canvas/CanvasJourney';
+import { MathBoard } from './board/MathBoard';
 import { SlidesChapter } from './components/SlidesChapter';
 import { SfxProvider, SfxCue } from './sfx';
 import { FontLoader } from './fonts';
@@ -178,14 +179,17 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   // Narration: canvas mode plays it per-station inside CanvasJourney; slides
   // mode plays it per-scene inside SceneRouter (Kokoro, one clip per scene).
 
+  // math_board plays scenes back-to-back on one continuous camera clock, just
+  // like the canvas journey — no transition overlaps to subtract.
+  const boardish = mode === 'canvas_journey' || mode === 'math_board';
   const duckWindows =
     mode === 'hybrid'
       ? narrationWindowsHybrid(chapters, fps)
-      : narrationWindows(scenes, fps, mode === 'canvas_journey' ? 'canvas' : 'slides');
+      : narrationWindows(scenes, fps, boardish ? 'canvas' : 'slides');
   const total =
     mode === 'hybrid'
       ? totalHybridFrames(chapters, fps)
-      : mode === 'canvas_journey'
+      : boardish
         ? totalCanvasFrames(scenes, fps)
         : totalDurationInFrames(scenes, fps);
 
@@ -225,6 +229,29 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     music?.url && musicVolume ? (
       <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
     ) : null;
+
+  if (mode === 'math_board') {
+    // A separate paradigm for worked-math videos (copilot.md math board): the
+    // whole solution accumulates on ONE continuous surface and a calm
+    // teacher's-eye camera writes the equation, glances at a diagram, steps
+    // aside to a concept and returns — none of the canvas journey's flight.
+    return (
+      <ThemeProvider theme={shotList?.theme}>
+        <SkinProvider skin={shotList?.skin}>
+        <MotionStyleProvider style={shotList?.motion_style}>
+        <SfxProvider config={shotList?.sfx}>
+          <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+            <FontLoader pack={fontPack} />
+            {musicBed}
+            <MathBoard scenes={scenes} captions={captions} />
+            <GlobalOverlays logoUrl={shotList?.brand?.logo_url} />
+          </AbsoluteFill>
+        </SfxProvider>
+        </MotionStyleProvider>
+        </SkinProvider>
+      </ThemeProvider>
+    );
+  }
 
   if (mode === 'canvas_journey') {
     return (

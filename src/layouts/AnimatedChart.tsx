@@ -31,15 +31,23 @@ const RollingValue: React.FC<{
 
 /**
  * animated_chart (copilot.md §5.2): a NATIVE animated chart — the antidote to
- * "please upload a screenshot of a sales graph". Three shapes:
+ * "please upload a screenshot of a sales graph". Shapes:
  *
- *  - bar:   hairline baseline draws first, bars grow bottom-up staggered 3f
- *           (easeOutExpo 18f), value labels count up on top, the
- *           highlight_index bar takes the accent, the rest stay muted;
- *  - line:  the series path draws itself (24f easeInOutQuint) over a solid
- *           10%-alpha accent area fill, a dot snaps onto the end;
- *  - donut: an arc sweeps to the highlighted value's share while the value
- *           counts up in the centre;
+ *  - bar:     hairline baseline draws first, bars grow bottom-up staggered 3f
+ *             (easeOutExpo 18f), value labels count up on top, the
+ *             highlight_index bar takes the accent, the rest stay muted;
+ *  - line:    the series path draws itself (24f easeInOutQuint) over a solid
+ *             10%-alpha accent area fill, a dot snaps onto the end;
+ *  - area:    the line, but the fill IS the story — a solid 18%-alpha accent
+ *             field revealed left-to-right with the stroke (cumulative growth);
+ *  - donut:   an arc sweeps to the highlighted value's share while the value
+ *             counts up in the centre;
+ *  - pie:     the whole composition — slices sweep in one after another,
+ *             the highlighted slice in the accent, share labels at each rim;
+ *  - scatter: dots pop onto the plot in sequence and a least-squares trend
+ *             line draws through them (correlation beats);
+ *  - radar:   3-8 spokes, two hairline web rings, the data polygon draws
+ *             itself and settles with a low-alpha accent fill;
  *  - counter: delegates to big_counter (one number IS the chart).
  *
  * SVG stroke/transform/colour only. One chime lands when the drawing
@@ -69,7 +77,12 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const caption = (slot.caption ?? '').trim();
   const source = (slot.source ?? '').trim();
-  const type = slot.chart_type === 'line' || slot.chart_type === 'donut' ? slot.chart_type : 'bar';
+  const KNOWN = ['bar', 'line', 'area', 'donut', 'pie', 'scatter', 'radar'] as const;
+  let type: (typeof KNOWN)[number] = (KNOWN as readonly string[]).includes(slot.chart_type ?? '')
+    ? (slot.chart_type as (typeof KNOWN)[number])
+    : 'bar';
+  // A radar below 3 axes is a line with delusions; bars tell it honestly.
+  if (type === 'radar' && values.length < 3) type = 'bar';
 
   const at = win?.start ?? 0;
   const kickerIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
@@ -167,7 +180,7 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
         />
       </div>
     );
-  } else if (type === 'line') {
+  } else if (type === 'line' || type === 'area') {
     const drawAt = f30(fps, 6);
     const drawDur = f30(fps, 24);
     doneAt = drawAt + drawDur;
@@ -192,8 +205,14 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
     chart = (
       <div style={{ position: 'relative', width: W * u, height: H * u }}>
         <svg width={W * u} height={H * u} viewBox={`0 0 ${W} ${H}`} fill="none">
-          {/* Solid 10%-alpha accent area — flat, not a gradient. */}
-          <polygon points={area} fill={theme.accent} opacity={0.1 * p} />
+          {/* Solid low-alpha accent area — flat, not a gradient. The area
+              variant reveals its fill WITH the stroke, left to right. */}
+          <polygon
+            points={area}
+            fill={theme.accent}
+            opacity={type === 'area' ? 0.18 : 0.1 * p}
+            style={type === 'area' ? { clipPath: `inset(0 ${(1 - p) * 100}% 0 0)` } : undefined}
+          />
           <polyline
             points={pts}
             stroke={theme.accent}
@@ -247,6 +266,299 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
             ))}
           </div>
         ) : null}
+      </div>
+    );
+  } else if (type === 'pie') {
+    // The whole composition: slices sweep in clockwise, one after another.
+    const total = values.reduce((a, b) => a + b, 0) || 1;
+    const hiIdx = hi ?? values.indexOf(Math.max(...values));
+    const R = 200;
+    const CX = 300;
+    const CY = H / 2;
+    const sliceAt = (i: number): number => f30(fps, 6) + i * f30(fps, 4);
+    const sliceDur = f30(fps, 14);
+    doneAt = sliceAt(values.length - 1) + sliceDur;
+
+    const polar = (a: number, r: number): [number, number] => [
+      CX + Math.cos(a) * r,
+      CY + Math.sin(a) * r,
+    ];
+
+    let angle = -Math.PI / 2;
+    const slices = values.map((v, i) => {
+      const span = (v / total) * Math.PI * 2;
+      const a0 = angle;
+      angle += span;
+      const p = easeOutQuint(clamp01((frame - sliceAt(i)) / sliceDur));
+      const aEnd = a0 + span * p;
+      const [sx, sy] = polar(a0, R);
+      const [ex, ey] = polar(aEnd, R);
+      const largeArc = aEnd - a0 > Math.PI ? 1 : 0;
+      const mid = a0 + span / 2;
+      const share = v / total;
+      const isHot = hiIdx === i;
+      return { d: `M ${CX} ${CY} L ${sx} ${sy} A ${R} ${R} 0 ${largeArc} 1 ${ex} ${ey} Z`, p, mid, share, isHot, i, v };
+    });
+
+    chart = (
+      <div style={{ position: 'relative', width: 1000 * u, height: H * u }}>
+        <svg width={1000 * u} height={H * u} viewBox={`0 0 1000 ${H}`} fill="none">
+          {slices.map((s) =>
+            s.p > 0.01 ? (
+              <path
+                key={s.i}
+                d={s.d}
+                fill={s.isHot ? theme.accent : theme.muted}
+                opacity={s.isHot ? 1 : 0.6 - (s.i % 4) * 0.12}
+                stroke={theme.bg_from}
+                strokeWidth={3}
+              />
+            ) : null
+          )}
+          {/* Rim labels: share percentage + name at each slice's mid-angle. */}
+          {slices.map((s) => {
+            if (s.share < 0.04) return null;
+            const [lx, ly] = polar(s.mid, R + 56);
+            return (
+              <g key={`l${s.i}`} opacity={clamp01((s.p - 0.6) * 2.5)}>
+                <text
+                  x={lx}
+                  y={ly}
+                  textAnchor="middle"
+                  fontFamily={displayFont}
+                  fontWeight={800}
+                  fontSize={34}
+                  fill={s.isHot ? theme.accent : theme.text}
+                >
+                  {Math.round(s.share * 100)}%
+                </text>
+                {labels[s.i] ? (
+                  <text
+                    x={lx}
+                    y={ly + 30}
+                    textAnchor="middle"
+                    fontFamily={MONO_FONT}
+                    fontSize={22}
+                    fill={theme.muted}
+                    style={{ textTransform: 'uppercase', letterSpacing: 1.5 }}
+                  >
+                    {labels[s.i]}
+                  </text>
+                ) : null}
+              </g>
+            );
+          })}
+        </svg>
+        {/* Legend column on the right balances the composition in 16:9. */}
+        <div
+          style={{
+            position: 'absolute',
+            left: 620 * u,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16 * u,
+          }}
+        >
+          {values.map((v, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 * u, opacity: clamp01((frame - sliceAt(i) - 4) / 8) }}>
+              <span
+                style={{
+                  width: 22 * u,
+                  height: 22 * u,
+                  background: hiIdx === i ? theme.accent : theme.muted,
+                  opacity: hiIdx === i ? 1 : 0.6 - (i % 4) * 0.12,
+                }}
+              />
+              <span style={{ fontFamily: MONO_FONT, fontSize: 24 * u, color: hiIdx === i ? theme.text : theme.muted }}>
+                {labels[i] ?? `#${i + 1}`}
+                {'  '}
+                <RollingValue value={v} unit={unit} frame={frame - sliceAt(i)} fps={fps} />
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  } else if (type === 'scatter') {
+    // Dots land in sequence; a least-squares trend line draws through them.
+    const min = Math.min(...values);
+    const range = max - min || 1;
+    const px = (i: number): number => 60 + (i / (values.length - 1)) * (W - 120);
+    const py = (v: number): number => 60 + (1 - (v - min) / range) * (H - 180);
+
+    const dotAt = (i: number): number => f30(fps, 8) + i * f30(fps, 3);
+    const trendAt = dotAt(values.length - 1) + f30(fps, 6);
+    const trendDur = f30(fps, 12);
+    doneAt = trendAt + trendDur;
+    const trendP = easeInOutQuint(clamp01((frame - trendAt) / trendDur));
+
+    // Least squares over (index, value).
+    const nPts = values.length;
+    const meanX = (nPts - 1) / 2;
+    const meanY = values.reduce((a, b) => a + b, 0) / nPts;
+    let num = 0;
+    let den = 0;
+    values.forEach((v, i) => {
+      num += (i - meanX) * (v - meanY);
+      den += (i - meanX) * (i - meanX);
+    });
+    const slope = den !== 0 ? num / den : 0;
+    const yAt = (i: number): number => meanY + slope * (i - meanX);
+
+    chart = (
+      <div style={{ position: 'relative', width: W * u, height: H * u }}>
+        <svg width={W * u} height={H * u} viewBox={`0 0 ${W} ${H}`} fill="none">
+          <line x1={40} y1={H - 60} x2={W - 40} y2={H - 60} stroke={hairline(theme, 0.3)} strokeWidth={2} />
+          {trendP > 0.01 ? (
+            <line
+              x1={px(0)}
+              y1={py(yAt(0))}
+              x2={px(0) + (px(nPts - 1) - px(0)) * trendP}
+              y2={py(yAt(0)) + (py(yAt(nPts - 1)) - py(yAt(0))) * trendP}
+              stroke={theme.accent}
+              strokeWidth={4}
+              opacity={0.65}
+              strokeLinecap="round"
+            />
+          ) : null}
+          {values.map((v, i) => {
+            const pop = spring({
+              frame: Math.max(0, frame - dotAt(i)),
+              fps,
+              config: SPRINGS.settle,
+              durationInFrames: Math.round(fps * 0.35),
+            });
+            const isHot = hi === i;
+            return (
+              <circle
+                key={i}
+                cx={px(i)}
+                cy={py(v)}
+                r={(isHot ? 16 : 11) * Math.min(1.05, pop)}
+                fill={isHot ? theme.accent : theme.muted}
+                opacity={isHot ? 1 : 0.75}
+              />
+            );
+          })}
+        </svg>
+        {hi != null ? (
+          <div
+            style={{
+              position: 'absolute',
+              left: px(hi) * u - 100 * u,
+              width: 200 * u,
+              top: py(values[hi]) * u - 62 * u,
+              textAlign: 'center',
+              fontFamily: displayFont,
+              fontWeight: 800,
+              fontSize: 38 * u,
+              color: theme.accent,
+              opacity: clamp01((frame - dotAt(hi) - 4) / 8),
+            }}
+          >
+            <RollingValue value={values[hi]} unit={unit} frame={frame - dotAt(hi)} fps={fps} />
+          </div>
+        ) : null}
+        {labels.length ? (
+          <div
+            style={{
+              position: 'absolute',
+              left: 60 * u,
+              right: 60 * u,
+              bottom: 8 * u,
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontFamily: MONO_FONT,
+              fontSize: 24 * u,
+              letterSpacing: 1.5 * u,
+              textTransform: 'uppercase',
+              color: theme.muted,
+            }}
+          >
+            {labels.slice(0, values.length).map((l, i) => (
+              <span key={i}>{l}</span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    );
+  } else if (type === 'radar') {
+    // 3-8 axes; the data polygon draws itself around the web.
+    const nAx = values.length;
+    const CX = W / 2;
+    const CY = H / 2 + 10;
+    const R = 200;
+    const angleOf = (i: number): number => (i / nAx) * Math.PI * 2 - Math.PI / 2;
+    const polar = (a: number, r: number): [number, number] => [
+      CX + Math.cos(a) * r,
+      CY + Math.sin(a) * r,
+    ];
+
+    const webP = easeOutQuint(clamp01((frame - f30(fps, 3)) / f30(fps, 12)));
+    const drawAt = f30(fps, 12);
+    const drawDur = f30(fps, 20);
+    doneAt = drawAt + drawDur + f30(fps, 6);
+    const dataP = easeInOutQuint(clamp01((frame - drawAt) / drawDur));
+    const fillP = easeOutQuint(clamp01((frame - drawAt - drawDur) / f30(fps, 8)));
+
+    const vertex = (i: number): [number, number] => polar(angleOf(i), (values[i] / max) * R);
+    const dataPath = `M ${values.map((_, i) => vertex(i).join(' ')).join(' L ')} Z`;
+    const ring = (r: number): string => values.map((_, i) => polar(angleOf(i), r).join(',')).join(' ');
+
+    chart = (
+      <div style={{ position: 'relative', width: W * u, height: (H + 40) * u }}>
+        <svg width={W * u} height={(H + 40) * u} viewBox={`0 0 ${W} ${H + 40}`} fill="none">
+          <g opacity={webP}>
+            <polygon points={ring(R)} stroke={hairline(theme, 0.18)} strokeWidth={2} />
+            <polygon points={ring(R * 0.5)} stroke={hairline(theme, 0.12)} strokeWidth={2} />
+            {values.map((_, i) => {
+              const [ex, ey] = polar(angleOf(i), R);
+              return <line key={i} x1={CX} y1={CY} x2={CX + (ex - CX) * webP} y2={CY + (ey - CY) * webP} stroke={hairline(theme, 0.14)} strokeWidth={2} />;
+            })}
+          </g>
+          <polygon points={values.map((_, i) => vertex(i).join(',')).join(' ')} fill={theme.accent} opacity={0.12 * fillP} />
+          <path
+            d={dataPath}
+            stroke={theme.accent}
+            strokeWidth={5.5}
+            strokeLinejoin="round"
+            pathLength={1}
+            strokeDasharray={1}
+            strokeDashoffset={1 - dataP}
+          />
+          {values.map((v, i) => {
+            const [vx, vy] = vertex(i);
+            const pop = spring({
+              frame: Math.max(0, frame - drawAt - drawDur - i * f30(fps, 2)),
+              fps,
+              config: SPRINGS.settle,
+              durationInFrames: Math.round(fps * 0.3),
+            });
+            return <circle key={`d${i}`} cx={vx} cy={vy} r={8 * Math.min(1, pop)} fill={theme.accent} />;
+          })}
+          {values.map((v, i) => {
+            const [lx, ly] = polar(angleOf(i), R + 46);
+            const isHot = hi === i;
+            return (
+              <text
+                key={`t${i}`}
+                x={lx}
+                y={ly}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontFamily={MONO_FONT}
+                fontSize={24}
+                fill={isHot ? theme.accent : theme.muted}
+                opacity={webP}
+                style={{ textTransform: 'uppercase', letterSpacing: 1.5 }}
+              >
+                {labels[i] ?? `#${i + 1}`}
+              </text>
+            );
+          })}
+        </svg>
       </div>
     );
   } else {

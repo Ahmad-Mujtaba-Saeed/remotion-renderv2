@@ -1,0 +1,160 @@
+{
+  "project_id": 9027,
+  "aspect_ratio": "16:9",
+  "composition_mode": "slides",
+  "captions": { "enabled": false },
+  "font_pack": "editorial",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "bg_from": "#0B1620",
+    "bg_to": "#0B1620",
+    "text": "#E8F1F7",
+    "muted": "#8FA9BC",
+    "accent": "#4FC3E8",
+    "paper": "#0B1620",
+    "panel": "#12222F"
+  },
+  "scenes": [
+    {
+      "scene_id": "p1",
+      "order": 1,
+      "duration_seconds": 6,
+      "narration": { "text": "Picture a right triangle with legs a and b, and hypotenuse c." },
+      "layout_template": "geometry_diagram",
+      "transition": "none",
+      "style": { "kicker": "THE FIGURE" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "right_triangle",
+          "heading": "A Right Triangle",
+          "points": [
+            { "x": 0.08, "y": 0.92, "label": "A" },
+            { "x": 0.08, "y": 0.08, "label": "B" },
+            { "x": 0.92, "y": 0.08, "label": "C" }
+          ],
+          "side_labels": ["a", "b", "c"]
+        }
+      }
+    },
+    {
+      "scene_id": "p2",
+      "order": 2,
+      "duration_seconds": 7,
+      "narration": { "text": "Square side a, and you get the area of a square sitting on that side." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "ONE SQUARE" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "right_triangle",
+          "heading": "The Square on a",
+          "points": [
+            { "x": 0.08, "y": 0.92, "label": "A" },
+            { "x": 0.08, "y": 0.08, "label": "B" },
+            { "x": 0.92, "y": 0.08, "label": "C" }
+          ],
+          "side_labels": ["a", "b", "c"],
+          "side_squares": ["a^2", "", ""],
+          "highlight_side": 0
+        }
+      }
+    },
+    {
+      "scene_id": "p3",
+      "order": 3,
+      "duration_seconds": 7,
+      "narration": { "text": "Do the same on side b. Now two squares stand on the two legs." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "TWO SQUARES" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "right_triangle",
+          "heading": "And the Square on b",
+          "points": [
+            { "x": 0.08, "y": 0.92, "label": "A" },
+            { "x": 0.08, "y": 0.08, "label": "B" },
+            { "x": 0.92, "y": 0.08, "label": "C" }
+          ],
+          "side_labels": ["a", "b", "c"],
+          "side_squares": ["a^2", "b^2", ""],
+          "highlight_side": 1
+        }
+      }
+    },
+    {
+      "scene_id": "p4",
+      "order": 4,
+      "duration_seconds": 8,
+      "narration": { "text": "The square on the hypotenuse is the big one. And the two smaller squares fill it exactly." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "THE CLAIM" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "right_triangle",
+          "heading": "All Three Squares",
+          "points": [
+            { "x": 0.08, "y": 0.92, "label": "A" },
+            { "x": 0.08, "y": 0.08, "label": "B" },
+            { "x": 0.92, "y": 0.08, "label": "C" }
+          ],
+          "side_labels": ["a", "b", "c"],
+          "side_squares": ["a^2", "b^2", "c^2"],
+          "highlight_side": 2,
+          "caption": "areas, not lengths"
+        }
+      }
+    },
+    {
+      "scene_id": "p5",
+      "order": 5,
+      "duration_seconds": 7,
+      "narration": { "text": "So a squared plus b squared equals c squared." },
+      "layout_template": "math_steps",
+      "transition": "fade",
+      "style": { "kicker": "THE RESULT" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "The Areas Combine",
+          "steps": [
+            { "expr": "area(a) + area(b)", "note": "the two small squares" },
+            { "expr": "a^2 + b^2 = c^2", "note": "fills the big one" }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "p6",
+      "order": 6,
+      "duration_seconds": 6,
+      "narration": { "text": "A three four five triangle: nine plus sixteen makes twenty five." },
+      "layout_template": "geometry_diagram",
+      "transition": "fade",
+      "style": { "kicker": "CHECK IT" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "right_triangle",
+          "heading": "Three Four Five",
+          "points": [
+            { "x": 0.1, "y": 0.85 },
+            { "x": 0.1, "y": 0.1 },
+            { "x": 0.9, "y": 0.1 }
+          ],
+          "side_labels": ["3", "4", "5"],
+          "side_squares": ["9", "16", "25"],
+          "highlight_side": 2
+        }
+      }
+    }
+  ]
+}

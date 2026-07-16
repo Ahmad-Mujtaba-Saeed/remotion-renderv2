@@ -18,7 +18,58 @@ export type ContentType =
   | 'meter'
   // Tier C (M6):
   | 'map'
-  | 'headlines';
+  | 'headlines'
+  // Math explainer cards:
+  | 'math_steps'
+  | 'geometry'
+  | 'function_plot';
+
+/** One line of a worked math solution (math_steps card). `expr` is the
+ *  linear math notation MathText typesets (frac{a}{b}, sqrt{...}, x^2, pi…);
+ *  `note` is an optional ≤6-word margin note ("subtract 5 from both sides"). */
+export interface MathStep {
+  expr: string;
+  note?: string;
+}
+
+/** One vertex of a geometry_diagram figure. Normalized 0..1, y UP (math
+ *  convention — the renderer flips into screen space). */
+export interface GeoPoint {
+  x: number;
+  y: number;
+  label?: string;
+}
+
+/** A marked angle at vertex index `at` of a geometry figure. `right` draws
+ *  the square marker instead of a sweeping arc. */
+export interface AngleMark {
+  at: number;
+  label?: string;
+  right?: boolean;
+}
+
+/** A labelled point of interest on a function_plot; y is computed from the
+ *  expression so the mark always sits ON the curve. */
+export interface PlotMark {
+  x: number;
+  label?: string;
+}
+
+/** A labelled point at parameter t (0..1) along edge `on_side` of a geometry
+ *  figure — midpoints, feet of altitudes, points named in the problem. */
+export interface EdgePoint {
+  on_side: number;
+  t: number;
+  label?: string;
+}
+
+/** A real-coordinate point of a coordinate_plane figure (NOT normalized —
+ *  these are the problem's own values, the renderer frames them). */
+export interface PlanePoint {
+  x: number;
+  y: number;
+  label?: string;
+}
 
 /** One dated stop on a timeline_card. */
 export interface TimelineNode {
@@ -33,7 +84,15 @@ export interface VersusSide {
   stats?: string[];
 }
 
-export type ChartType = 'bar' | 'line' | 'donut' | 'counter';
+export type ChartType =
+  | 'bar'
+  | 'line'
+  | 'area'
+  | 'donut'
+  | 'pie'
+  | 'scatter'
+  | 'radar'
+  | 'counter';
 
 /** One cell of an icon_grid. `icon` must be a LUCIDE_ICONS name (the PHP
  *  validator whitelists; unknown names render as a generic dot). */
@@ -175,6 +234,50 @@ export interface Slot {
   pins?: MapPin[];
   region?: string;
   route?: boolean;
+  // math_steps (math_steps card)
+  steps?: MathStep[];
+  // geometry (geometry_diagram): triangle | right_triangle | rectangle |
+  // square | polygon | circle | angle | number_line | coordinate_plane |
+  // fraction_bar
+  shape?: string;
+  points?: GeoPoint[];
+  side_labels?: string[];
+  angle_marks?: AngleMark[];
+  radius_label?: string;
+  center_label?: string;
+  fill?: boolean;
+  highlight_side?: number | null;
+  /** Equal-side tick marks per edge (0-3, positional like side_labels). */
+  side_ticks?: number[];
+  /** Parallel-side chevron arrows per edge (0-2, positional). */
+  side_arrows?: number[];
+  /**
+   * Squares erected OUTWARD on an edge, labelled with their area (positional
+   * per edge, "" = no square). The Pythagoras figure and every "area sitting
+   * on this side" argument. The figure auto-reframes to fit them.
+   */
+  side_squares?: string[];
+  /** Named points ON an edge (midpoints etc.). */
+  extra_points?: EdgePoint[];
+  /** coordinate_plane: real-value points + optional line through two of them. */
+  coords?: PlanePoint[];
+  line_through?: number[];
+  /** number_line: accent segment between two values. */
+  segment?: { from?: number; to?: number } | null;
+  /** fraction_bar: numerator/denominator cells. */
+  numerator?: number;
+  denominator?: number;
+  // function_plot: y = f(x) in calculator syntax; marks sit on the curve
+  expression?: string;
+  /** Optional second curve (comparisons/intersections), drawn in ink. */
+  expression2?: string;
+  /** Tangent-line touch point (slope/derivative beats). */
+  tangent_at?: number | null;
+  /** Under-curve shaded region (integral/area beats). */
+  shade?: { from?: number; to?: number } | null;
+  x_min?: number;
+  x_max?: number;
+  marks?: PlotMark[];
   // phone_mockup: which flat CSS device frame wraps the screen media
   frame?: 'phone' | 'browser';
   // floating panel / banner config
@@ -285,7 +388,7 @@ export interface Music {
 // Mirrors the PHP CanvasPlanValidator output — that validator is the contract.
 // ---------------------------------------------------------------------------
 
-export type CompositionMode = 'canvas_journey' | 'slides' | 'hybrid';
+export type CompositionMode = 'canvas_journey' | 'slides' | 'hybrid' | 'math_board';
 
 export type HoldMove = 'breathe' | 'push_in' | 'drift' | 'orbit' | 'rise' | 'sway' | 'settle_back';
 
