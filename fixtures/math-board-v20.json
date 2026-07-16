@@ -1,0 +1,85 @@
+{
+  "project_id": 9030,
+  "aspect_ratio": "16:9",
+  "composition_mode": "math_board",
+  "captions": { "enabled": false },
+  "font_pack": "editorial",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "bg_from": "#0B1620",
+    "bg_to": "#0B1620",
+    "text": "#E8F1F7",
+    "muted": "#8FA9BC",
+    "accent": "#4FC3E8",
+    "paper": "#0B1620",
+    "panel": "#12222F"
+  },
+  "scenes": [
+    {
+      "scene_id": "b1",
+      "order": 1,
+      "duration_seconds": 8,
+      "narration": { "text": "A car drives at twenty kilometres per minute for twenty minutes. How far does it get?" },
+      "layout_template": "scenario_diagram",
+      "style": { "kicker": "THE SETUP" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "The Journey",
+          "entities": [
+            { "label": "Car", "icon": "car", "value": "v = 20 km/min" },
+            { "label": "Destination", "icon": "map-pin", "value": "t = 20 min" }
+          ],
+          "connectors": [{ "label": "distance d", "sub": "?", "style": "arrow" }],
+          "question": "d = ?"
+        }
+      }
+    },
+    {
+      "scene_id": "b2",
+      "order": 2,
+      "duration_seconds": 10,
+      "narration": { "text": "Distance is speed times time. Put the numbers in, and watch where each one goes." },
+      "layout_template": "math_steps",
+      "style": { "kicker": "THE FORMULA" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Speed times time",
+          "steps": [
+            { "expr": "d = v * t" },
+            { "expr": "d = 20 * 20", "note": "substitute", "arrows": [{ "from": "v", "to": "20" }, { "from": "t", "to": "20" }] },
+            { "expr": "d = 400 km" }
+          ],
+          "rule": {
+            "name": "Distance formula",
+            "formula": "d = v * t",
+            "why": "Constant speed: every minute adds the same distance."
+          }
+        }
+      }
+    },
+    {
+      "scene_id": "b3",
+      "order": 3,
+      "duration_seconds": 7,
+      "narration": { "text": "Four hundred kilometres, sitting right there on the line." },
+      "layout_template": "geometry_diagram",
+      "style": { "kicker": "SEE IT" },
+      "slots": {
+        "slot_geometry": {
+          "content_type": "geometry",
+          "shape": "number_line",
+          "heading": "The Answer",
+          "x_min": 0,
+          "x_max": 500,
+          "marks": [{ "x": 400, "label": "400 km" }],
+          "segment": { "from": 0, "to": 400 }
+        }
+      }
+    }
+  ]
+}

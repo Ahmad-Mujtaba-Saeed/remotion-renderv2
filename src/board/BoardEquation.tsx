@@ -2,10 +2,11 @@ import React from 'react';
 import { useVideoConfig, spring } from 'remotion';
 import { Scene, MathStep } from '../types';
 import { useSceneClock } from '../canvas/SceneClock';
-import { useTheme, useDisplayFont, inkOn, MONO_FONT } from '../theme';
+import { useTheme, useDisplayFont, inkOn, MONO_FONT, BODY_FONT } from '../theme';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { SPRINGS } from '../motion/springs';
 import { MathText, InlineMathText, parseMath, mathToPlain, mathWidthUnits } from '../math/mathText';
+import { StepArrows } from '../math/StepArrows';
 
 /**
  * BoardEquation — one chunk of the worked solution WRITTEN onto the board.
@@ -38,12 +39,21 @@ export const BoardEquation: React.FC<{ scene: Scene; boxW: number; boxH: number 
 
   const heading = (slot?.heading ?? '').toString().trim();
   const kicker = (scene.style?.kicker ?? slot?.label ?? '').toString().trim();
+  // The rule this chunk of working applies — a strip written onto the board
+  // under the heading, because the margins are off-camera at reading zoom.
+  // boardLayout budgets its height (boardHasRule), so the box already fits it.
+  const mathRule = slot?.rule && (slot.rule.name ?? '').trim() !== '' ? slot.rule : null;
+  const hasArrows = steps.some((s) => (s.arrows ?? []).length > 0);
+  // Callback ref as state — see MathSteps: the arrows overlay must re-measure
+  // once the rows column actually exists.
+  const [rowsEl, setRowsEl] = React.useState<HTMLDivElement | null>(null);
 
   // ---- Type sizing off the box --------------------------------------------
   const headH = heading ? boxH * 0.2 : 0;
   const kickH = kicker ? boxH * 0.07 : 0;
+  const ruleH = mathRule ? boxH * 0.18 : 0;
   const rowGap = boxH * 0.03;
-  const rowZone = boxH - headH - kickH;
+  const rowZone = boxH - headH - kickH - ruleH;
   const rowH = rowZone / (steps.length + 0.3);
   const maxUnits = Math.max(...steps.map((s) => mathWidthUnits(parseMath(s.expr))), 6);
   const byWidth = (boxW * 0.9) / (maxUnits * 0.6);
@@ -76,6 +86,9 @@ export const BoardEquation: React.FC<{ scene: Scene; boxW: number; boxH: number 
   }
   const answerIdx = steps.length - 1;
   const headIn = easeOutQuint(clamp01(frame / f(12)));
+  const ruleIn = easeOutQuint(clamp01((frame - f(14)) / f(12)));
+  const rowDim = (i: number): number =>
+    i < answerIdx ? 1 - 0.45 * easeOutQuint(clamp01((frame - landAt[i + 1]) / f(8))) : 1;
 
   const row = (step: MathStep, i: number): React.ReactNode => {
     const local = frame - landAt[i];
@@ -103,13 +116,22 @@ export const BoardEquation: React.FC<{ scene: Scene; boxW: number; boxH: number 
     ) : null;
 
     const exprEl = isAnswer ? (
-      <AnswerChip expr={step.expr} size={exprSize} landFrame={local} fps={fps} accent={theme.accent} font={displayFont} />
+      <AnswerChip
+        expr={step.expr}
+        size={exprSize}
+        landFrame={local}
+        fps={fps}
+        accent={theme.accent}
+        font={displayFont}
+        atomMark={hasArrows ? `r${i}` : undefined}
+      />
     ) : (
       <MathText
         expr={step.expr}
         color={theme.text}
         highlightFrom={i > 0 ? steps[i - 1].expr : null}
         highlightColor={theme.accent}
+        atomMark={hasArrows ? `r${i}` : undefined}
         style={{ fontFamily: displayFont, fontWeight: 800, fontSize: exprSize, lineHeight: 1.15 }}
       />
     );
@@ -190,8 +212,66 @@ export const BoardEquation: React.FC<{ scene: Scene; boxW: number; boxH: number 
           <InlineMathText text={heading} />
         </div>
       ) : null}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
+      {mathRule ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            flexWrap: 'wrap',
+            gap: boxW * 0.02,
+            borderLeft: `${Math.max(2, boxW * 0.004)}px solid ${theme.accent}`,
+            paddingLeft: boxW * 0.018,
+            margin: `${boxH * 0.015}px 0 ${boxH * 0.02}px`,
+            opacity: ruleIn,
+            transform: `translateY(${(1 - ruleIn) * boxH * 0.015}px)`,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: MONO_FONT,
+              fontSize: boxH * 0.032,
+              letterSpacing: boxW * 0.0025,
+              textTransform: 'uppercase',
+              color: theme.accent,
+            }}
+          >
+            {mathRule.name}
+          </span>
+          {(mathRule.formula ?? '').trim() ? (
+            <MathText
+              expr={(mathRule.formula ?? '').trim()}
+              color={theme.accent}
+              style={{ fontFamily: displayFont, fontWeight: 800, fontSize: boxH * 0.05 }}
+            />
+          ) : null}
+          {(mathRule.why ?? '').trim() ? (
+            <span
+              style={{
+                fontFamily: BODY_FONT,
+                fontSize: boxH * 0.036,
+                color: theme.muted,
+                flexBasis: '100%',
+              }}
+            >
+              {(mathRule.why ?? '').trim()}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      <div ref={setRowsEl} style={{ display: 'flex', flexDirection: 'column', gap: rowGap, position: 'relative' }}>
         {steps.map((s, i) => row(s, i))}
+        {hasArrows ? (
+          <StepArrows
+            container={rowsEl}
+            steps={steps}
+            landAt={landAt}
+            frame={frame}
+            fps={fps}
+            color={theme.accent}
+            strokeWidth={Math.max(2, exprSize * 0.07)}
+            dimOf={rowDim}
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -205,7 +285,8 @@ const AnswerChip: React.FC<{
   fps: number;
   accent: string;
   font: string;
-}> = ({ expr, size, landFrame, fps, accent, font }) => {
+  atomMark?: string;
+}> = ({ expr, size, landFrame, fps, accent, font, atomMark }) => {
   const pop = spring({
     frame: Math.max(0, landFrame),
     fps,
@@ -226,6 +307,7 @@ const AnswerChip: React.FC<{
       <MathText
         expr={expr}
         color={inkOn(accent)}
+        atomMark={atomMark}
         style={{ fontFamily: font, fontWeight: 800, fontSize: size, lineHeight: 1.15 }}
       />
     </span>

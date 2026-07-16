@@ -55,9 +55,11 @@ export interface BoardPlan {
   activeAt: (frame: number) => number;
 }
 
-const MATH_TEMPLATES = new Set(['math_steps', 'geometry_diagram', 'function_plot']);
+const MATH_TEMPLATES = new Set(['math_steps', 'geometry_diagram', 'function_plot', 'scenario_diagram']);
 const isFigureTpl = (s: Scene): boolean =>
-  s.layout_template === 'geometry_diagram' || s.layout_template === 'function_plot';
+  s.layout_template === 'geometry_diagram' ||
+  s.layout_template === 'function_plot' ||
+  s.layout_template === 'scenario_diagram';
 const isEquationTpl = (s: Scene): boolean => s.layout_template === 'math_steps';
 const isMathTpl = (s: Scene): boolean => MATH_TEMPLATES.has(s.layout_template);
 
@@ -83,6 +85,15 @@ export const boardStepCount = (scene: Scene): number => {
 const boardHasHeading = (scene: Scene): boolean => {
   const slot = scene.slots?.['slot_math'] ?? Object.values(scene.slots ?? {})[0];
   return Boolean((slot?.heading ?? '').toString().trim());
+};
+
+/** Whether the equation card carries a rule strip (BoardEquation renders it
+ *  under the heading; the card must be budgeted the extra height here or the
+ *  camera's scroll math and the strip would fight over the same pixels). */
+const boardHasRule = (scene: Scene): boolean => {
+  const slot = scene.slots?.['slot_math'] ?? Object.values(scene.slots ?? {})[0];
+  const rule = slot?.rule as { name?: string } | null | undefined;
+  return Boolean((rule?.name ?? '').toString().trim());
 };
 
 /**
@@ -124,7 +135,9 @@ export const buildBoard = (
   const CONCEPT_LANE_X = -vw * 0.94; // left margin (pre-shift)
 
   const eqHeight = (scene: Scene): number =>
-    (boardHasHeading(scene) ? HEAD_H : LINE_H * 0.35) + boardStepCount(scene) * LINE_H;
+    (boardHasHeading(scene) ? HEAD_H : LINE_H * 0.35) +
+    (boardHasRule(scene) ? LINE_H * 0.85 : 0) +
+    boardStepCount(scene) * LINE_H;
 
   // ---- Constant framing scales -------------------------------------------
   const frameScale = (w: number, h: number, mw = 0.92, mh = 0.9): number =>

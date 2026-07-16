@@ -212,6 +212,14 @@ export const collectAtoms = (nodes: MathNode[]): string[] => {
  *  in order; an atom with no budget left is NEW and takes the accent. */
 type HighlightCtx = { budget: Map<string, number>; color: string } | null;
 
+/** When set, every atom is wrapped in a span tagged `data-ma="<mark>:<i>"`,
+ *  where i counts atoms in render order — the SAME order collectAtoms walks,
+ *  so an atom's index in collectAtoms() addresses its span in the DOM. This is
+ *  how StepArrows finds the pixel position of "the 5 in line two". The counter
+ *  is mutated during render, which is safe for the same reason the highlight
+ *  budget is: one render per frame, in document order. */
+type MarkCtx = { mark: string; next: number } | null;
+
 const highlightBudget = (prevExpr: string): Map<string, number> => {
   const budget = new Map<string, number>();
   for (const atom of collectAtoms(parseMath(prevExpr))) {
@@ -224,8 +232,8 @@ const highlightBudget = (prevExpr: string): Map<string, number> => {
  *  Mutating the shared budget during render is safe: React renders this tree
  *  exactly once per frame, in document order — the same order collectAtoms
  *  walks. */
-const TextRun: React.FC<{ value: string; hi: HighlightCtx }> = ({ value, hi }) => {
-  if (!hi) {
+const TextRun: React.FC<{ value: string; hi: HighlightCtx; mk: MarkCtx }> = ({ value, hi, mk }) => {
+  if (!hi && !mk) {
     return <span style={{ whiteSpace: 'pre' }}>{value}</span>;
   }
   const parts = value.match(/\s+|\d+\.?\d*|[A-Za-zͰ-Ͽ∞]+|[^\s]/g) ?? [];
@@ -235,13 +243,25 @@ const TextRun: React.FC<{ value: string; hi: HighlightCtx }> = ({ value, hi }) =
         if (/^\s+$/.test(p)) {
           return <React.Fragment key={i}>{p}</React.Fragment>;
         }
-        const left = hi.budget.get(p) ?? 0;
-        if (left > 0) {
-          hi.budget.set(p, left - 1);
-          return <React.Fragment key={i}>{p}</React.Fragment>;
+        const tag = mk ? { 'data-ma': `${mk.mark}:${mk.next++}` } : {};
+        if (hi) {
+          const left = hi.budget.get(p) ?? 0;
+          if (left > 0) {
+            hi.budget.set(p, left - 1);
+            return (
+              <span key={i} {...tag}>
+                {p}
+              </span>
+            );
+          }
+          return (
+            <span key={i} {...tag} style={{ color: hi.color }}>
+              {p}
+            </span>
+          );
         }
         return (
-          <span key={i} style={{ color: hi.color }}>
+          <span key={i} {...tag}>
             {p}
           </span>
         );
@@ -250,27 +270,28 @@ const TextRun: React.FC<{ value: string; hi: HighlightCtx }> = ({ value, hi }) =
   );
 };
 
-const Nodes: React.FC<{ nodes: MathNode[]; color: string; barColor: string; hi?: HighlightCtx }> = ({
-  nodes,
-  color,
-  barColor,
-  hi = null,
-}) => (
+const Nodes: React.FC<{
+  nodes: MathNode[];
+  color: string;
+  barColor: string;
+  hi?: HighlightCtx;
+  mk?: MarkCtx;
+}> = ({ nodes, color, barColor, hi = null, mk = null }) => (
   <>
     {nodes.map((n, i) => {
       switch (n.kind) {
         case 'text':
-          return <TextRun key={i} value={n.value} hi={hi} />;
+          return <TextRun key={i} value={n.value} hi={hi} mk={mk} />;
         case 'sup':
           return (
             <span key={i} style={{ fontSize: '0.62em', position: 'relative', top: '-0.5em' }}>
-              <Nodes nodes={n.body} color={color} barColor={barColor} hi={hi} />
+              <Nodes nodes={n.body} color={color} barColor={barColor} hi={hi} mk={mk} />
             </span>
           );
         case 'sub':
           return (
             <span key={i} style={{ fontSize: '0.62em', position: 'relative', top: '0.28em' }}>
-              <Nodes nodes={n.body} color={color} barColor={barColor} hi={hi} />
+              <Nodes nodes={n.body} color={color} barColor={barColor} hi={hi} mk={mk} />
             </span>
           );
         case 'frac':
@@ -288,7 +309,7 @@ const Nodes: React.FC<{ nodes: MathNode[]; color: string; barColor: string; hi?:
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 0.18em' }}>
-                <Nodes nodes={n.num} color={color} barColor={barColor} hi={hi} />
+                <Nodes nodes={n.num} color={color} barColor={barColor} hi={hi} mk={mk} />
               </span>
               <span
                 style={{
@@ -300,7 +321,7 @@ const Nodes: React.FC<{ nodes: MathNode[]; color: string; barColor: string; hi?:
                 }}
               />
               <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 0.18em' }}>
-                <Nodes nodes={n.den} color={color} barColor={barColor} hi={hi} />
+                <Nodes nodes={n.den} color={color} barColor={barColor} hi={hi} mk={mk} />
               </span>
             </span>
           );
@@ -321,7 +342,7 @@ const Nodes: React.FC<{ nodes: MathNode[]; color: string; barColor: string; hi?:
                   padding: '0.06em 0.1em 0 0.06em',
                 }}
               >
-                <Nodes nodes={n.body} color={color} barColor={barColor} hi={hi} />
+                <Nodes nodes={n.body} color={color} barColor={barColor} hi={hi} mk={mk} />
               </span>
             </span>
           );
@@ -384,11 +405,14 @@ export const MathText: React.FC<{
   style?: React.CSSProperties;
   highlightFrom?: string | null;
   highlightColor?: string;
-}> = ({ expr, color, barColor, style, highlightFrom = null, highlightColor }) => {
+  /** Tag every atom span `data-ma="<atomMark>:<index>"` for StepArrows. */
+  atomMark?: string;
+}> = ({ expr, color, barColor, style, highlightFrom = null, highlightColor, atomMark }) => {
   const hi: HighlightCtx =
     highlightFrom != null && highlightColor
       ? { budget: highlightBudget(highlightFrom), color: highlightColor }
       : null;
+  const mk: MarkCtx = atomMark ? { mark: atomMark, next: 0 } : null;
   return (
     <span
       style={{
@@ -400,7 +424,7 @@ export const MathText: React.FC<{
         ...style,
       }}
     >
-      <Nodes nodes={parseMath(expr)} color={color} barColor={barColor ?? color} hi={hi} />
+      <Nodes nodes={parseMath(expr)} color={color} barColor={barColor ?? color} hi={hi} mk={mk} />
     </span>
   );
 };

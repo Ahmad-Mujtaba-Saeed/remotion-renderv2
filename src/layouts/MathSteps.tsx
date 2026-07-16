@@ -9,6 +9,7 @@ import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
 import { MathText, parseMath, mathToPlain, mathWidthUnits } from '../math/mathText';
+import { StepArrows } from '../math/StepArrows';
 import { KineticText } from '../components/KineticText';
 import { SfxCue } from '../sfx';
 
@@ -32,6 +33,9 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { frame, durationInFrames } = useSceneClock();
   const win = useSceneWindow();
   const meta = useSceneMeta();
+  // Callback ref as state — StepArrows must re-measure once the column
+  // actually exists (a child's layout effect beats its parent's ref).
+  const [stepsCol, setStepsCol] = React.useState<HTMLDivElement | null>(null);
 
   if (!slot) return null;
   const steps: MathStep[] = (slot.steps ?? []).filter(
@@ -88,6 +92,12 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
   const answerAt = stepAt(answerIdx);
   const at = win?.start ?? 0;
 
+  // Operation arrows (a term moving sides, a product distributing) need every
+  // atom addressable in the DOM — atomMark turns that on, only when asked for.
+  const hasArrows = steps.some((s) => (s.arrows ?? []).length > 0);
+  const rowDim = (i: number): number =>
+    i < answerIdx ? 1 - 0.42 * easeOutQuint(clamp01((frame - stepAt(i + 1)) / f30(fps, 8))) : 1;
+
   const row = (step: MathStep, i: number): React.ReactNode => {
     const local = frame - stepAt(i);
     const inP = easeOutQuint(clamp01(local / f30(fps, 12)));
@@ -129,6 +139,7 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
         accent={theme.accent}
         font={displayFont}
         u={u}
+        atomMark={hasArrows ? `r${i}` : undefined}
       />
     ) : (
       <MathText
@@ -138,6 +149,7 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
         // the eye lands exactly on the move the note names.
         highlightFrom={i > 0 ? steps[i - 1].expr : null}
         highlightColor={theme.accent}
+        atomMark={hasArrows ? `r${i}` : undefined}
         style={{ fontFamily: displayFont, fontWeight: 800, fontSize: exprSize, lineHeight: 1.2 }}
       />
     );
@@ -219,15 +231,29 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
           }}
         >
           <div
+            ref={setStepsCol}
             style={{
               flex: 1,
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
               gap: Math.max(18 * u, exprSize * 0.55),
+              position: 'relative',
             }}
           >
             {steps.map((s, i) => row(s, i))}
+            {hasArrows ? (
+              <StepArrows
+                container={stepsCol}
+                steps={steps}
+                landAt={landAt}
+                frame={frame}
+                fps={fps}
+                color={theme.accent}
+                strokeWidth={Math.max(2.5, exprSize * 0.07)}
+                dimOf={rowDim}
+              />
+            ) : null}
           </div>
           {rule ? <RulePanel rule={rule} frame={frame} fps={fps} portrait={portrait} u={u} /> : null}
         </div>
@@ -345,7 +371,8 @@ const AnswerChip: React.FC<{
   accent: string;
   font: string;
   u: number;
-}> = ({ expr, size, landFrame, fps, accent, font, u }) => {
+  atomMark?: string;
+}> = ({ expr, size, landFrame, fps, accent, font, u, atomMark }) => {
   const pop = spring({
     frame: Math.max(0, landFrame),
     fps,
@@ -366,6 +393,7 @@ const AnswerChip: React.FC<{
       <MathText
         expr={expr}
         color={inkOn(accent)}
+        atomMark={atomMark}
         style={{ fontFamily: font, fontWeight: 800, fontSize: size, lineHeight: 1.2 }}
       />
     </span>

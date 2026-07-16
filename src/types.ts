@@ -30,6 +30,29 @@ export type ContentType =
 export interface MathStep {
   expr: string;
   note?: string;
+  /**
+   * Operation arrows drawn from atoms of the PREVIOUS line to atoms of THIS
+   * line — a term moving across the equals sign, a product distributing onto
+   * its results. `from`/`to` are short tokens exactly as written in each line
+   * ("5", "x", "log_2", "x^2"); the renderer finds them and draws the curve.
+   */
+  arrows?: Array<{ from: string; to: string }>;
+}
+
+/** One actor in a scenario_diagram — a labelled box with an optional icon and
+ *  its given value ("v = 20 km/min"). */
+export interface ScenarioEntity {
+  label: string;
+  icon?: string;
+  value?: string;
+}
+
+/** The relationship riding the gap between two adjacent entities. Positional:
+ *  connector i sits between entity i and entity i+1. */
+export interface ScenarioConnector {
+  label?: string;
+  sub?: string;
+  style?: 'arrow' | 'line' | 'both';
 }
 
 /** The named rule a math_steps card is applying, shown in a panel beside the
@@ -287,6 +310,10 @@ export interface Slot {
   angle2_label?: string;
   point_label?: string;
   show_coords?: boolean;
+  /** scenario (scenario_diagram): the word-problem setup drawing. */
+  entities?: ScenarioEntity[];
+  connectors?: ScenarioConnector[];
+  question?: string;
   // function_plot: y = f(x) in calculator syntax; marks sit on the curve
   expression?: string;
   /** Optional second curve (comparisons/intersections), drawn in ink. */

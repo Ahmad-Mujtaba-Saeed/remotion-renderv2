@@ -1,0 +1,96 @@
+{
+  "project_id": 9029,
+  "aspect_ratio": "16:9",
+  "composition_mode": "slides",
+  "captions": { "enabled": false },
+  "font_pack": "editorial",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "bg_from": "#0B1620",
+    "bg_to": "#0B1620",
+    "text": "#E8F1F7",
+    "muted": "#8FA9BC",
+    "accent": "#4FC3E8",
+    "paper": "#0B1620",
+    "panel": "#12222F"
+  },
+  "scenes": [
+    {
+      "scene_id": "s1",
+      "order": 1,
+      "duration_seconds": 9,
+      "narration": { "text": "A car drives at twenty kilometres per minute and reaches its destination in twenty minutes. How far away is it?" },
+      "layout_template": "scenario_diagram",
+      "transition": "none",
+      "style": { "kicker": "THE SETUP" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "The Journey",
+          "entities": [
+            { "label": "Car", "icon": "car", "value": "v = 20 km/min" },
+            { "label": "Destination", "icon": "map-pin", "value": "t = 20 min" }
+          ],
+          "connectors": [
+            { "label": "distance d", "sub": "?", "style": "arrow" }
+          ],
+          "question": "d = ?"
+        }
+      }
+    },
+    {
+      "scene_id": "s2",
+      "order": 2,
+      "duration_seconds": 8,
+      "narration": { "text": "Three actors this time: a tap fills, a drain empties, the tank sits between them." },
+      "layout_template": "scenario_diagram",
+      "transition": "fade",
+      "style": { "kicker": "THREE ACTORS" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "Tap, Tank, Drain",
+          "entities": [
+            { "label": "Tap", "icon": "droplet", "value": "+6 L/min" },
+            { "label": "Tank", "icon": "database", "value": "120 L" },
+            { "label": "Drain", "icon": "droplet", "value": "-2 L/min" }
+          ],
+          "connectors": [
+            { "label": "fills", "style": "arrow" },
+            { "label": "empties", "style": "arrow" }
+          ],
+          "question": "t = ?"
+        }
+      }
+    },
+    {
+      "scene_id": "a1",
+      "order": 3,
+      "duration_seconds": 10,
+      "narration": { "text": "Move the five across, watch it flip sign, then distribute the x over the bracket." },
+      "layout_template": "math_steps",
+      "transition": "fade",
+      "style": { "kicker": "WATCH THE PIECES" },
+      "slots": {
+        "slot_math": {
+          "content_type": "math_steps",
+          "heading": "Where Each Piece Goes",
+          "steps": [
+            { "expr": "x^2 + 5x = 24" },
+            { "expr": "x^2 + 5x - 24 = 0", "note": "move the 24 across", "arrows": [{ "from": "24", "to": "24" }] },
+            { "expr": "(x + 8)(x - 3) = 0", "note": "factor", "arrows": [{ "from": "5x", "to": "8" }, { "from": "24", "to": "3" }] },
+            { "expr": "x = -8 or x = 3" }
+          ],
+          "rule": {
+            "name": "Zero product property",
+            "formula": "ab = 0 -> a = 0 or b = 0",
+            "why": "If two things multiply to zero, one of them must be zero."
+          }
+        }
+      }
+    }
+  ]
+}

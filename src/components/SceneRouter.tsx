@@ -28,6 +28,7 @@ import { HeadlineTicker } from '../layouts/HeadlineTicker';
 import { MathSteps } from '../layouts/MathSteps';
 import { GeometryDiagram } from '../layouts/GeometryDiagram';
 import { FunctionPlot } from '../layouts/FunctionPlot';
+import { ScenarioDiagram } from '../layouts/ScenarioDiagram';
 import { AmbientBackground } from './AmbientBackground';
 import { PunchLine } from './PunchLine';
 import { CaptionTrack } from './CaptionTrack';
@@ -136,6 +137,8 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <GeometryDiagram scene={scene} />;
     case 'function_plot':
       return <FunctionPlot scene={scene} />;
+    case 'scenario_diagram':
+      return <ScenarioDiagram scene={scene} />;
     case 'single_focus':
     default:
       return <SingleFocus scene={scene} />;
