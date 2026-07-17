@@ -1,6 +1,8 @@
 import { Scene, MathStep } from '../types';
 import { sceneFrames } from '../timing';
 import { clamp01, easeInOutSine } from '../motion/easing';
+import { parseMath, mathWidthUnits } from '../math/mathText';
+import { equationSteps, equationLandAt } from './equationPacing';
 
 /**
  * boardLayout — the geometry + camera of the MATH BOARD composition mode.
@@ -19,9 +21,19 @@ import { clamp01, easeInOutSine } from '../motion/easing';
 
 export type BoardKind = 'equation' | 'figure' | 'note' | 'concept';
 
-/** One written line's height as a fraction of the frame — shared with
- *  BoardEquation so type sizing and card sizing agree. */
+/** One written line's height as a fraction of the frame — an upper bound;
+ *  buildBoard shrinks it to hug the width-fit type size (see EQ_* below). */
 export const LINE_H_FRAC = 0.15;
+
+/** Fraction of the equation box the longest line may span, and the extra
+ *  width units a row spends beside the expression (number column, gap,
+ *  answer-chip padding). Shared with BoardEquation so the size the layout
+ *  budgets rows for IS the size the card actually renders — and so a full
+ *  row, chrome included, can never spill past the box in a narrow frame. */
+export const EQ_WIDTH_BUDGET = 0.88;
+export const EQ_EXTRA_UNITS = 2.2;
+/** A board of only short lines still writes at a calm size, never a shout. */
+export const EQ_MIN_UNITS = 14;
 
 export interface CamState {
   x: number;
@@ -133,12 +145,22 @@ export const buildBoard = (
   const CONCEPT_W = vw * 0.66;
   const CONCEPT_H = vh * 0.52;
   const NOTE_H = vh * 0.42;
-  // One written equation line. 0.15 (was 0.19): with phase consolidation a
-  // section carries 4-8 lines, and at width-fit reading zoom a smaller line
-  // height IS smaller handwriting — the "giant text on an empty board" fix.
-  const LINE_H = vh * LINE_H_FRAC;
-  const HEAD_H = vh * 0.14; // heading zone in an equation card
-  const GAP = vh * 0.11; // vertical air between spine cards
+  // One written equation line. The frame fraction is only an upper bound:
+  // the type itself is WIDTH-fit (the longest line on the board spans the
+  // spine), so the line height hugs that size — otherwise a portrait frame
+  // (narrow width-fit type, tall vh-sized rows) writes small text with huge
+  // dead air between lines, and the rowH-capped size turns into giant type.
+  let maxUnits = 0;
+  for (const scene of scenes) {
+    if (!isEquationTpl(scene)) continue;
+    for (const s of equationSteps(scene)) {
+      maxUnits = Math.max(maxUnits, mathWidthUnits(parseMath(s.expr)));
+    }
+  }
+  const SPINE_UNIT = (SPINE_W * EQ_WIDTH_BUDGET) / (Math.max(maxUnits, EQ_MIN_UNITS) * 0.6 + EQ_EXTRA_UNITS);
+  const LINE_H = Math.min(vh * LINE_H_FRAC, SPINE_UNIT * 2.15);
+  const HEAD_H = Math.min(vh * 0.14, LINE_H * 0.95); // heading zone in an equation card
+  const GAP = Math.min(vh * 0.11, LINE_H * 0.7); // vertical air between spine cards
   const CONCEPT_LANE_X = -vw * 0.94; // left margin (pre-shift)
 
   const eqHeight = (scene: Scene): number =>
@@ -257,21 +279,54 @@ export const buildBoard = (
       }
     : { x: vw / 2, y: vh / 2, scale: 1, rot: 0 };
 
+  // Land times per equation scene, window-relative — the camera follows the
+  // SAME pacing BoardEquation writes with, so the two can never drift apart.
+  const landCache = new Map<number, number[]>();
+  const landFor = (sceneIndex: number): number[] => {
+    let land = landCache.get(sceneIndex);
+    if (!land) {
+      land = equationLandAt(scenes[sceneIndex], windows[sceneIndex].frames, fps);
+      landCache.set(sceneIndex, land);
+    }
+    return land;
+  };
+
   const restPose = (sceneIndex: number, h: number): CamState => {
     if (lastIsOutro && sceneIndex === scenes.length - 1) {
       return pullbackPose;
     }
     const card = poseFor(sceneIndex);
     if (card.kind === 'equation') {
-      let cyTop = card.cy;
-      let cyBot = card.cy;
+      let y = card.cy;
       if (card.h > viewportH * 0.96) {
-        // Tall working: scroll the write-head down the card as it fills in.
-        cyTop = card.top + viewportH / 2;
-        cyBot = card.top + card.h - viewportH / 2;
+        // Tall working: the camera rests ON the active line and nudges down
+        // one quiet step as each new line lands — never a continuous drift.
+        // The line being written sits ~2/3 down the frame, so the write-head
+        // can never sink below the bottom of the shot.
+        const scene = scenes[sceneIndex];
+        const cyTop = card.top + viewportH / 2;
+        // The bottom bound may look up to ~30% of a viewport past the card:
+        // a hard card-bottom clamp pinned the LAST lines of a card barely
+        // taller than the frame against the bottom edge, and a stripe of
+        // empty grid under the answer is what a real board looks like anyway.
+        const cyBot = Math.max(cyTop, card.top + card.h - viewportH * 0.3);
+        const headZone =
+          (boardHasHeading(scene) ? HEAD_H : LINE_H * 0.35) +
+          (boardHasRule(scene) ? LINE_H * 0.85 : 0);
+        const lineY = (k: number): number => card.top + headZone + (k + 0.5) * LINE_H;
+        const target = (k: number): number => clamp(lineY(k) - viewportH * 0.18, cyTop, cyBot);
+        const land = landFor(sceneIndex);
+        const w = windows[sceneIndex];
+        const local = w.travel + h * Math.max(1, w.frames - w.travel);
+        y = target(0);
+        for (let k = 1; k < land.length; k++) {
+          const move = Math.max(1, Math.min(Math.round(fps * 0.55), land[k] - land[k - 1]));
+          const t0 = land[k] - move;
+          if (local <= t0) break;
+          y = lerp(target(k - 1), target(k), easeInOutSine(clamp01((local - t0) / move)));
+        }
       }
-      const wp = easeInOutSine(clamp01(h / 0.85));
-      return { x: spineWorldX, y: lerp(cyTop, cyBot, wp), scale: S_READ, rot: 0 };
+      return { x: spineWorldX, y, scale: S_READ, rot: 0 };
     }
     if (card.kind === 'figure') {
       return { x: card.cx, y: card.cy, scale: S_FIG, rot: 0 };

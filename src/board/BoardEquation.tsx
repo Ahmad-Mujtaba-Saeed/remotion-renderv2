@@ -7,6 +7,8 @@ import { clamp01, easeOutQuint } from '../motion/easing';
 import { SPRINGS } from '../motion/springs';
 import { MathText, InlineMathText, parseMath, mathToPlain, mathWidthUnits } from '../math/mathText';
 import { StepArrows } from '../math/StepArrows';
+import { equationSteps, equationLandAt } from './equationPacing';
+import { EQ_WIDTH_BUDGET, EQ_EXTRA_UNITS, EQ_MIN_UNITS } from './boardLayout';
 
 /**
  * BoardEquation — one chunk of the worked solution WRITTEN onto the board.
@@ -38,9 +40,7 @@ export const BoardEquation: React.FC<{
   const { fps } = useVideoConfig();
   const { frame, durationInFrames } = useSceneClock();
 
-  const steps: MathStep[] = ((slot?.steps as MathStep[] | undefined) ?? []).filter(
-    (s): s is MathStep => !!s && typeof s === 'object' && typeof s.expr === 'string' && s.expr.trim() !== ''
-  );
+  const steps: MathStep[] = equationSteps(scene);
   if (steps.length === 0) return null;
 
   const heading = (slot?.heading ?? '').toString().trim();
@@ -60,39 +60,26 @@ export const BoardEquation: React.FC<{
   const ruleH = mathRule ? boxH * 0.18 : 0;
   const rowGap = boxH * 0.03;
   const rowZone = boxH - headH - kickH - ruleH;
-  const rowH = rowZone / (steps.length + 0.3);
+  // The inter-row gaps must come OUT of the row budget: unbudgeted, an
+  // 8-step card ran ~0.2×boxH past its box and bled onto the card below it.
+  const rowH = (rowZone - rowGap * (steps.length - 1)) / (steps.length + 0.3);
   const ownMaxUnits = Math.max(...steps.map((s) => mathWidthUnits(parseMath(s.expr))), 6);
   // Board-wide size: every card measures against the LONGEST line on the
-  // whole board (min 14 units so a board of short lines still isn't shouted).
-  const maxUnits = Math.max(globalMaxUnits ?? ownMaxUnits, 14);
-  const byWidth = (boxW * 0.9) / (maxUnits * 0.6);
+  // whole board (min units so a board of short lines still isn't shouted).
+  // The budget subtracts the row's chrome (number column, gap, answer-chip
+  // padding) so a full row can never spill past the box — the old expr-only
+  // fit is what pushed long lines off screen in 9:16.
+  const maxUnits = Math.max(globalMaxUnits ?? ownMaxUnits, EQ_MIN_UNITS);
+  const byWidth = (boxW * EQ_WIDTH_BUDGET) / (maxUnits * 0.6 + EQ_EXTRA_UNITS);
   const exprSize = Math.max(boxH * 0.04, Math.min(rowH * 0.5, byWidth));
   const rule = Math.max(1, boxW * 0.0016);
 
   // ---- Pacing: land each line where its share of the narration begins ------
+  // (equationPacing — shared with boardLayout's camera, which follows the
+  // write-head using the same land times.)
   const f = (n: number): number => Math.round((n / 30) * fps);
   const firstAt = f(heading ? 20 : 12);
-  const words = scene.narration_words ?? [];
-  let landAt: number[];
-  if (words.length >= steps.length && steps.length > 1) {
-    const minGap = f(8);
-    const lastOk = Math.max(firstAt + minGap, durationInFrames * 0.85);
-    landAt = steps.map((_, i) => {
-      const w = words[Math.floor((i * words.length) / steps.length)];
-      return Math.round((w?.start ?? 0) * fps);
-    });
-    landAt[0] = Math.max(firstAt, Math.min(landAt[0], lastOk));
-    for (let i = 1; i < landAt.length; i++) {
-      landAt[i] = Math.max(landAt[i - 1] + minGap, Math.min(landAt[i], lastOk));
-    }
-  } else {
-    const lastBy = Math.max(firstAt + f(8), durationInFrames * 0.75);
-    const gap =
-      steps.length > 1
-        ? Math.max(f(10), Math.min(f(46), (lastBy - firstAt) / (steps.length - 1)))
-        : 0;
-    landAt = steps.map((_, i) => Math.round(firstAt + i * gap));
-  }
+  const landAt = equationLandAt(scene, durationInFrames, fps);
   const answerIdx = steps.length - 1;
   const headIn = easeOutQuint(clamp01(frame / f(12)));
   // The rule lands just BEFORE the first line — why the move is legal, then
@@ -119,7 +106,10 @@ export const BoardEquation: React.FC<{
           textTransform: 'uppercase',
           color: theme.muted,
           opacity: noteP,
-          whiteSpace: 'nowrap',
+          // Wrap, never overflow: a long move name pushed the row past the
+          // box on narrow (9:16) boards when it refused to break.
+          minWidth: 0,
+          flex: '0 1 auto',
         }}
       >
         {note}
