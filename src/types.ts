@@ -320,6 +320,9 @@ export interface Slot {
   entities?: ScenarioEntity[];
   connectors?: ScenarioConnector[];
   question?: string;
+  /** scenario: the SHAPE of the sketch — 'line' (default), 'arc' (up and
+   *  back down: projectiles), 'climb' (rising), 'fall' (dropping). */
+  layout?: string;
   // function_plot: y = f(x) in calculator syntax; marks sit on the curve
   expression?: string;
   /** Optional second curve (comparisons/intersections), drawn in ink. */

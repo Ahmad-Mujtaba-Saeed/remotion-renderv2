@@ -1,0 +1,126 @@
+{
+  "project_id": 9030,
+  "aspect_ratio": "16:9",
+  "composition_mode": "slides",
+  "captions": { "enabled": false },
+  "font_pack": "tech",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "bg_from": "#0B1620",
+    "bg_to": "#0B1620",
+    "text": "#E8F1F7",
+    "muted": "#8FA9BC",
+    "accent": "#4FC3E8",
+    "paper": "#0B1620",
+    "panel": "#12222F"
+  },
+  "scenes": [
+    {
+      "scene_id": "s1",
+      "order": 1,
+      "duration_seconds": 9,
+      "narration": {
+        "text": "A projectile launches from three metres up, rises to its peak, and falls back to the ground. How high does it get?"
+      },
+      "layout_template": "scenario_diagram",
+      "transition": "none",
+      "style": { "kicker": "THE SETUP" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "The Flight",
+          "layout": "arc",
+          "entities": [
+            { "label": "Launch", "icon": "rocket", "value": "h0 = 3 m" },
+            { "label": "Peak", "icon": "mountain", "value": "h max = ?" },
+            { "label": "Ground", "icon": "flag", "value": "h = 0" }
+          ],
+          "connectors": [
+            { "label": "rises", "style": "arrow" },
+            { "label": "falls back", "style": "arrow" }
+          ],
+          "question": "h max = ?  t = ?"
+        }
+      }
+    },
+    {
+      "scene_id": "s2",
+      "order": 2,
+      "duration_seconds": 8,
+      "narration": {
+        "text": "A balloon rises from the field at a steady three metres per second. When does it reach one hundred and twenty metres?"
+      },
+      "layout_template": "scenario_diagram",
+      "transition": "fade",
+      "style": { "kicker": "GOING UP" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "The Ascent",
+          "layout": "climb",
+          "entities": [
+            { "label": "Field", "icon": "flag", "value": "h = 0" },
+            { "label": "Balloon", "icon": "plane", "value": "v = 3 m/s" },
+            { "label": "Target", "icon": "target", "value": "h = 120 m" }
+          ],
+          "connectors": [
+            { "label": "rises", "style": "arrow" },
+            { "label": "t = ?", "style": "arrow" }
+          ],
+          "question": "t = ?"
+        }
+      }
+    },
+    {
+      "scene_id": "s3",
+      "order": 3,
+      "duration_seconds": 8,
+      "narration": {
+        "text": "A stone is dropped from a ninety metre cliff. How long until it hits the water?"
+      },
+      "layout_template": "scenario_diagram",
+      "transition": "fade",
+      "style": { "kicker": "LETTING GO" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "The Drop",
+          "layout": "fall",
+          "entities": [
+            { "label": "Cliff", "icon": "mountain", "value": "h = 90 m" },
+            { "label": "Water", "icon": "droplet", "value": "h = 0" }
+          ],
+          "connectors": [{ "label": "falls", "sub": "t = ?", "style": "arrow" }],
+          "question": "t = ?"
+        }
+      }
+    },
+    {
+      "scene_id": "s4",
+      "order": 4,
+      "duration_seconds": 8,
+      "narration": {
+        "text": "And the classic: a car heads to its destination on a flat road — this one really is a straight line."
+      },
+      "layout_template": "scenario_diagram",
+      "transition": "fade",
+      "style": { "kicker": "CONTROL CASE" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "The Journey",
+          "layout": "line",
+          "entities": [
+            { "label": "Car", "icon": "car", "value": "v = 20 km/min" },
+            { "label": "Destination", "icon": "map-pin", "value": "t = 20 min" }
+          ],
+          "connectors": [{ "label": "distance d", "sub": "?", "style": "arrow" }],
+          "question": "d = ?"
+        }
+      }
+    }
+  ]
+}
