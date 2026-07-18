@@ -135,19 +135,22 @@ export const BoardEquation: React.FC<{
           right: 0,
           top: '50%',
           transform: 'translateY(-50%)',
-          maxWidth: '34%',
-          display: 'inline-flex',
-          alignItems: 'baseline',
-          justifyContent: 'flex-end',
-          flexWrap: 'wrap',
-          gap: exprSize * 0.18,
-          opacity: refP * 0.85,
+          maxWidth: '36%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: exprSize * 0.1,
+          // A hairline tying the citation to its line, the way a lecturer
+          // brackets the margin note against the step it belongs to.
+          borderLeft: `${Math.max(2, exprSize * 0.05)}px solid ${theme.accent}`,
+          paddingLeft: exprSize * 0.3,
+          opacity: refP,
         }}
       >
         <span
           style={{
             fontFamily: MONO_FONT,
-            fontSize: Math.max(exprSize * 0.26, boxH * 0.024),
+            fontSize: Math.max(exprSize * 0.3, boxH * 0.026),
             textTransform: 'uppercase',
             letterSpacing: boxW * 0.0012,
             color: theme.accent,
@@ -158,11 +161,15 @@ export const BoardEquation: React.FC<{
         </span>
         <MathText
           expr={ref}
-          color={theme.muted}
+          color={theme.text}
           style={{
             fontFamily: displayFont,
-            fontWeight: 700,
-            fontSize: Math.max(exprSize * 0.36, boxH * 0.03),
+            fontWeight: 800,
+            // Was ~0.36 of the line and read as fine print against 800-weight
+            // maths. The citation is the teaching content of the row, so it
+            // gets a real size — half the working line, on its own row under
+            // the label rather than squeezed beside it.
+            fontSize: Math.max(exprSize * 0.52, boxH * 0.04),
             lineHeight: 1.15,
           }}
         />
