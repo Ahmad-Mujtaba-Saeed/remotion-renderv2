@@ -31,6 +31,14 @@ export interface MathStep {
   expr: string;
   note?: string;
   /**
+   * The "as we know…" citation for THIS line — the formula or identity that
+   * authorises the move ("L{y'} = sY - y(0)", "a^2 - b^2 = (a-b)(a+b)"),
+   * written in the margin to the right of the step the way a lecturer does.
+   * The card's `rule` panel names the one idea of the whole phase; this names
+   * what a single line leans on. Typeset, so it may use the linear notation.
+   */
+  ref?: string;
+  /**
    * Operation arrows drawn from atoms of the PREVIOUS line to atoms of THIS
    * line — a term moving across the equals sign, a product distributing onto
    * its results. `from`/`to` are short tokens exactly as written in each line

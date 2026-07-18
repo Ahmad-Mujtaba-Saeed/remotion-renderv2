@@ -32,6 +32,12 @@ export const LINE_H_FRAC = 0.15;
  *  row, chrome included, can never spill past the box in a narrow frame. */
 export const EQ_WIDTH_BUDGET = 0.88;
 export const EQ_EXTRA_UNITS = 2.2;
+/** Width units reserved for the right-margin "as we know" citation column,
+ *  added to the board-wide max when ANY step carries a `ref`. Reserving it
+ *  board-wide (rather than per card) keeps the one-size-for-the-whole-board
+ *  rule: every line still renders at the same size, there is simply a margin
+ *  the citations can live in without squeezing the working. */
+export const EQ_REF_UNITS = 7;
 /** A board of only short lines still writes at a calm size, never a shout. */
 export const EQ_MIN_UNITS = 14;
 
@@ -95,7 +101,10 @@ export const boardStepCount = (scene: Scene): number => {
   const steps = ((slot?.steps as MathStep[] | undefined) ?? []).filter(
     (s) => s && typeof s === 'object' && typeof s.expr === 'string' && s.expr.trim() !== ''
   );
-  return clamp(steps.length || 1, 1, 8);
+  // 12 matches the validator's per-card step cap: budgeting for fewer lines
+  // than a card can actually carry under-sized the card and the tail of the
+  // working overflowed its box.
+  return clamp(steps.length || 1, 1, 12);
 };
 
 const boardHasHeading = (scene: Scene): boolean => {
@@ -256,28 +265,10 @@ export const buildBoard = (
   const poseFor = (sceneIndex: number): BoardCard =>
     cardByScene.get(sceneIndex) ?? cards[cards.length - 1];
 
-  // The payoff shot: the outro pulls back to frame the ENTIRE finished board —
-  // the whole working visible at once, the thing the accumulating surface has
-  // been earning the whole video.
-  const lastIsOutro =
-    scenes.length > 0 && scenes[scenes.length - 1].layout_template === 'outro_card';
-  const bbox = cards.reduce(
-    (b, c) => ({
-      minX: Math.min(b.minX, c.cx - c.w / 2),
-      maxX: Math.max(b.maxX, c.cx + c.w / 2),
-      minY: Math.min(b.minY, c.top),
-      maxY: Math.max(b.maxY, c.top + c.h),
-    }),
-    { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
-  );
-  const pullbackPose: CamState = isFinite(bbox.minX)
-    ? {
-        x: (bbox.minX + bbox.maxX) / 2,
-        y: (bbox.minY + bbox.maxY) / 2,
-        scale: frameScale(bbox.maxX - bbox.minX, bbox.maxY - bbox.minY, 0.88, 0.84),
-        rot: 0,
-      }
-    : { x: vw / 2, y: vh / 2, scale: 1, rot: 0 };
+  // NOTE: the outro used to pull the camera back to frame the entire finished
+  // board. It was rejected — a zoom-out at the end reads as the video backing
+  // away from the work rather than landing on it. The outro now rests on its
+  // own card like any other note, at the same scale as the beat before it.
 
   // Land times per equation scene, window-relative — the camera follows the
   // SAME pacing BoardEquation writes with, so the two can never drift apart.
@@ -292,9 +283,6 @@ export const buildBoard = (
   };
 
   const restPose = (sceneIndex: number, h: number): CamState => {
-    if (lastIsOutro && sceneIndex === scenes.length - 1) {
-      return pullbackPose;
-    }
     const card = poseFor(sceneIndex);
     if (card.kind === 'equation') {
       let y = card.cy;

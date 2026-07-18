@@ -1,6 +1,11 @@
 import React, { createContext, useContext } from 'react';
 import { Theme, DEFAULT_THEME } from './types';
-import { DISPLAY_FONT_FAMILY, BODY_FONT_FAMILY, MONO_FONT_FAMILY } from './fonts';
+import {
+  DISPLAY_FONT_FAMILY,
+  BODY_FONT_FAMILY,
+  MONO_FONT_FAMILY,
+  MATH_GLYPH_FALLBACK,
+} from './fonts';
 
 const ThemeContext = createContext<Theme>(DEFAULT_THEME);
 
@@ -42,9 +47,13 @@ export const useSkin = (): Skin => useContext(SkinContext);
  * fully deterministic — no network fetch mid-render — while still getting a
  * real, designed typeface instead of a system-font substitute.
  */
-export const DISPLAY_FONT = `'${DISPLAY_FONT_FAMILY}', 'Segoe UI', system-ui, sans-serif`;
-export const BODY_FONT = `'${BODY_FONT_FAMILY}', 'Segoe UI', system-ui, sans-serif`;
-export const MONO_FONT = `'${MONO_FONT_FAMILY}', 'Consolas', 'Courier New', monospace`;
+/* MATH_GLYPH_FALLBACK sits directly after the bundled face in every stack: the
+ * bundled subsets carry no π/θ/√/≤/∞/ℒ/∫, and 'Segoe UI'/'Consolas' do not
+ * carry the operator range either, so without it a maths glyph fell through to
+ * whatever Chromium picked last. See fonts.ts for the full note. */
+export const DISPLAY_FONT = `'${DISPLAY_FONT_FAMILY}', ${MATH_GLYPH_FALLBACK}, 'Segoe UI', system-ui, sans-serif`;
+export const BODY_FONT = `'${BODY_FONT_FAMILY}', ${MATH_GLYPH_FALLBACK}, 'Segoe UI', system-ui, sans-serif`;
+export const MONO_FONT = `'${MONO_FONT_FAMILY}', ${MATH_GLYPH_FALLBACK}, 'Consolas', 'Courier New', monospace`;
 
 /** Kept for existing call sites — the display face is now consistent across
  *  every theme (a real display face doesn't need per-theme substitution). */

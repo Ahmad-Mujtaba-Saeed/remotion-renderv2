@@ -7,7 +7,7 @@ import { CaptionTrack } from '../components/CaptionTrack';
 import { SceneClockProvider } from '../canvas/SceneClock';
 import { SfxCue } from '../sfx';
 import { clamp01, easeInOutSine } from '../motion/easing';
-import { buildBoard } from './boardLayout';
+import { buildBoard, EQ_REF_UNITS } from './boardLayout';
 import { BoardEquation } from './BoardEquation';
 import { BoardNote } from './BoardNote';
 import { BoardFigure } from './BoardFigure';
@@ -44,6 +44,7 @@ export const MathBoard: React.FC<{ scenes: Scene[]; captions?: boolean }> = ({
   // it, so a two-character line never renders as a headline.
   const globalMaxUnits = useMemo(() => {
     let max = 0;
+    let anyRef = false;
     for (const scene of scenes) {
       if (scene.layout_template !== 'math_steps') continue;
       const slot = scene.slots?.['slot_math'] ?? Object.values(scene.slots ?? {})[0];
@@ -51,9 +52,14 @@ export const MathBoard: React.FC<{ scenes: Scene[]; captions?: boolean }> = ({
         if (s && typeof s.expr === 'string' && s.expr.trim() !== '') {
           max = Math.max(max, mathWidthUnits(parseMath(s.expr)));
         }
+        if (s && typeof s.ref === 'string' && s.ref.trim() !== '') {
+          anyRef = true;
+        }
       }
     }
-    return max;
+    // Reserve the citation margin board-wide so the working never has to share
+    // its line with an "as we know" note.
+    return anyRef ? max + EQ_REF_UNITS : max;
   }, [scenes]);
 
   if (!scenes.length) return null;

@@ -37,12 +37,19 @@ const W = (word: string): RegExp => new RegExp(`(?<![A-Za-z])${word}(?![A-Za-z])
 
 const SYMBOLS: Array<[RegExp, string]> = [
   [/\+-/g, '±'],
+  // Longest-first: "<=>" must not be eaten by "<=", and "===" not by "==".
+  [/<=>/g, '⇔'],
+  [/===/g, '≡'],
+  [/=>/g, '⇒'],
   [/<=/g, '≤'],
   [/>=/g, '≥'],
   [/!=/g, '≠'],
   [/~=/g, '≈'],
   [/->/g, '→'],
   [/\*/g, '×'],
+  // Reasoning glue — the "so" and "as we know" of a worked solution.
+  [/\btherefore\b/g, '∴'],
+  [/\bbecause\b/g, '∵'],
   [W('pm'), '±'],
   [W('pi'), 'π'],
   [W('theta'), 'θ'],
@@ -55,7 +62,42 @@ const SYMBOLS: Array<[RegExp, string]> = [
   [W('sigma'), 'σ'],
   [W('omega'), 'ω'],
   [W('inf'), '∞'],
+  [W('infty'), '∞'],
   [W('deg'), '°'],
+  // Transforms. The Laplace script-L is the one operator this template could
+  // not draw at all — a Laplace video wrote the words "Laplace transform of y"
+  // into the expression instead. `invlaplace` covers the inverse; an "L^-1"
+  // source never reaches here, because parseMath splits the ^ off first.
+  [W('invlaplace'), 'ℒ⁻¹'],
+  [/\b[Ll]aplace(\s+transform)?(?![A-Za-z])/g, 'ℒ'],
+  [/\b[Ff]ourier(\s+transform)?(?![A-Za-z])/g, 'ℱ'],
+  // Calculus / analysis.
+  [W('int'), '∫'],
+  [W('oint'), '∮'],
+  [W('sum'), '∑'],
+  [W('prod'), '∏'],
+  [W('partial'), '∂'],
+  [W('nabla'), '∇'],
+  [W('grad'), '∇'],
+  [W('propto'), '∝'],
+  [W('approx'), '≈'],
+  // Remaining greek in common use. Capitals map to capital glyphs.
+  [W('gamma'), 'γ'],
+  [W('Gamma'), 'Γ'],
+  [W('epsilon'), 'ε'],
+  [W('zeta'), 'ζ'],
+  [W('eta'), 'η'],
+  [W('kappa'), 'κ'],
+  [W('rho'), 'ρ'],
+  [W('tau'), 'τ'],
+  [W('phi'), 'φ'],
+  [W('Phi'), 'Φ'],
+  [W('chi'), 'χ'],
+  [W('psi'), 'ψ'],
+  [W('Psi'), 'Ψ'],
+  [W('Omega'), 'Ω'],
+  [W('Sigma'), 'Σ'],
+  [W('Lambda'), 'Λ'],
 ];
 
 const substituteSymbols = (s: string): string => {
@@ -75,6 +117,21 @@ const readGroup = (s: string, open: number): [string, number] => {
   for (let i = open; i < s.length; i++) {
     if (s[i] === '{') depth++;
     else if (s[i] === '}') {
+      depth--;
+      if (depth === 0) return [s.slice(open + 1, i), i + 1];
+    }
+  }
+  return [s.slice(open + 1), s.length];
+};
+
+/** Reads a `(...)` balanced group starting at `open` (must be '('), returning
+ *  [contentWithoutParens, indexAfterClosingParen]. The parentheses are dropped:
+ *  they were grouping notation for the script, not something to draw. */
+const readParens = (s: string, open: number): [string, number] => {
+  let depth = 0;
+  for (let i = open; i < s.length; i++) {
+    if (s[i] === '(') depth++;
+    else if (s[i] === ')') {
       depth--;
       if (depth === 0) return [s.slice(open + 1, i), i + 1];
     }
@@ -124,10 +181,21 @@ export const parseMath = (input: string): MathNode[] => {
         const [body, next] = readGroup(s, i + 1);
         nodes.push({ kind, body: parseMath(body) });
         i = next;
+      } else if (s[i + 1] === '(') {
+        // Parenthesised script: e^(-2t), x_(n+1). Models write this far more
+        // often than the braced form, and reading only the "(" left the rest
+        // of the exponent sitting on the baseline ("e^( -2t)").
+        const [body, next] = readParens(s, i + 1);
+        nodes.push({ kind, body: parseMath(body) });
+        i = next;
       } else {
-        // Unbraced script: take a signed number run or one character (x^2,
-        // x^-1, a_n) — the forgiving-subset reading of what LLMs emit.
-        const m = /^-?\d+|^./.exec(s.slice(i + 1));
+        // Unbraced script: a signed alphanumeric run, else one character
+        // (x^2, x^-1, a_n) — the forgiving-subset reading of what LLMs emit.
+        // The run must span letters as well as digits: "e^-st" and "e^-2t"
+        // mean the whole exponent, and a digits-only run left "st"/"t" behind
+        // on the baseline. A space or an operator still ends it, so "x^2 + 3"
+        // and "x^2+3" are unaffected.
+        const m = /^[+-]?[A-Za-z0-9.]+|^./.exec(s.slice(i + 1));
         const tok = m ? m[0] : '';
         nodes.push({ kind, body: [{ kind: 'text', value: substituteSymbols(tok) }] });
         i += 1 + tok.length;

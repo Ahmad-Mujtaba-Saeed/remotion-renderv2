@@ -96,7 +96,12 @@ export const BoardEquation: React.FC<{
     const dimP = i < answerIdx ? easeOutQuint(clamp01((frame - landAt[i + 1]) / f(8))) : 0;
     const dim = 1 - 0.45 * dimP;
 
-    const note = mathToPlain(parseMath((step.note ?? '').toString().trim()));
+    // ONE annotation per line. When a line carries a citation, the note is
+    // suppressed: the note only names the move ("start with the equation")
+    // while the citation says WHY it is allowed, and squeezing both into the
+    // row left the note wrapping into a four-line stack beside the maths.
+    const ref = (step.ref ?? '').toString().trim();
+    const note = ref ? '' : mathToPlain(parseMath((step.note ?? '').toString().trim()));
     const noteEl = note ? (
       <span
         style={{
@@ -113,6 +118,54 @@ export const BoardEquation: React.FC<{
         }}
       >
         {note}
+      </span>
+    ) : null;
+
+    // The "as we know…" citation, pinned to the right margin of the row and
+    // written a beat AFTER the line lands — the lecturer states the move, then
+    // justifies it. Typeset (not plain) so an identity renders as maths.
+    const refP = easeOutQuint(clamp01((local - f(8)) / f(10)));
+    const refEl = ref ? (
+      <span
+        style={{
+          // Out of flex flow: the citation lives in the margin the board-wide
+          // sizing reserved for it (EQ_REF_UNITS) and can never squeeze or
+          // wrap the equation it annotates.
+          position: 'absolute',
+          right: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          maxWidth: '34%',
+          display: 'inline-flex',
+          alignItems: 'baseline',
+          justifyContent: 'flex-end',
+          flexWrap: 'wrap',
+          gap: exprSize * 0.18,
+          opacity: refP * 0.85,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: MONO_FONT,
+            fontSize: Math.max(exprSize * 0.26, boxH * 0.024),
+            textTransform: 'uppercase',
+            letterSpacing: boxW * 0.0012,
+            color: theme.accent,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          ∵ as we know
+        </span>
+        <MathText
+          expr={ref}
+          color={theme.muted}
+          style={{
+            fontFamily: displayFont,
+            fontWeight: 700,
+            fontSize: Math.max(exprSize * 0.36, boxH * 0.03),
+            lineHeight: 1.15,
+          }}
+        />
       </span>
     ) : null;
 
@@ -146,6 +199,11 @@ export const BoardEquation: React.FC<{
             alignItems: 'center',
             gap: boxW * 0.03,
             width: '100%',
+            // Keep the row's own content out of the citation's margin. The ref
+            // is absolutely positioned at the right edge, so without this a
+            // long note ran underneath it and the two overlapped.
+            paddingRight: ref ? '38%' : 0,
+            boxSizing: 'border-box',
             opacity: inP === 0 ? 0 : dim,
             transform: `translateY(${(1 - inP) * boxH * 0.02}px)`,
             clipPath: `inset(0 ${(1 - inP) * 100}% 0 0)`,
@@ -166,6 +224,10 @@ export const BoardEquation: React.FC<{
           {exprEl}
           {noteEl}
         </div>
+        {/* Outside the clipped layer, like the pen tip: the citation fades in
+            on its own beat instead of waiting for the write-on to sweep past
+            it. */}
+        {refEl}
         {/* The pen tip: a small accent dot riding the write-on edge — the
             attention cue the whiteboard-lecture research keeps finding (the
             eye follows the hand). Sits OUTSIDE the clipped layer so it leads

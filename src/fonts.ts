@@ -39,6 +39,25 @@ export const DISPLAY_FONT_FAMILY = 'Explainer Display';
 export const BODY_FONT_FAMILY = 'Explainer Body';
 export const MONO_FONT_FAMILY = 'Explainer Mono';
 
+/**
+ * Maths glyph fallback. The bundled faces are LATIN-ONLY subsets: none of them
+ * carries π, θ, Δ, √, ≤, ∞, →, ℒ, ∫ or ∑. Those glyphs have only ever survived
+ * because Chromium silently fell through to a host font — which means the maths
+ * has been rendering in whatever the render machine happened to install, and
+ * would land as tofu boxes on a host with no symbol font (a Linux render
+ * container).
+ *
+ * Appending this to every maths font stack makes that fallback explicit and
+ * ordered: Cambria Math and Segoe UI Symbol both ship with Windows and both
+ * cover the full operator/greek range; DejaVu Sans is the usual Linux
+ * equivalent; `serif` is the last resort.
+ *
+ * NOTE: this is a font STACK, not a bundled file — a render host with none of
+ * these installed still shows tofu. Bundling a subset of a math face is the
+ * permanent fix if rendering ever moves off Windows.
+ */
+export const MATH_GLYPH_FALLBACK = `'Cambria Math', 'Segoe UI Symbol', 'DejaVu Sans', 'STIX Two Math', serif`;
+
 export type FontPackName = 'editorial' | 'classic' | 'tech';
 
 interface FontFace {
