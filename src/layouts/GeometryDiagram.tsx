@@ -131,6 +131,19 @@ const fitTransform = (all: Pt[]): { s: number; tx: number; ty: number } => {
   };
 };
 
+/** The circle through three points (a triangle's circumcircle), or null when
+ *  they are collinear so no finite circle passes through them. */
+const circleThrough = (a: Pt, b: Pt, c: Pt): { cx: number; cy: number; r: number } | null => {
+  const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+  if (Math.abs(d) < 1e-6) return null;
+  const a2 = a.x * a.x + a.y * a.y;
+  const b2 = b.x * b.x + b.y * b.y;
+  const c2 = c.x * c.x + c.y * c.y;
+  const cx = (a2 * (b.y - c.y) + b2 * (c.y - a.y) + c2 * (a.y - b.y)) / d;
+  const cy = (a2 * (c.x - b.x) + b2 * (a.x - c.x) + c2 * (b.x - a.x)) / d;
+  return { cx, cy, r: Math.hypot(a.x - cx, a.y - cy) };
+};
+
 const DEFAULT_POINTS: Record<string, GeoPoint[]> = {
   triangle: [
     { x: 0.5, y: 0.92 },
@@ -232,6 +245,10 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
     figure = (
       <UnitCircleFigure slot={slot} frame={frame} fps={fps} drawP={drawP} drawDone={drawDone} ink={ink} theme={theme} displayFont={displayFont} />
     );
+  } else if (shape === 'area_model') {
+    figure = (
+      <AreaModelFigure slot={slot} frame={frame} fps={fps} ink={ink} theme={theme} displayFont={displayFont} />
+    );
   } else {
     const raw =
       Array.isArray(slot.points) && slot.points.length >= 3
@@ -296,20 +313,117 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
       ? `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y} L ${pts[2].x} ${pts[2].y}`
       : `M ${pts.map((p) => `${p.x} ${p.y}`).join(' L ')} Z`;
 
+    // Point lookup for internal segments (cevians, medians, diagonals, the
+    // parallel line that carves a similar triangle): a vertex by its label or
+    // index, or an extra_point by its label (positioned exactly as its dot is).
+    const vertexByLabel: Record<string, Pt> = {};
+    pts.forEach((p) => {
+      if (p.label) vertexByLabel[p.label] = p;
+    });
+    const extraByLabel: Record<string, Pt> = {};
+    (slot.extra_points ?? []).forEach((ep) => {
+      const edge = edges[Math.max(0, Math.min(edges.length - 1, Math.round(Number(ep.on_side) || 0)))];
+      const lbl = (ep.label ?? '').trim();
+      if (!edge || !lbl) return;
+      const t = clamp01(Number(ep.t) || 0.5);
+      extraByLabel[lbl] = { x: edge[0].x + (edge[1].x - edge[0].x) * t, y: edge[0].y + (edge[1].y - edge[0].y) * t };
+    });
+    const resolvePoint = (ref: string | number): Pt | null => {
+      if (typeof ref === 'number') return pts[ref] ?? null;
+      const s = String(ref).trim();
+      if (vertexByLabel[s]) return vertexByLabel[s];
+      if (extraByLabel[s]) return extraByLabel[s];
+      const asNum = Number(s);
+      return Number.isInteger(asNum) ? pts[asNum] ?? null : null;
+    };
+
+    // The circle through the first three vertices — a triangle inscribed in its
+    // circumcircle (the "angle in a semicircle" family, cyclic quadrilaterals).
+    const circum = slot.circumcircle && !isAngle && n >= 3 ? circleThrough(pts[0], pts[1], pts[2]) : null;
+
     const labelIn = (i: number): number =>
       easeOutQuint(clamp01((frame - drawDone - i * f30(fps, 3)) / f30(fps, 9)));
+
+    // ---- Square stand-up schedule -------------------------------------------
+    // Ordinarily the erected squares rise on a fixed 7-frame stagger just after
+    // the outline draws. For an EVOLVING figure (slot.progressive — a drawn
+    // proof the composer fused onto one slide) each square instead rises when
+    // the voice reaches it: the narration is split into (base + one segment per
+    // square) and square k stands up at the word its segment begins on. So "now
+    // a square on side b" is spoken exactly as that square rises, not two
+    // seconds before. Without narration timings it falls back to the stagger,
+    // and non-progressive figures stay byte-identical to before.
+    const words = scene.narration_words ?? [];
+    const revealOrder =
+      Array.isArray(slot.reveal_order) && slot.reveal_order.length ? slot.reveal_order : sqs.map((s) => s.edge);
+    const progressive = slot.progressive === true && words.length >= 2 && sqs.length >= 1;
+    const standFrames: number[] = (() => {
+      if (!progressive) return [];
+      const startFrac = clamp01(slot.reveal_start_frac ?? 0.22);
+      const endFrac = 0.9;
+      const E = sqs.length;
+      const minGap = f30(fps, 10);
+      // Prefer the composer's explicit per-square fractions (each square lined
+      // up with the step that introduces it); otherwise spread them evenly from
+      // the opening reserved for the bare figure.
+      const explicit =
+        Array.isArray(slot.reveal_fracs) && slot.reveal_fracs.length === E ? slot.reveal_fracs : null;
+      const wordFrame = (frac: number): number => {
+        const idx = Math.min(words.length - 1, Math.max(0, Math.floor(clamp01(frac) * words.length)));
+        return Math.round((words[idx]?.start ?? 0) * fps);
+      };
+      const out: number[] = [];
+      for (let pos = 0; pos < E; pos++) {
+        const frac = explicit ? explicit[pos] : E <= 1 ? startFrac : startFrac + (pos / E) * (endFrac - startFrac);
+        let f = Math.max(drawDone, wordFrame(frac));
+        if (pos > 0) f = Math.max(f, out[pos - 1] + minGap);
+        out.push(f);
+      }
+      return out;
+    })();
+    // Frame each square (in sqs/edge order) stands up. Its slot in the reveal
+    // schedule is where its edge sits in reveal_order (narrative order), or its
+    // own index when the edge isn't listed.
+    const standAt = (k: number): number => {
+      if (!progressive) return drawDone + k * f30(fps, 7);
+      const listed = revealOrder.indexOf(sqs[k].edge);
+      const pos = Math.min(standFrames.length - 1, listed >= 0 ? listed : k);
+      return standFrames[Math.max(0, pos)] ?? drawDone;
+    };
+    // Highlight + fill are the closing beat: after the LAST square has risen in
+    // an evolving figure, on the usual early schedule otherwise.
+    const lastStand = progressive && standFrames.length ? standFrames[standFrames.length - 1] + f30(fps, 16) : drawDone;
     const fillP = slot.fill
-      ? easeOutQuint(clamp01((frame - drawDone - f30(fps, 2)) / f30(fps, 10)))
+      ? easeOutQuint(clamp01((frame - (progressive ? lastStand : drawDone) - f30(fps, 2)) / f30(fps, 10)))
       : 0;
-    const hiP = hi != null ? easeInOutQuint(clamp01((frame - drawDone - f30(fps, 4)) / f30(fps, 10))) : 0;
+    const hiP =
+      hi != null
+        ? easeInOutQuint(clamp01((frame - (progressive ? lastStand : drawDone) - f30(fps, 4)) / f30(fps, 10)))
+        : 0;
 
     figure = (
       <>
+        {/* Circumcircle, drawn first so it sits behind the inscribed figure and
+            sweeps in with the outline. */}
+        {circum ? (
+          <circle
+            cx={circum.cx}
+            cy={circum.cy}
+            r={circum.r}
+            fill="none"
+            stroke={theme.muted}
+            strokeWidth={3.5}
+            strokeLinecap="round"
+            strokeDasharray={`${2 * Math.PI * circum.r * drawP} ${2 * Math.PI * circum.r}`}
+            transform={`rotate(-90 ${circum.cx} ${circum.cy})`}
+            opacity={0.7}
+          />
+        ) : null}
         {/* Erected squares stand up one at a time once the figure is drawn —
             outline first, then the area floods, then it names itself. Behind
             the figure so its outline always reads on top. */}
         {sqs.map((sq, k) => {
-          const at = drawDone + k * f30(fps, 7);
+          const at = standAt(k);
           const dur = f30(fps, 16);
           const p = easeInOutQuint(clamp01((frame - at) / dur));
           if (p <= 0) return null;
@@ -380,6 +494,45 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
             strokeDashoffset={1 - hiP}
           />
         ) : null}
+
+        {/* Internal segments (cevians, medians, diagonals, similar-triangle
+            cut lines): each draws itself after the outline, staggered, and
+            names itself once fully drawn. */}
+        {(slot.segments ?? []).map((seg, i) => {
+          const a = resolvePoint(seg.from);
+          const b = resolvePoint(seg.to);
+          if (!a || !b) return null;
+          const p = easeInOutQuint(clamp01((frame - drawDone - i * f30(fps, 5)) / f30(fps, 14)));
+          if (p <= 0.001) return null;
+          const label = (seg.label ?? '').trim();
+          return (
+            <g key={`seg${i}`}>
+              <line
+                x1={a.x}
+                y1={a.y}
+                x2={a.x + (b.x - a.x) * p}
+                y2={a.y + (b.y - a.y) * p}
+                stroke={theme.accent}
+                strokeWidth={4.5}
+                strokeLinecap="round"
+                strokeDasharray={seg.dashed ? '10 9' : undefined}
+              />
+              {label && p > 0.9 ? (
+                <text
+                  x={(a.x + b.x) / 2}
+                  y={(a.y + b.y) / 2 - 12}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontFamily={MONO_FONT}
+                  fontSize={25}
+                  fill={theme.accent}
+                >
+                  {mathLabel(label)}
+                </text>
+              ) : null}
+            </g>
+          );
+        })}
 
         {/* Vertex letters land outward from the centroid. */}
         {pts.map((p, i) =>
@@ -1314,6 +1467,135 @@ const FractionBarFigure: React.FC<{
           </g>
         );
       })}
+    </>
+  );
+};
+
+/**
+ * area_model: the box that proves an algebraic identity by area. `terms`
+ * ["a","b"] carves a square of side (a+b) into a² / ab / ab / b² — the picture
+ * `(a+b)² = a² + 2ab + b²` literally IS. `col_terms` differing turns it into a
+ * rectangle product (a+b)(c+d). Cells on the diagonal (the perfect squares)
+ * flood a touch stronger than the cross terms so the eye reads the a²+…+b²
+ * structure. The outline draws, the internal cuts follow, then each region
+ * floods and names its area.
+ */
+const AreaModelFigure: React.FC<{
+  slot: { terms?: string[]; col_terms?: string[] };
+  frame: number;
+  fps: number;
+  ink: string;
+  theme: Theme;
+  displayFont: string;
+}> = ({ slot, frame, fps, ink, theme, displayFont }) => {
+  const clean = (arr?: string[]): string[] =>
+    (arr ?? []).map((t) => String(t ?? '').trim()).filter((t) => t !== '').slice(0, 4);
+  const rows = clean(slot.terms);
+  const cols = slot.col_terms && clean(slot.col_terms).length ? clean(slot.col_terms) : rows;
+  if (rows.length < 2 || cols.length < 1) return null;
+
+  // First term biggest, so a² reads larger than b² — the areas stay honest.
+  const weight = (arr: string[]): number[] => {
+    const w = arr.map((_, i) => arr.length - i);
+    const s = w.reduce((a, b) => a + b, 0) || 1;
+    return w.map((v) => v / s);
+  };
+  const rowF = weight(rows);
+  const colF = weight(cols);
+  const cumul = (arr: number[], k: number): number => arr.slice(0, k).reduce((a, b) => a + b, 0);
+
+  const S = Math.min(W * 0.52, H * 0.82);
+  const bx = (W - S) / 2 + 40; // shift right to clear the row-term labels
+  const by = (H - S) / 2 + 16;
+
+  const outlineP = easeOutQuint(clamp01((frame - f30(fps, 4)) / f30(fps, 12)));
+  const gridP = easeInOutQuint(clamp01((frame - f30(fps, 14)) / f30(fps, 12)));
+  const cellAt = (idx: number): number => f30(fps, 22) + idx * f30(fps, 4);
+
+  return (
+    <>
+      {rows.map((rt, i) =>
+        cols.map((ct, j) => {
+          const idx = i * cols.length + j;
+          const x = bx + cumul(colF, j) * S;
+          const y = by + cumul(rowF, i) * S;
+          const w = colF[j] * S;
+          const h = rowF[i] * S;
+          const p = easeOutQuint(clamp01((frame - cellAt(idx)) / f30(fps, 9)));
+          const isDiag = rt === ct;
+          const label = isDiag ? `${rt}^2` : `${rt}${ct}`;
+          const fontSize = Math.max(19, Math.min(46, Math.min(w, h) * 0.32));
+          return (
+            <g key={`c${i}-${j}`}>
+              <rect x={x} y={y} width={w} height={h} fill={theme.accent} opacity={(isDiag ? 0.24 : 0.1) * p} />
+              <text
+                x={x + w / 2}
+                y={y + h / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontFamily={displayFont}
+                fontWeight={800}
+                fontSize={fontSize}
+                fill={ink}
+                opacity={p}
+              >
+                {mathLabel(label)}
+              </text>
+            </g>
+          );
+        })
+      )}
+      <g opacity={gridP}>
+        {colF.slice(0, -1).map((_, j) => {
+          const x = bx + cumul(colF, j + 1) * S;
+          return <line key={`vg${j}`} x1={x} y1={by} x2={x} y2={by + S} stroke={ink} strokeWidth={2.5} />;
+        })}
+        {rowF.slice(0, -1).map((_, i) => {
+          const y = by + cumul(rowF, i + 1) * S;
+          return <line key={`hg${i}`} x1={bx} y1={y} x2={bx + S} y2={y} stroke={ink} strokeWidth={2.5} />;
+        })}
+      </g>
+      <rect
+        x={bx}
+        y={by}
+        width={S}
+        height={S}
+        fill="none"
+        stroke={ink}
+        strokeWidth={5}
+        pathLength={1}
+        strokeDasharray={1}
+        strokeDashoffset={1 - outlineP}
+      />
+      {cols.map((ct, j) => (
+        <text
+          key={`ct${j}`}
+          x={bx + (cumul(colF, j) + colF[j] / 2) * S}
+          y={by - 20}
+          textAnchor="middle"
+          fontFamily={MONO_FONT}
+          fontSize={28}
+          fill={theme.accent}
+          opacity={outlineP}
+        >
+          {mathLabel(ct)}
+        </text>
+      ))}
+      {rows.map((rt, i) => (
+        <text
+          key={`rt${i}`}
+          x={bx - 24}
+          y={by + (cumul(rowF, i) + rowF[i] / 2) * S}
+          textAnchor="end"
+          dominantBaseline="middle"
+          fontFamily={MONO_FONT}
+          fontSize={28}
+          fill={theme.accent}
+          opacity={outlineP}
+        >
+          {mathLabel(rt)}
+        </text>
+      ))}
     </>
   );
 };

@@ -100,6 +100,15 @@ export interface EdgePoint {
   label?: string;
 }
 
+/** An internal segment of a geometry figure, drawn between two of its points
+ *  (each a vertex label, a vertex index, or an extra_point label). */
+export interface GeoSegment {
+  from: string | number;
+  to: string | number;
+  label?: string;
+  dashed?: boolean;
+}
+
 /** A real-coordinate point of a coordinate_plane figure (NOT normalized —
  *  these are the problem's own values, the renderer frames them). */
 export interface PlanePoint {
@@ -296,8 +305,45 @@ export interface Slot {
    * on this side" argument. The figure auto-reframes to fit them.
    */
   side_squares?: string[];
+  /**
+   * Evolving figure (a drawn proof — Pythagoras, "area on each side"): the
+   * erected squares (and the highlight/fill) stand up ONE AT A TIME in step
+   * with the narration, instead of on a fixed timer, so "now a square on side
+   * b" is spoken exactly as that square rises. Set by the composer when it
+   * fuses an object + argument-step run into a single slide.
+   */
+  progressive?: boolean;
+  /** Edge indices in the order their squares should reveal (narrative order,
+   *  which need not be edge order). Falls back to edge order when absent. */
+  reveal_order?: number[];
+  /** Fraction of the narration reserved for the base figure before the first
+   *  square rises (the "we start with a right triangle" opening). 0..0.5. */
+  reveal_start_frac?: number;
+  /** Explicit narration fraction (0..1) at which each square — in reveal_order
+   *  — should rise, one per square. Set when the composer can line each square
+   *  up with the step that introduces it; falls back to an even spread from
+   *  reveal_start_frac when absent or mismatched. */
+  reveal_fracs?: number[];
   /** Named points ON an edge (midpoints etc.). */
   extra_points?: EdgePoint[];
+  /**
+   * Internal segments drawn between two of the figure's points — a cevian, a
+   * median, a diagonal, the parallel line that carves a similar triangle. Each
+   * endpoint is a vertex LABEL, a vertex index, or an extra_point label.
+   */
+  segments?: GeoSegment[];
+  /** Draw the circle through the figure's first three vertices — a triangle or
+   *  polygon inscribed in its circumcircle ("angle in a semicircle", cyclic
+   *  quadrilaterals). */
+  circumcircle?: boolean;
+  /**
+   * area_model only: the binomial terms along the rows (and columns, unless
+   * `col_terms` is given). `["a","b"]` builds the (a+b)² square carved into
+   * a² / ab / ab / b². `col_terms` differing gives a rectangle product
+   * (a+b)(c+d).
+   */
+  terms?: string[];
+  col_terms?: string[];
   /** coordinate_plane: real-value points + optional line through two of them. */
   coords?: PlanePoint[];
   line_through?: number[];
