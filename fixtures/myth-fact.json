@@ -1,0 +1,174 @@
+{
+ "project_id": "myth-fact-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "editorial",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "mf1",
+   "order": 1,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "People swear goldfish only remember three seconds of their lives. Actually goldfish can remember things for months and even learn tricks."
+   },
+   "narration_words": [
+    {
+     "word": "People",
+     "start": 0.4,
+     "end": 0.73
+    },
+    {
+     "word": "swear",
+     "start": 0.79,
+     "end": 1.06
+    },
+    {
+     "word": "goldfish",
+     "start": 1.12,
+     "end": 1.56
+    },
+    {
+     "word": "only",
+     "start": 1.62,
+     "end": 1.84
+    },
+    {
+     "word": "remember",
+     "start": 1.91,
+     "end": 2.35
+    },
+    {
+     "word": "three",
+     "start": 2.41,
+     "end": 2.68
+    },
+    {
+     "word": "seconds",
+     "start": 2.74,
+     "end": 3.12
+    },
+    {
+     "word": "of",
+     "start": 3.19,
+     "end": 3.37
+    },
+    {
+     "word": "their",
+     "start": 3.42,
+     "end": 3.7
+    },
+    {
+     "word": "lives.",
+     "start": 3.76,
+     "end": 4.09
+    },
+    {
+     "word": "Actually",
+     "start": 4.15,
+     "end": 4.59
+    },
+    {
+     "word": "goldfish",
+     "start": 4.65,
+     "end": 5.09
+    },
+    {
+     "word": "can",
+     "start": 5.15,
+     "end": 5.33
+    },
+    {
+     "word": "remember",
+     "start": 5.39,
+     "end": 5.83
+    },
+    {
+     "word": "things",
+     "start": 5.89,
+     "end": 6.22
+    },
+    {
+     "word": "for",
+     "start": 6.28,
+     "end": 6.46
+    },
+    {
+     "word": "months",
+     "start": 6.52,
+     "end": 6.85
+    },
+    {
+     "word": "and",
+     "start": 6.91,
+     "end": 7.09
+    },
+    {
+     "word": "even",
+     "start": 7.15,
+     "end": 7.37
+    },
+    {
+     "word": "learn",
+     "start": 7.43,
+     "end": 7.71
+    },
+    {
+     "word": "tricks.",
+     "start": 7.76,
+     "end": 8.15
+    }
+   ],
+   "layout_template": "myth_fact",
+   "transition": "none",
+   "style": {
+    "kicker": "THE GOLDFISH TEST"
+   },
+   "slots": {
+    "slot_myth_fact": {
+     "content_type": "myth_fact",
+     "heading": "The 3-second memory",
+     "myth": "A goldfish forgets everything after three seconds",
+     "fact": "Goldfish remember for months \u2014 and can learn tricks"
+    }
+   }
+  },
+  {
+   "scene_id": "mf2",
+   "order": 2,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "No timings on this one \u2014 the pivot falls back to the fixed beat."
+   },
+   "layout_template": "myth_fact",
+   "transition": "none",
+   "slots": {
+    "slot_myth_fact": {
+     "content_type": "myth_fact",
+     "myth": "We only use 10% of our brains",
+     "fact": "Scans show activity across virtually every region"
+    }
+   }
+  }
+ ]
+}

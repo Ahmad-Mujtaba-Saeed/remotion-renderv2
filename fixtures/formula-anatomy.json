@@ -1,0 +1,108 @@
+{
+ "project_id": "formula-anatomy-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "tech",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "fa1",
+   "order": 1,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "Meet the model. The minus four point nine is half of gravity pulling the ball down. The twenty eight is the launch speed upward. And the three is the starting height off the ground."
+   },
+   "narration_words": [
+    { "word": "Meet", "start": 0.3, "end": 0.55 },
+    { "word": "the", "start": 0.6, "end": 0.72 },
+    { "word": "model.", "start": 0.78, "end": 1.2 },
+    { "word": "The", "start": 1.4, "end": 1.52 },
+    { "word": "minus", "start": 1.58, "end": 1.9 },
+    { "word": "four", "start": 1.95, "end": 2.2 },
+    { "word": "point", "start": 2.25, "end": 2.5 },
+    { "word": "nine", "start": 2.55, "end": 2.8 },
+    { "word": "is", "start": 2.86, "end": 2.98 },
+    { "word": "half", "start": 3.04, "end": 3.3 },
+    { "word": "of", "start": 3.35, "end": 3.45 },
+    { "word": "gravity", "start": 3.5, "end": 3.95 },
+    { "word": "pulling", "start": 4.0, "end": 4.3 },
+    { "word": "the", "start": 4.35, "end": 4.45 },
+    { "word": "ball", "start": 4.5, "end": 4.75 },
+    { "word": "down.", "start": 4.8, "end": 5.1 },
+    { "word": "The", "start": 5.2, "end": 5.32 },
+    { "word": "twenty", "start": 5.38, "end": 5.65 },
+    { "word": "eight", "start": 5.7, "end": 5.95 },
+    { "word": "is", "start": 6.0, "end": 6.1 },
+    { "word": "the", "start": 6.15, "end": 6.25 },
+    { "word": "launch", "start": 6.3, "end": 6.6 },
+    { "word": "speed", "start": 6.65, "end": 6.95 },
+    { "word": "upward.", "start": 7.0, "end": 7.35 },
+    { "word": "And", "start": 7.4, "end": 7.5 },
+    { "word": "the", "start": 7.52, "end": 7.6 },
+    { "word": "three", "start": 7.62, "end": 7.8 },
+    { "word": "is", "start": 7.82, "end": 7.88 },
+    { "word": "the", "start": 7.9, "end": 7.95 },
+    { "word": "starting", "start": 7.97, "end": 8.2 },
+    { "word": "height.", "start": 8.22, "end": 8.5 }
+   ],
+   "layout_template": "formula_anatomy",
+   "transition": "none",
+   "style": {
+    "kicker": "THE MODEL"
+   },
+   "slots": {
+    "slot_formula": {
+     "content_type": "formula",
+     "heading": "The flight, as an equation",
+     "formula": "h(t) = -4.9t^2 + 28t + 3",
+     "parts": [
+      { "match": "-4.9", "label": "half of gravity, pulling down" },
+      { "match": "28", "label": "launch speed, 28 m/s up" },
+      { "match": "3", "label": "starting height, 3 m" }
+     ]
+    }
+   }
+  },
+  {
+   "scene_id": "fa2",
+   "order": 2,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "No word timings here, so the labels take the fallback spread across the fraction and the radical."
+   },
+   "layout_template": "formula_anatomy",
+   "transition": "none",
+   "slots": {
+    "slot_formula": {
+     "content_type": "formula",
+     "formula": "x = frac{-b +- sqrt{b^2 - 4*a*c}}{2*a}",
+     "parts": [
+      { "match": "+-", "label": "two roots: one plus, one minus" },
+      { "match": "b^2 - 4*a*c", "label": "the discriminant" },
+      { "match": "2*a", "label": "twice the lead coefficient" }
+     ]
+    }
+   }
+  }
+ ]
+}

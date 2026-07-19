@@ -9,6 +9,7 @@ import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { SPRINGS } from '../motion/springs';
 import { clamp01, easeOutCubic } from '../motion/easing';
 import { f30 } from '../motion/choreo';
+import { CalloutLayer } from './CalloutLayer';
 
 /**
  * Renders an image (or video) slot with its camera move. If no asset has been
@@ -38,15 +39,27 @@ const FrameStrip: React.FC<{ frames: FrameSequence; style: React.CSSProperties }
   return <Img src={`${frames.url_prefix}${String(idx).padStart(5, '0')}.jpg`} style={style} />;
 };
 
-/** Aspect of the slot's box, measured pre-transform (offset* ignores scale). */
+/** Aspect of the slot's box, measured pre-transform (offset* ignores scale).
+ *  Remotion sizes the composition container AFTER the mount commit (a DOM
+ *  mutation with no re-render), so at mount everything measures 0 — a
+ *  one-shot measure here silently never fired during real renders (only in
+ *  Studio). The ResizeObserver catches the container getting its size. */
 const useBoxAspect = (): [React.RefObject<HTMLDivElement>, number | null] => {
   const ref = useRef<HTMLDivElement>(null);
   const [aspect, setAspect] = useState<number | null>(null);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (el && el.offsetHeight > 0) {
-      setAspect(el.offsetWidth / el.offsetHeight);
-    }
+    if (!el) return;
+    const measure = () => {
+      if (el.offsetHeight > 0) {
+        const next = el.offsetWidth / el.offsetHeight;
+        setAspect((prev) => (prev !== null && Math.abs(prev - next) < 0.001 ? prev : next));
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
   return [ref, aspect];
 };
@@ -203,12 +216,28 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
     );
   }
 
+  // Manual/AI callout pins finally render (they were plumbed end-to-end but
+  // never drawn). They live INSIDE the camera move so a pin stays glued to
+  // the pixel it points at while the image pans or zooms.
+  const callouts = (slot.callouts ?? []).filter((c) => (c.text ?? '').trim() !== '');
+  const withCallouts = callouts.length ? (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {media}
+      <CalloutLayer
+        callouts={callouts}
+        media={{ mediaAspect, fit: contained ? 'contain' : 'cover', focus }}
+      />
+    </div>
+  ) : (
+    media
+  );
+
   return (
     <div ref={boxRef} style={{ width: '100%', height: '100%', position: 'relative', ...framelessWrap, ...entrance }}>
       {containBackdrop}
       {/* Panning letterboxed media around looks broken — contained assets get
           a gentle push-in instead of their assigned pan. */}
-      <CameraMove move={contained ? 'slow_zoom_in' : slot.camera_move}>{media}</CameraMove>
+      <CameraMove move={contained ? 'slow_zoom_in' : slot.camera_move}>{withCallouts}</CameraMove>
       {slot.label ? (
         <div
           style={{

@@ -245,6 +245,14 @@ export interface Callout {
   anchor?: 'auto' | 'left' | 'right' | 'top' | 'bottom';
 }
 
+/** One labelled part of a formula_anatomy equation. `match` is an exact
+ *  substring of the formula (same linear notation); the renderer finds its
+ *  atoms in the typeset line and hangs the label off them. */
+export interface FormulaPart {
+  match: string;
+  label: string;
+}
+
 export interface Slot {
   content_type: ContentType;
   label?: string;
@@ -282,8 +290,17 @@ export interface Slot {
   items?: (IconItem | HeadlineItem | string)[];
   // timeline_nodes (timeline_card)
   nodes?: TimelineNode[];
+  // myth_fact (myth_fact card): the belief and its correction
+  myth?: string;
+  fact?: string;
   // meter (progress_meter)
   value_pct?: number;
+  // pictogram (pictogram_percent): `filled` of `of` person icons in accent
+  of?: number;
+  filled?: number;
+  // formula (formula_anatomy): one equation, parts labelled via leader lines
+  formula?: string;
+  parts?: FormulaPart[];
   // map (map_card)
   pins?: MapPin[];
   region?: string;

@@ -25,6 +25,11 @@ import { PhoneMockup } from '../layouts/PhoneMockup';
 import { PhotoStack } from '../layouts/PhotoStack';
 import { MapCard } from '../layouts/MapCard';
 import { HeadlineTicker } from '../layouts/HeadlineTicker';
+import { LabeledDiagram } from '../layouts/LabeledDiagram';
+import { MythFact } from '../layouts/MythFact';
+import { FormulaAnatomy } from '../layouts/FormulaAnatomy';
+import { CycleDiagram } from '../layouts/CycleDiagram';
+import { PictogramPercent } from '../layouts/PictogramPercent';
 import { MathSteps } from '../layouts/MathSteps';
 import { GeometryDiagram } from '../layouts/GeometryDiagram';
 import { FunctionPlot } from '../layouts/FunctionPlot';
@@ -131,6 +136,16 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <MapCard scene={scene} />;
     case 'headline_ticker':
       return <HeadlineTicker scene={scene} />;
+    case 'labeled_diagram':
+      return <LabeledDiagram scene={scene} />;
+    case 'myth_fact':
+      return <MythFact scene={scene} />;
+    case 'pictogram_percent':
+      return <PictogramPercent scene={scene} />;
+    case 'formula_anatomy':
+      return <FormulaAnatomy scene={scene} />;
+    case 'cycle_diagram':
+      return <CycleDiagram scene={scene} />;
     case 'math_steps':
       return <MathSteps scene={scene} />;
     case 'geometry_diagram':

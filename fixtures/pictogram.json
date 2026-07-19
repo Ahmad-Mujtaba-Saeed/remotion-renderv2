@@ -1,0 +1,70 @@
+{
+ "project_id": "pictogram-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "editorial",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "sand",
+  "label": "Sand",
+  "bg_from": "#F0E9DC",
+  "bg_to": "#F0E9DC",
+  "accent": "#C24D2C",
+  "accent2": "#9E3E22",
+  "text": "#221D16",
+  "muted": "#8D8578",
+  "panel": "#E6DDCB"
+ },
+ "scenes": [
+  {
+   "scene_id": "pg1",
+   "order": 1,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "Seven in ten players never see the ending of the games they buy."
+   },
+   "layout_template": "pictogram_percent",
+   "transition": "none",
+   "style": {
+    "kicker": "THE FINISH LINE"
+   },
+   "slots": {
+    "slot_pictogram": {
+     "content_type": "pictogram",
+     "filled": 7,
+     "of": 10,
+     "heading": "Never finish the story",
+     "label": "of players who buy a game"
+    }
+   }
+  },
+  {
+   "scene_id": "pg2",
+   "order": 2,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "Sixty-four percent of users trust online reviews."
+   },
+   "layout_template": "pictogram_percent",
+   "transition": "none",
+   "slots": {
+    "slot_pictogram": {
+     "content_type": "pictogram",
+     "filled": 6.4,
+     "of": 10,
+     "unit": "%",
+     "label": "of users trust online reviews"
+    }
+   }
+  }
+ ]
+}

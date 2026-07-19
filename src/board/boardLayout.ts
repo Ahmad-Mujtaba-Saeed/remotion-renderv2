@@ -77,11 +77,18 @@ export interface BoardPlan {
   activeAt: (frame: number) => number;
 }
 
-const MATH_TEMPLATES = new Set(['math_steps', 'geometry_diagram', 'function_plot', 'scenario_diagram']);
+const MATH_TEMPLATES = new Set([
+  'math_steps',
+  'geometry_diagram',
+  'function_plot',
+  'scenario_diagram',
+  'formula_anatomy',
+]);
 const isFigureTpl = (s: Scene): boolean =>
   s.layout_template === 'geometry_diagram' ||
   s.layout_template === 'function_plot' ||
-  s.layout_template === 'scenario_diagram';
+  s.layout_template === 'scenario_diagram' ||
+  s.layout_template === 'formula_anatomy';
 const isEquationTpl = (s: Scene): boolean => s.layout_template === 'math_steps';
 const isMathTpl = (s: Scene): boolean => MATH_TEMPLATES.has(s.layout_template);
 
