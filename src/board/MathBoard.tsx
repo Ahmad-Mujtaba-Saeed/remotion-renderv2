@@ -8,6 +8,7 @@ import { SceneClockProvider } from '../canvas/SceneClock';
 import { SfxCue } from '../sfx';
 import { clamp01, easeInOutSine } from '../motion/easing';
 import { buildBoard, EQ_REF_UNITS } from './boardLayout';
+import { BoardStyle } from './boardTheme';
 import { BoardEquation } from './BoardEquation';
 import { BoardNote } from './BoardNote';
 import { BoardFigure } from './BoardFigure';
@@ -25,10 +26,12 @@ import { MathStep } from '../types';
  * glances at diagrams, steps aside to concepts and returns; there is no flight,
  * no roll, no idle push. The music bed lives in ExplainerVideo, outside this.
  */
-export const MathBoard: React.FC<{ scenes: Scene[]; captions?: boolean }> = ({
-  scenes: scenesProp,
-  captions = false,
-}) => {
+export const MathBoard: React.FC<{
+  scenes: Scene[];
+  captions?: boolean;
+  /** Surface decor variant; the matching THEME is provided by the caller. */
+  boardStyle?: BoardStyle;
+}> = ({ scenes: scenesProp, captions = false, boardStyle = 'slate' }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
   const { fps, width: vw, height: vh } = useVideoConfig();
@@ -67,11 +70,24 @@ export const MathBoard: React.FC<{ scenes: Scene[]; captions?: boolean }> = ({
   const cam = plan.at(frame);
   const f = (n: number): number => Math.round((n / 30) * fps);
 
-  // Graph-paper surface: faint square grid pinned to the world (the one
-  // texture — a math board should read as a grid). Ink on light themes,
-  // light on dark themes, barely there either way.
+  // Surface decor per board style, pinned to the world. Slate keeps the
+  // graph-paper grid; chalk is a plain deep-green field (a chalkboard has no
+  // ruling); notebook draws horizontal rules plus the classic red margin
+  // line. All hairline-flat — the decor never competes with the working.
   const line = isLightTheme(theme) ? 'rgba(23,30,40,0.06)' : 'rgba(255,255,255,0.06)';
   const cell = Math.round(vw * 0.055);
+  const surfaceDecor: React.CSSProperties | null =
+    boardStyle === 'chalk'
+      ? null
+      : boardStyle === 'notebook'
+        ? {
+            backgroundImage: `linear-gradient(rgba(47,90,201,0.13) 1px, transparent 1px)`,
+            backgroundSize: `${cell}px ${cell}px`,
+          }
+        : {
+            backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
+            backgroundSize: `${cell}px ${cell}px, ${cell}px ${cell}px`,
+          };
 
   // Per-card presence: appears as the board reaches it, then eases back to a
   // soft dim once the NEXT beat takes focus — the current line owns the eye
@@ -104,15 +120,20 @@ export const MathBoard: React.FC<{ scenes: Scene[]; captions?: boolean }> = ({
           transformOrigin: '0 0',
         }}
       >
-        {/* Graph-paper grid across the whole board. */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
-            backgroundSize: `${cell}px ${cell}px, ${cell}px ${cell}px`,
-          }}
-        />
+        {/* The board's ruling, across the whole world. */}
+        {surfaceDecor ? <div style={{ position: 'absolute', inset: 0, ...surfaceDecor }} /> : null}
+        {boardStyle === 'notebook' ? (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: cell * 1.5,
+              width: 2,
+              background: 'rgba(201,67,47,0.3)',
+            }}
+          />
+        ) : null}
 
         {plan.cards.map((card) => {
           const opacity = cardOpacity(card.sceneIndex);

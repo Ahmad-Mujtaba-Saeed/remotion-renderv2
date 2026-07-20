@@ -29,6 +29,7 @@ import { LabeledDiagram } from '../layouts/LabeledDiagram';
 import { MythFact } from '../layouts/MythFact';
 import { FormulaAnatomy } from '../layouts/FormulaAnatomy';
 import { CycleDiagram } from '../layouts/CycleDiagram';
+import { SpectrumCard } from '../layouts/SpectrumCard';
 import { PictogramPercent } from '../layouts/PictogramPercent';
 import { MathSteps } from '../layouts/MathSteps';
 import { GeometryDiagram } from '../layouts/GeometryDiagram';
@@ -146,6 +147,8 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <FormulaAnatomy scene={scene} />;
     case 'cycle_diagram':
       return <CycleDiagram scene={scene} />;
+    case 'spectrum_card':
+      return <SpectrumCard scene={scene} />;
     case 'math_steps':
       return <MathSteps scene={scene} />;
     case 'geometry_diagram':

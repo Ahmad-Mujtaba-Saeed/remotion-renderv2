@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
-import { renderExplainer, renderThumbnail } from './render';
+import { renderExplainer, renderThumbnail, renderPreviewStill } from './render';
 import type { ShotList } from './types';
 import type { ThumbnailProps } from './ThumbnailComp';
 
@@ -105,6 +105,50 @@ app.post('/render', async (req, res) => {
   } catch (err: any) {
     console.error('[render] failed:', err);
     return res.status(500).json({ success: false, error: err?.message || 'Render failed' });
+  }
+});
+
+/**
+ * POST /preview
+ * Body: { output_path, frame, fps, width, height, scale?, shot_list }
+ * Freezes one frame of the real Explainer composition to a PNG so the
+ * storyboard UI can show what a style change looks like without a render.
+ */
+app.post('/preview', async (req, res) => {
+  const { output_path, shot_list, frame, fps, width, height, scale, project_id } = req.body || {};
+
+  if (!output_path || !shot_list) {
+    return res.status(400).json({ success: false, error: 'output_path and shot_list are required' });
+  }
+
+  const shotList = shot_list as ShotList;
+  if (!Array.isArray(shotList.scenes) || shotList.scenes.length === 0) {
+    return res.status(400).json({ success: false, error: 'shot_list.scenes is empty' });
+  }
+
+  const hostOutputPath = toHostPath(output_path);
+
+  try {
+    fs.mkdirSync(path.dirname(hostOutputPath), { recursive: true });
+    const start = Date.now();
+
+    await renderPreviewStill({
+      shotList,
+      outputPath: hostOutputPath,
+      frame: Number(frame) || 0,
+      fps: Number(fps) || 30,
+      width: Number(width) || 1920,
+      height: Number(height) || 1080,
+      scale: scale ? Number(scale) : undefined,
+    });
+
+    const seconds = ((Date.now() - start) / 1000).toFixed(1);
+    console.log(`[preview] project=${project_id} frame=${frame} in ${seconds}s -> ${hostOutputPath}`);
+
+    return res.json({ success: true, output_path, render_seconds: Number(seconds) });
+  } catch (err: any) {
+    console.error('[preview] failed:', err);
+    return res.status(500).json({ success: false, error: err?.message || 'Preview render failed' });
   }
 });
 

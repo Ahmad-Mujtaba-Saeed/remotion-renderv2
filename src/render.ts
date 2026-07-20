@@ -102,6 +102,61 @@ export const renderExplainer = async (req: RenderRequest): Promise<string> => {
   return req.outputPath;
 };
 
+export interface PreviewRequest {
+  shotList: ShotList;
+  outputPath: string;
+  /** Composition frame to freeze. Clamped to the composition's own length. */
+  frame: number;
+  fps?: number;
+  width?: number;
+  height?: number;
+  /** Render scale — previews ship at 0.5 by default (half-size PNG, ~4x faster). */
+  scale?: number;
+}
+
+/**
+ * Freeze ONE frame of the real `Explainer` composition to a PNG — the
+ * storyboard's live style preview. It goes through the SAME shot list the
+ * video render consumes, so what the preview shows (scheme, font pack, skin,
+ * motion style, board skin) is what the MP4 will show; nothing here is a
+ * second, drifting approximation of the renderer.
+ *
+ * Reuses the cached bundle, so a warm preview is a second or two. Audio is
+ * irrelevant to a still, so a project whose narration has not been synthesized
+ * yet still previews fine.
+ */
+export const renderPreviewStill = async (req: PreviewRequest): Promise<string> => {
+  const fps = req.fps ?? 30;
+  const width = req.width ?? 1920;
+  const height = req.height ?? 1080;
+
+  // Silence the SFX layer: a still never plays a cue, and resolving the pack
+  // touches the filesystem for nothing.
+  const shotList: ShotList = {
+    ...req.shotList,
+    sfx: { ...(req.shotList.sfx ?? {}), enabled: false },
+  };
+
+  const inputProps = { shotList, fps, width, height };
+  const serveUrl = await getServeUrl();
+
+  const composition = await selectComposition({ serveUrl, id: 'Explainer', inputProps });
+
+  await renderStill({
+    serveUrl,
+    composition,
+    inputProps,
+    frame: Math.max(0, Math.min(Math.round(req.frame), composition.durationInFrames - 1)),
+    output: req.outputPath,
+    imageFormat: 'png',
+    scale: req.scale ?? 0.5,
+    chromiumOptions: { gl: 'angle' },
+    timeoutInMilliseconds: 120000,
+  });
+
+  return req.outputPath;
+};
+
 /**
  * Render the §10.5 thumbnail still (composition `ExplainerThumbnail`) to a
  * PNG. Reuses the cached bundle, so after a video render this costs ~a second.

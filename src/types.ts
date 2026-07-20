@@ -253,6 +253,12 @@ export interface FormulaPart {
   label: string;
 }
 
+/** One item on a spectrum_card axis; position is 0..1 from the left pole. */
+export interface SpectrumItem {
+  label: string;
+  position: number;
+}
+
 export interface Slot {
   content_type: ContentType;
   label?: string;
@@ -301,6 +307,9 @@ export interface Slot {
   // formula (formula_anatomy): one equation, parts labelled via leader lines
   formula?: string;
   parts?: FormulaPart[];
+  // spectrum (spectrum_card): a labelled axis with items placed along it
+  axis?: { left_label?: string; right_label?: string };
+  spectrum_items?: SpectrumItem[];
   // map (map_card)
   pins?: MapPin[];
   region?: string;
@@ -647,6 +656,10 @@ export interface ShotList {
   motion_style?: string | null;
   /** Surface skin (§11.2): flat | outline | print. Missing = flat. */
   skin?: string | null;
+  /** Math-board surface skin: slate (the video theme, default) | chalk
+      (deep-green board, chalk strokes) | notebook (ruled paper, ink).
+      Resolved server-side from the topic; math_board mode only. */
+  board_style?: string | null;
   /** Chapter progress chip (§10.3): a mono `02 / 06` at the kicker position,
       screen-space, hybrid mode only. Laravel defaults it off. */
   chapter_chip?: { enabled?: boolean } | null;

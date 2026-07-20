@@ -22,6 +22,7 @@ import { DEFAULT_THEME } from './types';
 import { presentationFor } from './transitions';
 import { CanvasJourney } from './canvas/CanvasJourney';
 import { MathBoard } from './board/MathBoard';
+import { boardTheme, resolveBoardStyle } from './board/boardTheme';
 import { SlidesChapter } from './components/SlidesChapter';
 import { SfxProvider, SfxCue } from './sfx';
 import { FontLoader } from './fonts';
@@ -235,15 +236,20 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     // whole solution accumulates on ONE continuous surface and a calm
     // teacher's-eye camera writes the equation, glances at a diagram, steps
     // aside to a concept and returns — none of the canvas journey's flight.
+    //
+    // The board may carry its own SKIN (chalk / notebook): a fixed palette
+    // provided as THE theme, so every board component restyles at once.
+    const boardStyle = resolveBoardStyle(shotList?.board_style);
+    const bTheme = boardTheme(boardStyle, shotList?.theme ?? DEFAULT_THEME);
     return (
-      <ThemeProvider theme={shotList?.theme}>
+      <ThemeProvider theme={bTheme}>
         <SkinProvider skin={shotList?.skin}>
         <MotionStyleProvider style={shotList?.motion_style}>
         <SfxProvider config={shotList?.sfx}>
-          <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+          <AbsoluteFill style={{ background: bTheme.bg_from }}>
             <FontLoader pack={fontPack} />
             {musicBed}
-            <MathBoard scenes={scenes} captions={captions} />
+            <MathBoard scenes={scenes} captions={captions} boardStyle={boardStyle} />
             <GlobalOverlays logoUrl={shotList?.brand?.logo_url} />
           </AbsoluteFill>
         </SfxProvider>

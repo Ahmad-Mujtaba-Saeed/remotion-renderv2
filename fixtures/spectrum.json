@@ -1,0 +1,110 @@
+{
+ "project_id": "spectrum-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "editorial",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "sp1",
+   "order": 1,
+   "duration_seconds": 9,
+   "narration": {
+    "text": "Index funds sit near the safe end. Bonds are safer still. Crypto lives all the way out on the risky edge, and single stocks sit in between."
+   },
+   "narration_words": [
+    { "word": "Index", "start": 0.3, "end": 0.6 },
+    { "word": "funds", "start": 0.65, "end": 0.95 },
+    { "word": "sit", "start": 1.0, "end": 1.2 },
+    { "word": "near", "start": 1.25, "end": 1.45 },
+    { "word": "the", "start": 1.5, "end": 1.58 },
+    { "word": "safe", "start": 1.63, "end": 1.9 },
+    { "word": "end.", "start": 1.95, "end": 2.2 },
+    { "word": "Bonds", "start": 2.5, "end": 2.85 },
+    { "word": "are", "start": 2.9, "end": 3.0 },
+    { "word": "safer", "start": 3.05, "end": 3.35 },
+    { "word": "still.", "start": 3.4, "end": 3.7 },
+    { "word": "Crypto", "start": 4.0, "end": 4.4 },
+    { "word": "lives", "start": 4.45, "end": 4.7 },
+    { "word": "all", "start": 4.75, "end": 4.9 },
+    { "word": "the", "start": 4.95, "end": 5.03 },
+    { "word": "way", "start": 5.08, "end": 5.25 },
+    { "word": "out", "start": 5.3, "end": 5.5 },
+    { "word": "on", "start": 5.55, "end": 5.65 },
+    { "word": "the", "start": 5.7, "end": 5.78 },
+    { "word": "risky", "start": 5.83, "end": 6.15 },
+    { "word": "edge,", "start": 6.2, "end": 6.5 },
+    { "word": "and", "start": 6.6, "end": 6.72 },
+    { "word": "single", "start": 6.78, "end": 7.05 },
+    { "word": "stocks", "start": 7.1, "end": 7.45 },
+    { "word": "sit", "start": 7.5, "end": 7.65 },
+    { "word": "in", "start": 7.7, "end": 7.78 },
+    { "word": "between.", "start": 7.83, "end": 8.3 }
+   ],
+   "layout_template": "spectrum_card",
+   "transition": "none",
+   "style": {
+    "kicker": "RISK CHECK"
+   },
+   "slots": {
+    "slot_spectrum": {
+     "content_type": "spectrum",
+     "heading": "Where does crypto sit?",
+     "caption": "risk, not returns",
+     "axis": { "left_label": "Safe", "right_label": "Risky" },
+     "highlight_index": 2,
+     "spectrum_items": [
+      { "label": "Index funds", "position": 0.25 },
+      { "label": "Bonds", "position": 0.08 },
+      { "label": "Crypto", "position": 0.95 },
+      { "label": "Single stocks", "position": 0.6 }
+     ]
+    }
+   }
+  },
+  {
+   "scene_id": "sp2",
+   "order": 2,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "No word timings here — five crowded items exercise the fallback spread and the same-side de-overlap sweep."
+   },
+   "layout_template": "spectrum_card",
+   "transition": "none",
+   "slots": {
+    "slot_spectrum": {
+     "content_type": "spectrum",
+     "heading": "Sweetness of apples",
+     "axis": { "left_label": "Tart", "right_label": "Sweet" },
+     "spectrum_items": [
+      { "label": "Granny Smith", "position": 0.05 },
+      { "label": "Braeburn", "position": 0.38 },
+      { "label": "Jonagold", "position": 0.45 },
+      { "label": "Gala", "position": 0.52 },
+      { "label": "Fuji", "position": 0.9 }
+     ]
+    }
+   }
+  }
+ ]
+}
