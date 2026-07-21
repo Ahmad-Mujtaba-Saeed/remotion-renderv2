@@ -1,0 +1,118 @@
+{
+ "project_id": "decision-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "editorial",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "dt1",
+   "order": 1,
+   "duration_seconds": 11,
+   "narration": {
+    "text": "Start here: do you need updates the instant they happen? If you do, the next question is scale. If you don't, plain polling is fine and you can stop reading."
+   },
+   "layout_template": "decision_tree",
+   "transition": "none",
+   "style": {
+    "kicker": "PICK YOUR TRANSPORT"
+   },
+   "slots": {
+    "slot_decision": {
+     "content_type": "decision",
+     "heading": "Which transport?",
+     "question": "Do you need real-time updates?",
+     "caption": "rule of thumb, not a law",
+     "branches": [
+      {
+       "label": "Yes",
+       "question": "More than 10k concurrent?",
+       "branches": [
+        { "label": "Yes", "outcome": "WebSockets + a queue" },
+        { "label": "No", "outcome": "Plain WebSockets" }
+       ]
+      },
+      {
+       "label": "No",
+       "outcome": "HTTP polling"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "scene_id": "dt2",
+   "order": 2,
+   "duration_seconds": 11,
+   "narration": {
+    "text": "Both paths split again here, so all four endings sit across the bottom row and every one of them has to stay readable."
+   },
+   "layout_template": "decision_tree",
+   "transition": "none",
+   "slots": {
+    "slot_decision": {
+     "content_type": "decision",
+     "question": "Is the data personal?",
+     "branches": [
+      {
+       "label": "Yes",
+       "question": "Leaving the country?",
+       "branches": [
+        { "label": "Yes", "outcome": "Standard clauses" },
+        { "label": "No", "outcome": "Local storage" }
+       ]
+      },
+      {
+       "label": "No",
+       "question": "Is it commercially sensitive?",
+       "branches": [
+        { "label": "Yes", "outcome": "Encrypt at rest" },
+        { "label": "No", "outcome": "No restriction" }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "scene_id": "dt3",
+   "order": 3,
+   "duration_seconds": 9,
+   "narration": {
+    "text": "The simplest possible shape: one question, two answers, done, with no second level anywhere in it."
+   },
+   "layout_template": "decision_tree",
+   "transition": "none",
+   "slots": {
+    "slot_decision": {
+     "content_type": "decision",
+     "question": "Is it reversible?",
+     "branches": [
+      { "label": "Yes", "outcome": "Just try it" },
+      { "label": "No", "outcome": "Write it down first" }
+     ]
+    }
+   }
+  }
+ ]
+}

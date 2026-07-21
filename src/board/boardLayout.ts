@@ -77,18 +77,30 @@ export interface BoardPlan {
   activeAt: (frame: number) => number;
 }
 
+/*
+ * Deliberately NOT the same list as the validator's MATH_TEMPLATES: this one
+ * only decides how a scene is DRAWN once a video is already on the board, so
+ * practice_card belongs here (its problem and answer are maths and it has no
+ * heading/bullets for a spine note to render). The PHP list also decides
+ * whether a video boards AT ALL, and a "try one yourself" beat is not evidence
+ * of a derivation — adding it there would drag quiz-ish videos onto the board.
+ */
 const MATH_TEMPLATES = new Set([
   'math_steps',
   'geometry_diagram',
   'function_plot',
   'scenario_diagram',
   'formula_anatomy',
+  'practice_card',
+  'common_mistake',
 ]);
 const isFigureTpl = (s: Scene): boolean =>
   s.layout_template === 'geometry_diagram' ||
   s.layout_template === 'function_plot' ||
   s.layout_template === 'scenario_diagram' ||
-  s.layout_template === 'formula_anatomy';
+  s.layout_template === 'formula_anatomy' ||
+  s.layout_template === 'practice_card' ||
+  s.layout_template === 'common_mistake';
 const isEquationTpl = (s: Scene): boolean => s.layout_template === 'math_steps';
 const isMathTpl = (s: Scene): boolean => MATH_TEMPLATES.has(s.layout_template);
 

@@ -30,6 +30,12 @@ import { MythFact } from '../layouts/MythFact';
 import { FormulaAnatomy } from '../layouts/FormulaAnatomy';
 import { CycleDiagram } from '../layouts/CycleDiagram';
 import { SpectrumCard } from '../layouts/SpectrumCard';
+import { VennCard } from '../layouts/VennCard';
+import { TermCard } from '../layouts/TermCard';
+import { ReceiptCard } from '../layouts/ReceiptCard';
+import { PracticeCard } from '../layouts/PracticeCard';
+import { CommonMistake } from '../layouts/CommonMistake';
+import { DecisionTree } from '../layouts/DecisionTree';
 import { PictogramPercent } from '../layouts/PictogramPercent';
 import { MathSteps } from '../layouts/MathSteps';
 import { GeometryDiagram } from '../layouts/GeometryDiagram';
@@ -149,6 +155,18 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <CycleDiagram scene={scene} />;
     case 'spectrum_card':
       return <SpectrumCard scene={scene} />;
+    case 'venn_card':
+      return <VennCard scene={scene} />;
+    case 'term_card':
+      return <TermCard scene={scene} />;
+    case 'receipt_card':
+      return <ReceiptCard scene={scene} />;
+    case 'practice_card':
+      return <PracticeCard scene={scene} />;
+    case 'common_mistake':
+      return <CommonMistake scene={scene} />;
+    case 'decision_tree':
+      return <DecisionTree scene={scene} />;
     case 'math_steps':
       return <MathSteps scene={scene} />;
     case 'geometry_diagram':

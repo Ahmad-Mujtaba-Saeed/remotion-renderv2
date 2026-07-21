@@ -1,0 +1,89 @@
+{
+ "project_id": "term-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "editorial",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "tm1",
+   "order": 1,
+   "duration_seconds": 9,
+   "narration": {
+    "text": "Before we go further you need one word: arbitrage. It simply means buying something in one market and selling it in another for more."
+   },
+   "layout_template": "term_card",
+   "transition": "none",
+   "style": {
+    "kicker": "ONE WORD FIRST"
+   },
+   "slots": {
+    "slot_term": {
+     "content_type": "term",
+     "term": "Arbitrage",
+     "phonetic": "AR-bi-trahzh",
+     "part_of_speech": "noun",
+     "definition": "Buying something in one market and selling it in another for more, pocketing the difference.",
+     "caption": "from French arbitrer, to judge"
+    }
+   }
+  },
+  {
+   "scene_id": "tm2",
+   "order": 2,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "The second word is longer and has no pronunciation guide, so the card has to stand on the word and its meaning alone."
+   },
+   "layout_template": "term_card",
+   "transition": "none",
+   "slots": {
+    "slot_term": {
+     "content_type": "term",
+     "term": "Interoperability",
+     "definition": "The ability of two different systems to work together without anyone rebuilding either one."
+    }
+   }
+  },
+  {
+   "scene_id": "tm3",
+   "order": 3,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "A very long compound term proves the size ladder steps down instead of spilling off the edges of the frame."
+   },
+   "layout_template": "term_card",
+   "transition": "none",
+   "slots": {
+    "slot_term": {
+     "content_type": "term",
+     "term": "Antidisestablishmentarian",
+     "phonetic": "/ˌæn.ti.dɪs.ɪˌstæb.lɪʃ.mənˈteər.i.ən/",
+     "part_of_speech": "adjective",
+     "definition": "Opposed to withdrawing state support from an established church.",
+     "caption": "the classic longest-word example"
+    }
+   }
+  }
+ ]
+}

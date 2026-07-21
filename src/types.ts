@@ -259,6 +259,36 @@ export interface SpectrumItem {
   position: number;
 }
 
+/** A leaf of a decision_tree: the answer taken and where it lands. */
+export interface DecisionLeaf {
+  label: string;
+  outcome: string;
+}
+
+/**
+ * A first-level branch of a decision_tree. Either it ENDS (outcome) or it asks
+ * one more question with exactly two leaves — never deeper; the validator
+ * enforces the depth so the layout always has somewhere to put every node.
+ */
+export interface DecisionBranch {
+  label: string;
+  outcome?: string;
+  question?: string;
+  branches?: DecisionLeaf[];
+}
+
+/** One line of a receipt_card; value is a plain number (negative = discount). */
+export interface ReceiptRow {
+  label: string;
+  value: number;
+}
+
+/** One circle of a venn_card; caption is what is unique to that set. */
+export interface VennSet {
+  label: string;
+  caption?: string;
+}
+
 export interface Slot {
   content_type: ContentType;
   label?: string;
@@ -310,6 +340,34 @@ export interface Slot {
   // spectrum (spectrum_card): a labelled axis with items placed along it
   axis?: { left_label?: string; right_label?: string };
   spectrum_items?: SpectrumItem[];
+  // venn (venn_card): 2-3 overlapping sets and what sits in the middle
+  sets?: VennSet[];
+  overlap_label?: string;
+  // decision (decision_tree): a yes/no flowchart, at most two levels deep.
+  // The root question reuses the `question` field declared further down for
+  // scenario_diagram — same type, and a slot is only ever one content type.
+  branches?: DecisionBranch[];
+  // receipt (receipt_card): itemised rows that sum to a total
+  rows?: ReceiptRow[];
+  total?: number;
+  total_label?: string;
+  // mistake (common_mistake): the line people write, then the line they meant.
+  // Both are checked server-side before they are ever labelled.
+  wrong?: string;
+  /** Named `correct`, not `right`: versus_card already owns `right` as a
+   *  panel, and a slot field cannot be two types at once. */
+  correct?: string;
+  why?: string;
+  // practice (practice_card): a problem handed to the viewer, then the answer.
+  // `answer` is only ever present when the validator could not disprove it.
+  prompt?: string;
+  answer?: string;
+  hint?: string;
+  // term (term_card): one word defined, dictionary-style
+  term?: string;
+  phonetic?: string;
+  part_of_speech?: string;
+  definition?: string;
   // map (map_card)
   pins?: MapPin[];
   region?: string;

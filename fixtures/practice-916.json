@@ -1,0 +1,214 @@
+{
+ "project_id": "practice-demo-916",
+ "aspect_ratio": "9:16",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "editorial",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "pr1",
+   "order": 1,
+   "duration_seconds": 12,
+   "narration": {
+    "text": "Now one for you. Pause the video here and solve this on paper before I say anything else. Ready? The answer is x equals seven."
+   },
+   "narration_words": [
+    {
+     "word": "Now",
+     "start": 0.4,
+     "end": 0.71
+    },
+    {
+     "word": "one",
+     "start": 0.74,
+     "end": 1.05
+    },
+    {
+     "word": "for",
+     "start": 1.08,
+     "end": 1.39
+    },
+    {
+     "word": "you.",
+     "start": 1.42,
+     "end": 1.73
+    },
+    {
+     "word": "Pause",
+     "start": 1.76,
+     "end": 2.07
+    },
+    {
+     "word": "the",
+     "start": 2.1,
+     "end": 2.41
+    },
+    {
+     "word": "video",
+     "start": 2.44,
+     "end": 2.75
+    },
+    {
+     "word": "here",
+     "start": 2.78,
+     "end": 3.09
+    },
+    {
+     "word": "and",
+     "start": 3.12,
+     "end": 3.43
+    },
+    {
+     "word": "solve",
+     "start": 3.46,
+     "end": 3.77
+    },
+    {
+     "word": "this",
+     "start": 3.8,
+     "end": 4.11
+    },
+    {
+     "word": "on",
+     "start": 4.14,
+     "end": 4.45
+    },
+    {
+     "word": "paper",
+     "start": 4.48,
+     "end": 4.79
+    },
+    {
+     "word": "before",
+     "start": 4.82,
+     "end": 5.13
+    },
+    {
+     "word": "I",
+     "start": 5.16,
+     "end": 5.47
+    },
+    {
+     "word": "say",
+     "start": 5.5,
+     "end": 5.81
+    },
+    {
+     "word": "anything",
+     "start": 5.84,
+     "end": 6.15
+    },
+    {
+     "word": "else.",
+     "start": 6.18,
+     "end": 6.49
+    },
+    {
+     "word": "Ready?",
+     "start": 6.52,
+     "end": 6.83
+    },
+    {
+     "word": "The",
+     "start": 6.86,
+     "end": 7.17
+    },
+    {
+     "word": "answer",
+     "start": 7.2,
+     "end": 7.51
+    },
+    {
+     "word": "is",
+     "start": 7.54,
+     "end": 7.85
+    },
+    {
+     "word": "x",
+     "start": 7.88,
+     "end": 8.19
+    },
+    {
+     "word": "equals",
+     "start": 8.22,
+     "end": 8.53
+    },
+    {
+     "word": "seven.",
+     "start": 8.56,
+     "end": 8.87
+    }
+   ],
+   "layout_template": "practice_card",
+   "transition": "none",
+   "style": {
+    "kicker": "YOUR TURN"
+   },
+   "slots": {
+    "slot_practice": {
+     "content_type": "practice",
+     "prompt": "3x + 5 = 26",
+     "answer": "x = 7",
+     "hint": "Take the 5 off both sides first",
+     "heading": "Try this one",
+     "caption": "same move as step 2"
+    }
+   }
+  },
+  {
+   "scene_id": "pr2",
+   "order": 2,
+   "duration_seconds": 10,
+   "narration": {
+    "text": "Here is a word problem instead of an equation. Pause, work out how far the train travels, then compare."
+   },
+   "layout_template": "practice_card",
+   "transition": "none",
+   "slots": {
+    "slot_practice": {
+     "content_type": "practice",
+     "prompt": "A train runs at 90 km/h for 40 minutes. How far does it go?",
+     "answer": "60 km"
+    }
+   }
+  },
+  {
+   "scene_id": "pr3",
+   "order": 3,
+   "duration_seconds": 11,
+   "narration": {
+    "text": "One more, with a fraction and a radical, to prove the typesetting holds at full size."
+   },
+   "layout_template": "practice_card",
+   "transition": "none",
+   "slots": {
+    "slot_practice": {
+     "content_type": "practice",
+     "prompt": "frac{x^2 - 9}{x - 3} = 8",
+     "answer": "x = 5",
+     "hint": "Factor the top before you cancel"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,276 @@
+{
+ "project_id": "mistake-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "editorial",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "cm1",
+   "order": 1,
+   "duration_seconds": 12,
+   "narration": {
+    "text": "Here is the one that catches almost everyone. You look at that and want to take the root of each piece. But a square root does not split over a sum. Add first, then take the root."
+   },
+   "narration_words": [
+    {
+     "word": "Here",
+     "start": 0.4,
+     "end": 0.7
+    },
+    {
+     "word": "is",
+     "start": 0.73,
+     "end": 1.03
+    },
+    {
+     "word": "the",
+     "start": 1.06,
+     "end": 1.36
+    },
+    {
+     "word": "one",
+     "start": 1.39,
+     "end": 1.69
+    },
+    {
+     "word": "that",
+     "start": 1.72,
+     "end": 2.02
+    },
+    {
+     "word": "catches",
+     "start": 2.05,
+     "end": 2.35
+    },
+    {
+     "word": "almost",
+     "start": 2.38,
+     "end": 2.68
+    },
+    {
+     "word": "everyone.",
+     "start": 2.71,
+     "end": 3.01
+    },
+    {
+     "word": "You",
+     "start": 3.04,
+     "end": 3.34
+    },
+    {
+     "word": "look",
+     "start": 3.37,
+     "end": 3.67
+    },
+    {
+     "word": "at",
+     "start": 3.7,
+     "end": 4
+    },
+    {
+     "word": "that",
+     "start": 4.03,
+     "end": 4.33
+    },
+    {
+     "word": "and",
+     "start": 4.36,
+     "end": 4.66
+    },
+    {
+     "word": "want",
+     "start": 4.69,
+     "end": 4.99
+    },
+    {
+     "word": "to",
+     "start": 5.02,
+     "end": 5.32
+    },
+    {
+     "word": "take",
+     "start": 5.35,
+     "end": 5.65
+    },
+    {
+     "word": "the",
+     "start": 5.68,
+     "end": 5.98
+    },
+    {
+     "word": "root",
+     "start": 6.01,
+     "end": 6.31
+    },
+    {
+     "word": "of",
+     "start": 6.34,
+     "end": 6.64
+    },
+    {
+     "word": "each",
+     "start": 6.67,
+     "end": 6.97
+    },
+    {
+     "word": "piece.",
+     "start": 7,
+     "end": 7.3
+    },
+    {
+     "word": "But",
+     "start": 7.33,
+     "end": 7.63
+    },
+    {
+     "word": "a",
+     "start": 7.66,
+     "end": 7.96
+    },
+    {
+     "word": "square",
+     "start": 7.99,
+     "end": 8.29
+    },
+    {
+     "word": "root",
+     "start": 8.32,
+     "end": 8.62
+    },
+    {
+     "word": "does",
+     "start": 8.65,
+     "end": 8.95
+    },
+    {
+     "word": "not",
+     "start": 8.98,
+     "end": 9.28
+    },
+    {
+     "word": "split",
+     "start": 9.31,
+     "end": 9.61
+    },
+    {
+     "word": "over",
+     "start": 9.64,
+     "end": 9.94
+    },
+    {
+     "word": "a",
+     "start": 9.97,
+     "end": 10.27
+    },
+    {
+     "word": "sum.",
+     "start": 10.3,
+     "end": 10.6
+    },
+    {
+     "word": "Add",
+     "start": 10.63,
+     "end": 10.93
+    },
+    {
+     "word": "first,",
+     "start": 10.96,
+     "end": 11.26
+    },
+    {
+     "word": "then",
+     "start": 11.29,
+     "end": 11.59
+    },
+    {
+     "word": "take",
+     "start": 11.62,
+     "end": 11.92
+    },
+    {
+     "word": "the",
+     "start": 11.95,
+     "end": 12.25
+    },
+    {
+     "word": "root.",
+     "start": 12.28,
+     "end": 12.58
+    }
+   ],
+   "layout_template": "common_mistake",
+   "transition": "none",
+   "style": {
+    "kicker": "COMMON MISTAKE"
+   },
+   "slots": {
+    "slot_mistake": {
+     "content_type": "mistake",
+     "wrong": "sqrt{9+16} = 3+4",
+     "correct": "sqrt{9+16} = sqrt{25} = 5",
+     "why": "A square root does not split over a sum — add inside first.",
+     "heading": "Roots and sums",
+     "caption": "bites hardest in Pythagoras questions"
+    }
+   }
+  },
+  {
+   "scene_id": "cm2",
+   "order": 2,
+   "duration_seconds": 10,
+   "narration": {
+    "text": "Squaring a bracket is not squaring each term. You have to multiply it out; the cross term is the piece people drop."
+   },
+   "layout_template": "common_mistake",
+   "transition": "none",
+   "slots": {
+    "slot_mistake": {
+     "content_type": "mistake",
+     "wrong": "(x+3)^2 = x^2 + 9",
+     "correct": "(x+3)^2 = x^2 + 6x + 9",
+     "why": "The cross term 6x is what the bracket actually produces."
+    }
+   }
+  },
+  {
+   "scene_id": "cm3",
+   "order": 3,
+   "duration_seconds": 10,
+   "narration": {
+    "text": "And one in words, to prove the card holds a sentence as well as a formula."
+   },
+   "layout_template": "common_mistake",
+   "transition": "none",
+   "slots": {
+    "slot_mistake": {
+     "content_type": "mistake",
+     "wrong": "Cancel the x on the top and bottom",
+     "correct": "Factor first, then cancel the whole bracket",
+     "why": "You can only cancel a factor of the WHOLE numerator.",
+     "heading": "Cancelling"
+    }
+   }
+  }
+ ]
+}

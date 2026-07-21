@@ -1,0 +1,107 @@
+{
+ "project_id": "receipt-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "editorial",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "rc1",
+   "order": 1,
+   "duration_seconds": 10,
+   "narration": {
+    "text": "Here is where the money actually goes: hosting, salaries, marketing, support, and then the discount we negotiated comes back off the top."
+   },
+   "layout_template": "receipt_card",
+   "transition": "none",
+   "style": {
+    "kicker": "WHERE IT GOES"
+   },
+   "slots": {
+    "slot_receipt": {
+     "content_type": "receipt",
+     "heading": "Monthly burn",
+     "unit": "$",
+     "caption": "per month, before tax",
+     "rows": [
+      { "label": "Hosting", "value": 4200 },
+      { "label": "Salaries", "value": 38500 },
+      { "label": "Marketing", "value": 6750 },
+      { "label": "Support tools", "value": 1180 },
+      { "label": "Annual discount", "value": -2400 }
+     ],
+     "total": 48230
+    }
+   }
+  },
+  {
+   "scene_id": "rc2",
+   "order": 2,
+   "duration_seconds": 9,
+   "narration": {
+    "text": "The same week measured in hours instead: meetings, deep work, review, and the admin nobody plans for."
+   },
+   "layout_template": "receipt_card",
+   "transition": "none",
+   "slots": {
+    "slot_receipt": {
+     "content_type": "receipt",
+     "heading": "Where the week went",
+     "unit": "hrs",
+     "total_label": "Total",
+     "rows": [
+      { "label": "Meetings", "value": 11.5 },
+      { "label": "Deep work", "value": 14 },
+      { "label": "Code review", "value": 6.5 },
+      { "label": "Admin", "value": 8 }
+     ]
+    }
+   }
+  },
+  {
+   "scene_id": "rc3",
+   "order": 3,
+   "duration_seconds": 9,
+   "narration": {
+    "text": "Eight lines with no heading and no unit at all, just to prove a long list still breathes inside the frame."
+   },
+   "layout_template": "receipt_card",
+   "transition": "none",
+   "slots": {
+    "slot_receipt": {
+     "content_type": "receipt",
+     "rows": [
+      { "label": "Research", "value": 120 },
+      { "label": "Writing", "value": 340 },
+      { "label": "Editing", "value": 95 },
+      { "label": "Illustration", "value": 260 },
+      { "label": "Voice", "value": 180 },
+      { "label": "Music licence", "value": 60 },
+      { "label": "Distribution", "value": 45 },
+      { "label": "Contingency", "value": 100 }
+     ]
+    }
+   }
+  }
+ ]
+}

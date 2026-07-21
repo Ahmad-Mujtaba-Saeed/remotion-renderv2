@@ -1,0 +1,147 @@
+{
+ "project_id": "venn-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "editorial",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "vn1",
+   "order": 1,
+   "duration_seconds": 10,
+   "narration": {
+    "text": "Mammals breathe air and feed their young milk. Fish breathe water and lay eggs. Whales sit in the middle, breathing air in the sea."
+   },
+   "narration_words": [
+    { "word": "Mammals", "start": 0.3, "end": 0.9 },
+    { "word": "breathe", "start": 0.95, "end": 1.3 },
+    { "word": "air", "start": 1.35, "end": 1.6 },
+    { "word": "and", "start": 1.65, "end": 1.8 },
+    { "word": "feed", "start": 1.85, "end": 2.1 },
+    { "word": "their", "start": 2.15, "end": 2.3 },
+    { "word": "young", "start": 2.35, "end": 2.6 },
+    { "word": "milk.", "start": 2.65, "end": 3.1 },
+    { "word": "Fish", "start": 3.6, "end": 4.0 },
+    { "word": "breathe", "start": 4.05, "end": 4.4 },
+    { "word": "water", "start": 4.45, "end": 4.8 },
+    { "word": "and", "start": 4.85, "end": 5.0 },
+    { "word": "lay", "start": 5.05, "end": 5.25 },
+    { "word": "eggs.", "start": 5.3, "end": 5.75 },
+    { "word": "Whales", "start": 6.3, "end": 6.8 },
+    { "word": "sit", "start": 6.85, "end": 7.05 },
+    { "word": "in", "start": 7.1, "end": 7.2 },
+    { "word": "the", "start": 7.25, "end": 7.35 },
+    { "word": "middle,", "start": 7.4, "end": 7.9 },
+    { "word": "breathing", "start": 8.0, "end": 8.5 },
+    { "word": "air", "start": 8.55, "end": 8.75 },
+    { "word": "in", "start": 8.8, "end": 8.9 },
+    { "word": "the", "start": 8.95, "end": 9.05 },
+    { "word": "sea.", "start": 9.1, "end": 9.5 }
+   ],
+   "layout_template": "venn_card",
+   "transition": "none",
+   "style": {
+    "kicker": "COMMON GROUND"
+   },
+   "slots": {
+    "slot_venn": {
+     "content_type": "venn",
+     "heading": "Where whales sit",
+     "caption": "air-breathers that never leave the water",
+     "sets": [
+      { "label": "Mammals", "caption": "feed young milk" },
+      { "label": "Sea life", "caption": "live in water" }
+     ],
+     "overlap_label": "Whales"
+    }
+   }
+  },
+  {
+   "scene_id": "vn2",
+   "order": 2,
+   "duration_seconds": 9,
+   "narration": {
+    "text": "You can build it cheap, you can build it fast, or you can build it well. The middle is where all three meet, and you only ever get two."
+   },
+   "narration_words": [
+    { "word": "You", "start": 0.3, "end": 0.45 },
+    { "word": "can", "start": 0.5, "end": 0.65 },
+    { "word": "build", "start": 0.7, "end": 0.95 },
+    { "word": "it", "start": 1.0, "end": 1.1 },
+    { "word": "cheap,", "start": 1.15, "end": 1.65 },
+    { "word": "you", "start": 2.0, "end": 2.15 },
+    { "word": "can", "start": 2.2, "end": 2.35 },
+    { "word": "build", "start": 2.4, "end": 2.65 },
+    { "word": "it", "start": 2.7, "end": 2.8 },
+    { "word": "fast,", "start": 2.85, "end": 3.3 },
+    { "word": "or", "start": 3.7, "end": 3.85 },
+    { "word": "you", "start": 3.9, "end": 4.05 },
+    { "word": "can", "start": 4.1, "end": 4.25 },
+    { "word": "build", "start": 4.3, "end": 4.55 },
+    { "word": "it", "start": 4.6, "end": 4.7 },
+    { "word": "well.", "start": 4.75, "end": 5.2 },
+    { "word": "The", "start": 5.7, "end": 5.85 },
+    { "word": "middle", "start": 5.9, "end": 6.3 },
+    { "word": "is", "start": 6.35, "end": 6.45 },
+    { "word": "where", "start": 6.5, "end": 6.75 },
+    { "word": "all", "start": 6.8, "end": 6.95 },
+    { "word": "three", "start": 7.0, "end": 7.3 },
+    { "word": "meet.", "start": 7.35, "end": 7.8 }
+   ],
+   "layout_template": "venn_card",
+   "transition": "none",
+   "slots": {
+    "slot_venn": {
+     "content_type": "venn",
+     "heading": "Pick two",
+     "sets": [
+      { "label": "Cheap" },
+      { "label": "Fast" },
+      { "label": "Good" }
+     ],
+     "overlap_label": "Pick two"
+    }
+   }
+  },
+  {
+   "scene_id": "vn3",
+   "order": 3,
+   "duration_seconds": 8,
+   "narration": {
+    "text": "No overlap label and no set captions at all — the tinted middle has to carry the meaning on its own here."
+   },
+   "layout_template": "venn_card",
+   "transition": "none",
+   "slots": {
+    "slot_venn": {
+     "content_type": "venn",
+     "heading": "Bare minimum",
+     "sets": [
+      { "label": "Supply" },
+      { "label": "Demand" }
+     ]
+    }
+   }
+  }
+ ]
+}
