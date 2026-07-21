@@ -5,6 +5,7 @@ import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SfxCue } from '../sfx';
@@ -142,7 +143,14 @@ export const PictogramPercent: React.FC<{ scene: Scene }> = ({ scene }) => {
               margin: `${22 * u}px 0 0`,
               fontFamily: displayFont,
               fontWeight: 800,
-              fontSize: (portrait ? 42 : 48) * u,
+              fontSize: fitText(heading, {
+                  width: width * (portrait ? 0.86 : 0.78),
+                  max: 48 * u,
+                  min: 25 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
               lineHeight: 1.1,
               color: theme.text,
             }}

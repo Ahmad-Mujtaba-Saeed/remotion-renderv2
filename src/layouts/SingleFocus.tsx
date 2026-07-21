@@ -147,7 +147,8 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
           >
             <div style={{ flex: 1.05, minWidth: 0, minHeight: 0, display: 'flex', alignItems: 'center' }}>
               <div style={{ width: '100%' }}>
-                <SlotRenderer slot={slot} />
+                {/* Half the padded frame, beside the illustration. */}
+                <SlotRenderer slot={slot} columnFrac={slidePortrait ? 0.78 : 0.42} />
               </div>
             </div>
             <div style={{ flex: 0.85, minWidth: 0, minHeight: 0 }}>
@@ -161,7 +162,10 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
       return (
         <AbsoluteFill style={{ padding: '7%' }}>
           <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-            <SlotRenderer slot={slot} />
+            {/* 7% padding here plus the panel's own inset — the text column is
+                appreciably narrower than the frame, and the solver must be
+                told the truth or it hands back a size that still wraps. */}
+            <SlotRenderer slot={slot} columnFrac={0.75} />
           </div>
         </AbsoluteFill>
       );
@@ -193,7 +197,7 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
           }}
         >
           <div style={{ flex: 1.05, minWidth: 0, minHeight: 0, display: 'flex' }}>
-            <SlotRenderer slot={slot} />
+            <SlotRenderer slot={slot} columnFrac={portrait ? 0.82 : 0.44} />
           </div>
           <div style={{ flex: 0.85, minWidth: 0, minHeight: 0 }}>
             <Illustration url={scene.illustration_url} />
@@ -209,7 +213,7 @@ export const SingleFocus: React.FC<{ scene: Scene }> = ({ scene }) => {
       <AbsoluteFill style={{ justifyContent: 'center' }}>
         <FieldMark variant={mark} />
         <AbsoluteFill style={{ padding: '5%', boxSizing: 'border-box', justifyContent: 'center' }}>
-          <SlotRenderer slot={slot} />
+          <SlotRenderer slot={slot} columnFrac={0.82} />
         </AbsoluteFill>
       </AbsoluteFill>
     );

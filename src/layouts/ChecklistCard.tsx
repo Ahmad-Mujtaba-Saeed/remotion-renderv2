@@ -6,6 +6,7 @@ import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText, fitGroup } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SfxCue } from '../sfx';
@@ -23,7 +24,7 @@ export const ChecklistCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
-  const { fps } = useVideoConfig();
+  const { fps, width, height } = useVideoConfig();
   const { frame } = useSceneClock();
   const win = useSceneWindow();
   const meta = useSceneMeta();
@@ -34,6 +35,19 @@ export const ChecklistCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const cons = (slot.cons ?? []).slice(0, 4);
   const twoCol = cons.length > 0;
   const heading = (slot.heading ?? '').trim();
+  /*
+   * Pros and cons share one size, solved from the longest row across BOTH
+   * columns — each column is only ~40% of the frame once the icon and the
+   * divider are paid for, which is why worst-case rows wrapped to three lines.
+   */
+  const rowFs = fitGroup([...pros, ...cons], {
+    width: width * (height > width ? 0.30 : 0.30),
+    max: 34 * u,
+    min: 21 * u,
+    maxLines: 2,
+    font: BODY_FONT,
+    weight: 700,
+  });
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
 
   const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
@@ -75,7 +89,7 @@ export const ChecklistCard: React.FC<{ scene: Scene }> = ({ scene }) => {
         <span
           style={{
             fontFamily: BODY_FONT,
-            fontSize: 34 * u,
+            fontSize: rowFs,
             fontWeight: 600,
             lineHeight: 1.3,
             color: isPro ? theme.text : theme.muted,
@@ -135,7 +149,14 @@ export const ChecklistCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
-                  fontSize: 64 * u,
+                  fontSize: fitText(heading, {
+                  width: width * (height > width ? 0.86 : 0.78),
+                  max: 64 * u,
+                  min: 35 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
                   lineHeight: 1.05,
                   color: theme.text,
                 }}

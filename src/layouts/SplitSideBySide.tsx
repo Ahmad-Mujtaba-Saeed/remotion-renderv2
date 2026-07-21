@@ -34,7 +34,7 @@ export const SplitSideBySide: React.FC<{ scene: Scene }> = ({ scene }) => {
       }}
     >
       <Half grow={leftPct}>
-        <SlotRenderer slot={left} />
+        <SlotRenderer slot={left} columnFrac={portrait ? 0.86 : 0.42} />
       </Half>
       <div
         style={{
@@ -45,7 +45,7 @@ export const SplitSideBySide: React.FC<{ scene: Scene }> = ({ scene }) => {
         }}
       />
       <Half grow={100 - leftPct}>
-        <SlotRenderer slot={right} />
+        <SlotRenderer slot={right} columnFrac={portrait ? 0.86 : 0.42} />
       </Half>
     </AbsoluteFill>
   );

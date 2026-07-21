@@ -5,6 +5,7 @@ import { useSceneClock } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, BODY_FONT, MONO_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText } from '../typography';
 import { clamp01, easeOutCubic, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
@@ -93,7 +94,14 @@ export const LabeledDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                 margin: 0,
                 fontFamily: displayFont,
                 fontWeight: 900,
-                fontSize: (portrait ? 54 : 60) * u,
+                fontSize: fitText(heading, {
+                  width: width * (portrait ? 0.86 : 0.78),
+                  max: 60 * u,
+                  min: 31 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
                 lineHeight: 1.05,
                 color: theme.text,
               }}

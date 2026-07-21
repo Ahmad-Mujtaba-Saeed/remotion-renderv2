@@ -6,6 +6,7 @@ import { useSceneClock } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, MONO_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText, fitGroup } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { KineticText } from '../components/KineticText';
@@ -36,6 +37,14 @@ export const IconGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
   const hi = slot.highlight_index ?? null;
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const heading = (slot.heading ?? '').trim();
+  const labelFs = fitGroup(items.map((i) => (typeof i === 'string' ? i : i.label ?? '')), {
+    width: width * (height > width ? 0.36 : 0.21),
+    max: 26 * u,
+    min: 16 * u,
+    maxLines: 2,
+    font: MONO_FONT,
+    weight: 700,
+  });
   const portrait = height > width;
 
   // Reading-order grid: 2 columns up to 4 items, else 3 (2 in portrait).
@@ -68,7 +77,7 @@ export const IconGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div
             style={{
               fontFamily: MONO_FONT,
-              fontSize: 26 * u,
+              fontSize: labelFs,
               fontWeight: 700,
               letterSpacing: 2.5 * u,
               textTransform: 'uppercase',
@@ -109,7 +118,14 @@ export const IconGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
               margin: `0 0 ${34 * u}px 0`,
               fontFamily: displayFont,
               fontWeight: 900,
-              fontSize: 62 * u,
+              fontSize: fitText(heading, {
+                  width: width * (portrait ? 0.86 : 0.78),
+                  max: 62 * u,
+                  min: 34 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
               lineHeight: 1.05,
               color: theme.text,
             }}

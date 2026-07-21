@@ -6,6 +6,7 @@ import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, inkOn, MONO_FONT, BODY_FONT } from '../theme';
 import { useSurfaceStyle } from '../components/Surface';
 import { useScaleUnit } from '../responsive';
+import { fitText } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
@@ -164,7 +165,14 @@ export const DecisionTree: React.FC<{ scene: Scene }> = ({ scene }) => {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
-                  fontSize: (portrait ? 42 : 48) * u,
+                  fontSize: fitText(heading, {
+                  width: width * (portrait ? 0.86 : 0.78),
+                  max: 48 * u,
+                  min: 25 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
                   lineHeight: 1.06,
                   color: theme.text,
                 }}

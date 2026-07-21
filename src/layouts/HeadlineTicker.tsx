@@ -6,6 +6,7 @@ import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, BODY_FONT, MONO_FONT } from '../theme';
 import { useSurfaceStyle } from '../components/Surface';
 import { useScaleUnit } from '../responsive';
+import { fitText } from '../typography';
 import { clamp01, easeOutCubic, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { KineticText } from '../components/KineticText';
@@ -128,7 +129,14 @@ export const HeadlineTicker: React.FC<{ scene: Scene }> = ({ scene }) => {
               <div
                 style={{
                   fontFamily: BODY_FONT,
-                  fontSize: (portrait ? 34 : 38) * u,
+                  fontSize: fitText(heading, {
+                  width: width * (portrait ? 0.86 : 0.78),
+                  max: 38 * u,
+                  min: 24 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
                   fontWeight: 700,
                   lineHeight: 1.25,
                   color: theme.text,

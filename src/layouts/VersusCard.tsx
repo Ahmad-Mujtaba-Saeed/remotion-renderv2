@@ -5,6 +5,7 @@ import { MediaSlot } from '../components/MediaSlot';
 import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useTheme, useDisplayFont, inkOn, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitGroup } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
@@ -31,7 +32,7 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
-  const { fps } = useVideoConfig();
+  const { fps, width, height } = useVideoConfig();
   const { frame, durationInFrames } = useSceneClock();
   const win = useSceneWindow();
   const at = win?.start ?? 0;
@@ -39,6 +40,20 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const sideL: VersusSide = versus?.left ?? {};
   const sideR: VersusSide = versus?.right ?? {};
   const verdict = (versus?.verdict ?? '').trim();
+  /*
+   * Both sides share ONE size per role, solved from the longest string on
+   * either side: a comparison whose left column is set larger than its right
+   * is not a comparison. The label chip sits inside a half-frame panel and had
+   * no fit at all — at 20 characters it ran off the edge of the frame.
+   */
+  const sideLabelFs = fitGroup(
+    [(versus?.left?.label ?? '').trim(), (versus?.right?.label ?? '').trim()],
+    { width: width * 0.36, max: 26 * u, min: 15 * u, maxLines: 1, font: MONO_FONT, weight: 700, letterSpacing: 3 * u, kinetic: false }
+  );
+  const statFs = fitGroup(
+    [...((versus?.left?.stats ?? []) as string[]), ...((versus?.right?.stats ?? []) as string[])],
+    { width: width * 0.4, max: 32 * u, min: 20 * u, maxLines: 1, font: BODY_FONT, weight: 600, kinetic: false }
+  );
 
   const seamP = easeOutQuint(clamp01(frame / f30(fps, 10)));
   const badgeAt = f30(fps, 16);
@@ -78,9 +93,10 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               background: theme.bg_from,
               border: `1px solid ${theme.accent}`,
               fontFamily: MONO_FONT,
-              fontSize: 26 * u,
+              fontSize: sideLabelFs,
               fontWeight: 700,
               letterSpacing: 3 * u,
+              whiteSpace: 'nowrap',
               textTransform: 'uppercase',
               color: theme.text,
               opacity: p,
@@ -102,7 +118,7 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
         key={`${isLeft ? 'l' : 'r'}-${i}`}
         style={{
           fontFamily: BODY_FONT,
-          fontSize: 32 * u,
+          fontSize: statFs,
           fontWeight: 600,
           color: theme.text,
           textAlign: isLeft ? 'right' : 'left',
@@ -215,7 +231,14 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
             justifyContent: 'center',
             fontFamily: displayFont,
             fontWeight: 900,
-            fontSize: 44 * u,
+            fontSize: fitGroup([verdict], {
+              width: width * 0.86,
+              max: 44 * u,
+              min: 24 * u,
+              maxLines: 1,
+              font: displayFont,
+              weight: 900,
+            }),
             color: verdictInk,
             textAlign: 'center',
             padding: '0 6%',

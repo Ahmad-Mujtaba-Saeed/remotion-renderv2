@@ -5,6 +5,7 @@ import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, inkOn, MONO_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText } from '../typography';
 import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
@@ -168,7 +169,14 @@ export const MapCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                 margin: 0,
                 fontFamily: displayFont,
                 fontWeight: 900,
-                fontSize: 58 * u,
+                fontSize: fitText(heading, {
+                  width: width * (height > width ? 0.86 : 0.78),
+                  max: 58 * u,
+                  min: 32 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
                 lineHeight: 1.05,
                 color: theme.text,
               }}

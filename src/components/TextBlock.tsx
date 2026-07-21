@@ -11,6 +11,7 @@ import { useScaleUnit } from '../responsive';
 import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useRegionStyle } from '../canvas/RegionStyle';
 import { useSceneMeta } from './SceneMeta';
+import { fitText, fitGroup } from '../typography';
 
 /** Deterministic per-scene variation seed (scene windows differ per scene). */
 const seeded = (n: number, salt: number): number => {
@@ -41,14 +42,25 @@ type Look = 'editorial' | 'statement';
  * no drop shadows — and specifically no `filter`/`backdrop-filter` anywhere,
  * since inside the camera-scaled canvas world that is what softens the text.
  */
-export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: boolean }> = ({
-  slot,
-  transparent,
-  compact,
-}) => {
+export const TextBlock: React.FC<{
+  slot: Slot;
+  transparent?: boolean;
+  compact?: boolean;
+  /**
+   * The share of the frame's width this text actually gets, so the type can be
+   * solved against its real column. Layouts know their own geometry (a side
+   * panel is a third of the frame, a split half is a half); the default suits
+   * a full-width text scene inside the usual ~6% padding.
+   *
+   * A fraction rather than pixels on purpose: the canvas journey and the math
+   * board render these layouts at DESIGN resolution and scale the result, so
+   * the frame is always the right basis.
+   */
+  columnFrac?: number;
+}> = ({ slot, transparent, compact, columnFrac = 0.86 }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
-  const { fps } = useVideoConfig();
+  const { fps, width: frameW } = useVideoConfig();
   const { frame, durationInFrames } = useSceneClock();
   const win = useSceneWindow();
   const u = useScaleUnit();
@@ -120,7 +132,49 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
     </div>
   );
 
-  const headingSize = centered ? ((slot.heading ?? '').length > 38 ? 82 : 100) : 70;
+  /*
+   * Type is SOLVED, not chosen. The old ladder (82 vs 100 for centred, a flat
+   * 70 otherwise) never looked at the column, and since the scale unit is
+   * min(w,h)/1080 a portrait frame put the same pixels into half the width —
+   * a 55-character heading landed as three lines and pushed the bullets off
+   * the stage. fitText measures the real face and returns the biggest size
+   * that fits the line budget.
+   */
+  const column = frameW * columnFrac;
+  const headingSize =
+    fitText(slot.heading ?? '', {
+      width: column,
+      max: (centered ? 100 : 70) * u,
+      min: (centered ? 46 : 38) * u,
+      maxLines: centered ? 3 : 2,
+      font: displayFont,
+      weight: 900,
+      letterSpacing: -1 * u,
+    }) / u;
+
+  /*
+   * Bullets take ONE size for the whole list — a list whose rows each pick
+   * their own size reads as a ransom note — solved from the longest row. The
+   * numeral column and its gap come off the width first, and a long list gets
+   * a tighter ceiling because it also has to fit VERTICALLY.
+   */
+  const rows = bullets.length;
+  const bulletSize = fitGroup(bullets, {
+    width: column - 108 * u,
+    max: (rows > 4 ? 36 : rows > 3 ? 40 : 44) * u,
+    min: 24 * u,
+    maxLines: rows > 3 ? 1 : 2,
+    font: BODY_FONT,
+    weight: 400,
+  });
+  const statementBulletSize = fitGroup(bullets, {
+    width: column * 0.92,
+    max: 38 * u,
+    min: 24 * u,
+    maxLines: 2,
+    font: BODY_FONT,
+    weight: 600,
+  });
   const headingNode = slot.heading ? (
     <div
       style={{
@@ -236,7 +290,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
               display: 'flex',
               alignItems: 'baseline',
               gap: 30 * u,
-              fontSize: 44 * u,
+              fontSize: bulletSize,
               lineHeight: 1.32,
               padding: `${26 * u}px 0`,
               opacity: enter * (1 - 0.55 * dim),
@@ -291,7 +345,7 @@ export const TextBlock: React.FC<{ slot: Slot; transparent?: boolean; compact?: 
               position: 'relative',
               padding: `${24 * u}px 0`,
               textAlign: 'center',
-              fontSize: 38 * u,
+              fontSize: statementBulletSize,
               lineHeight: 1.3,
               fontWeight: 600,
               opacity: enter * (1 - 0.55 * dim),

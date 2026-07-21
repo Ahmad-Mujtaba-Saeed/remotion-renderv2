@@ -11,11 +11,14 @@ import { PanelSurface } from './Surface';
  * - `glass` false → the parent supplies it (banner strip), so content renders
  *   transparent.
  */
-export const PanelContent: React.FC<{ slot?: Slot; glass: boolean; compact?: boolean }> = ({
-  slot,
-  glass,
-  compact,
-}) => {
+export const PanelContent: React.FC<{
+  slot?: Slot;
+  glass: boolean;
+  compact?: boolean;
+  /** Share of the frame width this panel occupies — the text solver needs the
+   *  real column, and only the layout knows how wide its panel is. */
+  columnFrac?: number;
+}> = ({ slot, glass, compact, columnFrac }) => {
   if (!slot) return null;
 
   if (slot.content_type === 'explanation_box') {
@@ -25,10 +28,10 @@ export const PanelContent: React.FC<{ slot?: Slot; glass: boolean; compact?: boo
   if (slot.content_type === 'text_block') {
     return glass ? (
       <PanelSurface style={{ padding: '7%' }}>
-        <TextBlock slot={slot} transparent compact={compact} />
+        <TextBlock slot={slot} transparent compact={compact} columnFrac={columnFrac} />
       </PanelSurface>
     ) : (
-      <TextBlock slot={slot} transparent compact={compact} />
+      <TextBlock slot={slot} transparent compact={compact} columnFrac={columnFrac} />
     );
   }
 

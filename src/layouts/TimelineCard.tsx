@@ -5,6 +5,7 @@ import { useSceneClock } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText, fitGroup, lineCount } from '../typography';
 import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
@@ -38,6 +39,45 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
 
+  /*
+   * The heading is solved against the column, and — because the solver can
+   * also tell us how many lines it took — the strip below can RESERVE that
+   * band. The sweep caught node 1 landing on top of a three-line portrait
+   * heading; nothing here had ever asked how tall the heading was.
+   */
+  const headOpts = {
+    width: width * (portrait ? 0.82 : 0.76),
+    max: 60 * u,
+    min: 30 * u,
+    maxLines: 2,
+    font: displayFont,
+    weight: 900 as const,
+  };
+  const headFs = heading ? fitText(heading, headOpts) : 0;
+  const headLines = heading ? lineCount(heading, headFs, headOpts) : 0;
+  const headBand = height * 0.07
+    + (portrait ? height * 0.04 : 0)
+    + (kicker ? 38 * u : 0)
+    + headLines * headFs * 1.05
+    + 46 * u;
+
+  /*
+   * The label column, in pixels. It has to be EXPLICIT in portrait: the strip
+   * is an absolutely-positioned shrink-to-fit flex container, so without a
+   * width its text children collapse to min-content — every label wrapped at
+   * its longest word ("Compound / interest / quietly / beat" for a four-word
+   * label). The sweep made that visible on all six nodes at once.
+   */
+  const labelW = portrait ? width * 0.56 : 360 * u;
+  const labelFs = fitGroup(nodes.map((n) => (n.label ?? '').trim()), {
+    width: labelW,
+    max: 30 * u,
+    min: 20 * u,
+    maxLines: 2,
+    font: BODY_FONT,
+    weight: 600,
+  });
+
   // Node i pops at its slot in the scene's active stretch.
   const startAt = f30(fps, 16);
   const endAt = Math.round(durationInFrames * 0.8);
@@ -51,7 +91,16 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
 
   // Which node is "active" (the last one that has landed) and the eased
   // glide of the strip toward keeping it at the golden point.
-  const seg = (portrait ? 300 : 420) * u;
+  /*
+   * Portrait spacing adapts to the room actually left under the heading, so a
+   * six-node timeline sits still instead of gliding half of itself off-screen.
+   * Landscape keeps its fixed segment: the strip runs across the width, which
+   * no heading competes for.
+   */
+  const availAxis = portrait ? Math.max(240 * u, height * 0.93 - headBand) : width;
+  const seg = portrait
+    ? Math.max(150 * u, Math.min(300 * u, (availAxis * 0.86) / Math.max(1, nodes.length - 1)))
+    : 420 * u;
   let activeF = 0;
   for (let i = 0; i < nodes.length; i++) {
     if (frame >= nodeAt(i)) {
@@ -62,8 +111,13 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const axis = portrait ? height : width;
   const stripLen = (nodes.length - 1) * seg;
   // Never glide past what keeps the strip on screen.
-  const rawShift = axis * GOLDEN - activeF * seg;
-  const shift = Math.max(Math.min(rawShift, axis * GOLDEN), axis * (1 - GOLDEN) - stripLen);
+  // Where node 0 sits at rest: under the reserved heading band in portrait,
+  // at the golden point across the frame in landscape.
+  const anchor = portrait ? headBand : axis * GOLDEN;
+  const rawShift = anchor - activeF * seg;
+  const shift = portrait
+    ? Math.max(Math.min(rawShift, anchor), Math.min(anchor, height * 0.93 - stripLen))
+    : Math.max(Math.min(rawShift, axis * GOLDEN), axis * (1 - GOLDEN) - stripLen);
 
   const nodeEl = (node: TimelineNode, i: number): React.ReactNode => {
     const pop = spring({
@@ -87,7 +141,7 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           gap: 18 * u,
           transform: `scale(${Math.min(1.06, pop)})`,
           opacity: Math.min(1, pop),
-          width: portrait ? undefined : seg,
+          width: portrait ? labelW + 64 * u : seg,
           marginLeft: portrait ? 0 : -seg / 2,
           textAlign: portrait ? 'left' : 'center',
         }}
@@ -119,11 +173,11 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div
             style={{
               fontFamily: BODY_FONT,
-              fontSize: 30 * u,
+              fontSize: labelFs,
               fontWeight: 600,
               lineHeight: 1.25,
               color: theme.text,
-              maxWidth: (portrait ? 620 : 360) * u,
+              maxWidth: labelW,
               marginTop: 8 * u,
             }}
           >
@@ -159,7 +213,7 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                 margin: 0,
                 fontFamily: displayFont,
                 fontWeight: 900,
-                fontSize: 60 * u,
+                fontSize: headFs,
                 lineHeight: 1.05,
                 color: theme.text,
               }}

@@ -5,6 +5,7 @@ import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, MONO_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText } from '../typography';
 import { clamp01, easeInOutQuint, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
@@ -238,7 +239,14 @@ export const FunctionPlot: React.FC<{ scene: Scene }> = ({ scene }) => {
               margin: 0,
               fontFamily: displayFont,
               fontWeight: 900,
-              fontSize: (portrait ? 50 : 58) * u,
+              fontSize: fitText(heading, {
+                  width: frameW * (portrait ? 0.86 : 0.78),
+                  max: 58 * u,
+                  min: 30 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
               lineHeight: 1.05,
               color: theme.text,
               textAlign: 'center',

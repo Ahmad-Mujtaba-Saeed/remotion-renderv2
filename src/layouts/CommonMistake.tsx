@@ -6,6 +6,7 @@ import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText } from '../typography';
 import { clamp01, easeOutCubic, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { MathText, parseMath, mathWidthUnits } from '../math/mathText';
@@ -144,7 +145,14 @@ export const CommonMistake: React.FC<{ scene: Scene }> = ({ scene }) => {
                 margin: 0,
                 fontFamily: displayFont,
                 fontWeight: 900,
-                fontSize: (portrait ? 46 : 54) * u,
+                fontSize: fitText(heading, {
+                  width: width * (portrait ? 0.86 : 0.78),
+                  max: 54 * u,
+                  min: 28 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
                 lineHeight: 1.06,
                 color: theme.text,
               }}

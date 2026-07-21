@@ -6,6 +6,7 @@ import { useSceneClock } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, inkOn, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText, fitGroup } from '../typography';
 import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
@@ -35,6 +36,14 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
 
   const portrait = height > width;
   const heading = (slot.heading ?? '').trim();
+  const stepFs = fitGroup(steps.map((st) => (st.label ?? '').trim()), {
+    width: width * (height > width ? 0.55 : 0.15),
+    max: 38 * u,
+    min: 20 * u,
+    maxLines: 2,
+    font: BODY_FONT,
+    weight: 700,
+  });
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
 
@@ -101,7 +110,7 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
               justifyContent: 'center',
               fontFamily: displayFont,
               fontWeight: 900,
-              fontSize: 38 * u,
+              fontSize: stepFs,
               color: inkOn(theme.accent),
               flexShrink: 0,
             }}
@@ -169,7 +178,14 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
               margin: `0 0 ${54 * u}px 0`,
               fontFamily: displayFont,
               fontWeight: 900,
-              fontSize: 60 * u,
+              fontSize: fitText(heading, {
+                  width: width * (portrait ? 0.86 : 0.78),
+                  max: 60 * u,
+                  min: 33 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
               lineHeight: 1.05,
               color: theme.text,
             }}

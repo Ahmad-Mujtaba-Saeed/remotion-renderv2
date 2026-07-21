@@ -5,6 +5,7 @@ import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, inkOn, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { fitText, fitGroup } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SfxCue } from '../sfx';
@@ -22,7 +23,7 @@ export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
-  const { fps } = useVideoConfig();
+  const { fps, width, height } = useVideoConfig();
   const { frame } = useSceneClock();
   const win = useSceneWindow();
   const meta = useSceneMeta();
@@ -34,6 +35,14 @@ export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
   const ranked = [...items].reverse(); // ranked[0] = #1
 
   const heading = (slot.heading ?? '').trim();
+  const rankFs = fitGroup(items, {
+    width: width * (height > width ? 0.62 : 0.56),
+    max: 32 * u,
+    min: 20 * u,
+    maxLines: 1,
+    font: BODY_FONT,
+    weight: 700,
+  });
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
 
@@ -73,7 +82,14 @@ export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
-                  fontSize: 60 * u,
+                  fontSize: fitText(heading, {
+                  width: width * (height > width ? 0.86 : 0.78),
+                  max: 60 * u,
+                  min: 33 * u,
+                  maxLines: 2,
+                  font: displayFont,
+                  weight: 900,
+                }),
                   lineHeight: 1.05,
                   color: theme.text,
                 }}
@@ -129,7 +145,7 @@ export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
                   justifyContent: 'center',
                   fontFamily: displayFont,
                   fontWeight: 900,
-                  fontSize: 32 * u,
+                  fontSize: rankFs,
                   color: flood > 0.5 ? theme.accent : inkOn(theme.accent),
                   flexShrink: 0,
                 }}

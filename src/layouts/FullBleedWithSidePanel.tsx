@@ -53,7 +53,7 @@ export const FullBleedWithSidePanel: React.FC<{ scene: Scene }> = ({ scene }) =>
             transform: portrait ? `translateY(${offset}px)` : `translateX(${offset}px)`,
           }}
         >
-          <PanelContent slot={panel} glass />
+          <PanelContent slot={panel} glass columnFrac={(portrait ? 86 : widthPct) / 100 * 0.86} />
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
