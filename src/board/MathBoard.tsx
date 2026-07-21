@@ -106,7 +106,10 @@ export const MathBoard: React.FC<{
 
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
-      <AmbientBackground />
+      {/* grid={false}: the board draws its own ruling pinned to the WORLD
+          below — a second, screen-space blueprint grid would parallax-fight
+          it. */}
+      <AmbientBackground grid={false} />
 
       {/* THE BOARD — one camera transform moves the whole surface. No roll, no
           will-change: an un-promoted layer rasters at the true scale every

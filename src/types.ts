@@ -259,6 +259,12 @@ export interface SpectrumItem {
   position: number;
 }
 
+/** One slab of a layer_stack; array order is TOP FIRST and is the content. */
+export interface LayerItem {
+  label: string;
+  caption?: string;
+}
+
 /** A leaf of a decision_tree: the answer taken and where it lands. */
 export interface DecisionLeaf {
   label: string;
@@ -340,6 +346,8 @@ export interface Slot {
   // spectrum (spectrum_card): a labelled axis with items placed along it
   axis?: { left_label?: string; right_label?: string };
   spectrum_items?: SpectrumItem[];
+  // layers (layer_stack): flat slabs stacked top first, order preserved
+  layers?: LayerItem[];
   // venn (venn_card): 2-3 overlapping sets and what sits in the middle
   sets?: VennSet[];
   overlap_label?: string;
@@ -540,6 +548,9 @@ export interface Scene {
   /** Story relation to the previous scene (analyzer, validator-normalised).
       Drives the signature transition + the flavour of the cut's SFX. */
   relation?: SceneRelation;
+  /** Scene mood (analyzer). Server-side it picks music and motion style;
+      here it keys the backdrop field's pattern when that layer is on. */
+  mood?: string;
   /** Per-scene presentation personality (variant, kicker, highlights). */
   style?: SceneStyle | null;
   slots: Record<string, Slot>;
@@ -706,6 +717,11 @@ export interface ShotList {
   /** Karaoke caption track (copilot.md §4.4) — screen-space word chips synced
       to narration_words. Laravel defaults it on for 9:16, off for 16:9. */
   captions?: { enabled?: boolean } | null;
+  /** Mood backdrop field (§11.5): a whisper-quiet geometric texture on the
+      flat colour field, keyed per scene mood. Laravel defaults it ON for new
+      renders; the renderer only obeys an explicit true, so payloads from
+      before the field existed render byte-identically. */
+  backdrop?: { enabled?: boolean } | null;
   /** Active font pack name ('editorial' | 'classic' | 'tech'); resolved by
       Laravel ('auto' never reaches the renderer). Missing = editorial. */
   font_pack?: string | null;

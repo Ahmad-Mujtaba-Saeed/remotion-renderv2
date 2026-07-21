@@ -23,9 +23,19 @@ export const useTheme = (): Theme => useContext(ThemeContext);
 // feel); `print` empties them too and leans on rules + the serif font pack
 // (Laravel maps `font_pack: auto` to classic under this skin). No textures —
 // grain is banned; the print feel comes from type and rules only.
+//
+// `blueprint` is the one skin that brings its OWN palette: an engineer's
+// drawing is deep navy with white hairlines no matter which scheme the video
+// runs — that totality is the point, the same argument boardTheme.ts makes
+// for chalk/notebook. The registry marks it `overrides_theme` so the UI can
+// dim the colour-scheme controls; the renderer swaps the theme via
+// `skinTheme()` below. Surfaces draw as drafting boxes (outline treatment),
+// the field carries a hairline grid (AmbientBackground), and Laravel maps
+// `font_pack: auto` to the mono-flavoured tech pack. Still flat: solid
+// fields, 1px rules, no texture.
 // ---------------------------------------------------------------------------
 
-export type Skin = 'flat' | 'outline' | 'print';
+export type Skin = 'flat' | 'outline' | 'print' | 'blueprint';
 
 const SkinContext = createContext<Skin>('flat');
 
@@ -33,12 +43,36 @@ export const SkinProvider: React.FC<{ skin?: string | null; children: React.Reac
   skin,
   children,
 }) => (
-  <SkinContext.Provider value={skin === 'outline' || skin === 'print' ? skin : 'flat'}>
+  <SkinContext.Provider
+    value={skin === 'outline' || skin === 'print' || skin === 'blueprint' ? skin : 'flat'}
+  >
     {children}
   </SkinContext.Provider>
 );
 
 export const useSkin = (): Skin => useContext(SkinContext);
+
+/** The blueprint skin's fixed palette (see the section note above). */
+export const BLUEPRINT_THEME: Theme = {
+  name: 'skin-blueprint',
+  label: 'Blueprint',
+  bg_from: '#14395B',
+  bg_to: '#14395B',
+  accent: '#7CCDE8',
+  accent2: '#F0B45F',
+  text: '#F2F7FB',
+  muted: '#93ACC4',
+  panel: '#1B466E',
+};
+
+/**
+ * The theme a shot list actually renders with: the video's own scheme, unless
+ * the skin is one that carries a fixed palette. Applied ONCE at the
+ * ThemeProvider mount so every component downstream restyles with no per-card
+ * work — the exact delivery mechanism boardTheme uses.
+ */
+export const skinTheme = (skin: string | null | undefined, base: Theme): Theme =>
+  skin === 'blueprint' ? BLUEPRINT_THEME : base;
 
 /**
  * The editorial type system: one confident display face (headings,

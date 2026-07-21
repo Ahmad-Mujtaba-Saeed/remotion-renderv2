@@ -30,6 +30,7 @@ import { MythFact } from '../layouts/MythFact';
 import { FormulaAnatomy } from '../layouts/FormulaAnatomy';
 import { CycleDiagram } from '../layouts/CycleDiagram';
 import { SpectrumCard } from '../layouts/SpectrumCard';
+import { LayerStack } from '../layouts/LayerStack';
 import { VennCard } from '../layouts/VennCard';
 import { TermCard } from '../layouts/TermCard';
 import { ReceiptCard } from '../layouts/ReceiptCard';
@@ -155,6 +156,8 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <CycleDiagram scene={scene} />;
     case 'spectrum_card':
       return <SpectrumCard scene={scene} />;
+    case 'layer_stack':
+      return <LayerStack scene={scene} />;
     case 'venn_card':
       return <VennCard scene={scene} />;
     case 'term_card':
@@ -198,7 +201,7 @@ export const SceneRouter: React.FC<{
             scene durations are paced to the audio length on the PHP side. */}
         {scene.narration_audio_url ? <Audio src={scene.narration_audio_url} volume={1.3} /> : null}
         <MidholdPush seconds={scene.duration_seconds}>
-          <AmbientBackground imageUrl={scene.ambient_image_url} />
+          <AmbientBackground imageUrl={scene.ambient_image_url} mood={scene.mood} />
           <Entrance>
             <SceneLayout scene={scene} />
           </Entrance>

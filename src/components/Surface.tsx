@@ -25,7 +25,10 @@ import { useTheme, hairline, useSkin, Skin } from '../theme';
  * blurry.
  */
 export const surfaceStyle = (theme: Theme, skin: Skin = 'flat', overMedia = true): React.CSSProperties => {
-  if (skin === 'outline' && !overMedia) {
+  // blueprint takes the outline treatment: a drafting box — transparent
+  // field, one white hairline — is exactly what a panel on an engineer's
+  // drawing is. The navy field itself comes from the skin's fixed theme.
+  if ((skin === 'outline' || skin === 'blueprint') && !overMedia) {
     return { background: 'transparent', border: `1px solid ${hairline(theme, 0.28)}` };
   }
   if (skin === 'print' && !overMedia) {
@@ -39,7 +42,7 @@ export const surfaceStyle = (theme: Theme, skin: Skin = 'flat', overMedia = true
   // its stronger border, print its rules, both on the opaque panel field.
   const base: React.CSSProperties = {
     background: theme.panel,
-    border: `1px solid ${hairline(theme, skin === 'outline' ? 0.28 : 0.09)}`,
+    border: `1px solid ${hairline(theme, skin === 'outline' || skin === 'blueprint' ? 0.28 : 0.09)}`,
   };
   if (skin === 'print') {
     base.border = undefined;

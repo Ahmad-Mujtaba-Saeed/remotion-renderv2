@@ -16,7 +16,7 @@ import {
   NarrationWindow,
 } from './timing';
 import { normalizeChapters } from './chapters';
-import { ThemeProvider, SkinProvider, useTheme, hairline } from './theme';
+import { ThemeProvider, SkinProvider, useTheme, hairline, skinTheme } from './theme';
 import { MotionStyleProvider } from './motion/styles';
 import { DEFAULT_THEME } from './types';
 import { presentationFor } from './transitions';
@@ -24,6 +24,7 @@ import { CanvasJourney } from './canvas/CanvasJourney';
 import { MathBoard } from './board/MathBoard';
 import { boardTheme, resolveBoardStyle } from './board/boardTheme';
 import { SlidesChapter } from './components/SlidesChapter';
+import { BackdropProvider } from './components/AmbientBackground';
 import { SfxProvider, SfxCue } from './sfx';
 import { FontLoader } from './fonts';
 
@@ -171,6 +172,13 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   // for 16:9) — the renderer only obeys an explicit true.
   const captions = shotList?.captions?.enabled === true;
   const fontPack = shotList?.font_pack ?? undefined;
+  // The blueprint skin carries a fixed palette (theme.tsx) — resolved ONCE
+  // here so every branch below mounts the same theme, exactly as the board
+  // skins do for the math board.
+  const theme = skinTheme(shotList?.skin, shotList?.theme ?? DEFAULT_THEME);
+  // Mood backdrop field (§11.5): only an explicit true turns it on, so
+  // payloads from before the field existed render byte-identically.
+  const backdropOn = shotList?.backdrop?.enabled === true;
 
   const chapters = useMemo(
     () => (mode === 'hybrid' && shotList ? normalizeChapters(shotList) : []),
@@ -238,12 +246,15 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     // aside to a concept and returns — none of the canvas journey's flight.
     //
     // The board may carry its own SKIN (chalk / notebook): a fixed palette
-    // provided as THE theme, so every board component restyles at once.
+    // provided as THE theme, so every board component restyles at once. The
+    // base is the skin-resolved theme, so a slate board under the blueprint
+    // skin draws on navy; chalk/notebook's fixed palettes still win.
     const boardStyle = resolveBoardStyle(shotList?.board_style);
-    const bTheme = boardTheme(boardStyle, shotList?.theme ?? DEFAULT_THEME);
+    const bTheme = boardTheme(boardStyle, theme);
     return (
       <ThemeProvider theme={bTheme}>
         <SkinProvider skin={shotList?.skin}>
+        <BackdropProvider enabled={backdropOn}>
         <MotionStyleProvider style={shotList?.motion_style}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: bTheme.bg_from }}>
@@ -254,6 +265,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
           </AbsoluteFill>
         </SfxProvider>
         </MotionStyleProvider>
+        </BackdropProvider>
         </SkinProvider>
       </ThemeProvider>
     );
@@ -261,11 +273,12 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
 
   if (mode === 'canvas_journey') {
     return (
-      <ThemeProvider theme={shotList?.theme}>
+      <ThemeProvider theme={theme}>
         <SkinProvider skin={shotList?.skin}>
+        <BackdropProvider enabled={backdropOn}>
         <MotionStyleProvider style={shotList?.motion_style}>
         <SfxProvider config={shotList?.sfx}>
-          <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+          <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
             <FontLoader pack={fontPack} />
             {musicBed}
             <CanvasJourney
@@ -278,6 +291,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
           </AbsoluteFill>
         </SfxProvider>
         </MotionStyleProvider>
+        </BackdropProvider>
         </SkinProvider>
       </ThemeProvider>
     );
@@ -315,11 +329,12 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     let sceneCursor = 0;
 
     return (
-      <ThemeProvider theme={shotList?.theme}>
+      <ThemeProvider theme={theme}>
         <SkinProvider skin={shotList?.skin}>
+        <BackdropProvider enabled={backdropOn}>
         <MotionStyleProvider style={shotList?.motion_style}>
         <SfxProvider config={shotList?.sfx}>
-          <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+          <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
             <FontLoader pack={fontPack} />
             {musicBed}
             <TransitionSeries>
@@ -330,7 +345,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
                   nodes.push(
                     <TransitionSeries.Transition
                       key={`t-${ch.chapter.id ?? i}`}
-                      presentation={presentationFor(ch.chapter.transition_in, shotList?.theme)}
+                      presentation={presentationFor(ch.chapter.transition_in, theme)}
                       timing={linearTiming({ durationInFrames: tf })}
                     />
                   );
@@ -364,11 +379,11 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
                   >
                     {/* §11.4 accent shift: a chapter may carry its own hue-
                         rotated accent (computed server-side — no runtime
-                        filters). The rest of the scheme stays put. */}
-                    {ch.chapter.accent ? (
-                      <ThemeProvider
-                        theme={{ ...(shotList?.theme ?? DEFAULT_THEME), accent: ch.chapter.accent }}
-                      >
+                        filters). The rest of the scheme stays put. Skipped
+                        under blueprint: the accent was rotated from the
+                        SCHEME the fixed palette just replaced. */}
+                    {ch.chapter.accent && shotList?.skin !== 'blueprint' ? (
+                      <ThemeProvider theme={{ ...theme, accent: ch.chapter.accent }}>
                         {body}
                       </ThemeProvider>
                     ) : (
@@ -385,17 +400,19 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
           </AbsoluteFill>
         </SfxProvider>
         </MotionStyleProvider>
+        </BackdropProvider>
         </SkinProvider>
       </ThemeProvider>
     );
   }
 
   return (
-    <ThemeProvider theme={shotList?.theme}>
+    <ThemeProvider theme={theme}>
       <SkinProvider skin={shotList?.skin}>
+        <BackdropProvider enabled={backdropOn}>
       <MotionStyleProvider style={shotList?.motion_style}>
       <SfxProvider config={shotList?.sfx}>
-        <AbsoluteFill style={{ background: shotList?.theme?.bg_from ?? '#0f172a' }}>
+        <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
           <FontLoader pack={fontPack} />
           {musicBed}
           <SlidesChapter scenes={scenes} fps={fps} captions={captions} />
@@ -403,7 +420,8 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
         </AbsoluteFill>
       </SfxProvider>
       </MotionStyleProvider>
-      </SkinProvider>
+      </BackdropProvider>
+        </SkinProvider>
     </ThemeProvider>
   );
 };

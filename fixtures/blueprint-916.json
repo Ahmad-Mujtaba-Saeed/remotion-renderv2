@@ -1,0 +1,226 @@
+{
+  "project_id": "fixture-blueprint",
+  "aspect_ratio": "9:16",
+  "composition_mode": "slides",
+  "captions": {
+    "enabled": false
+  },
+  "font_pack": "tech",
+  "motion_style": "crisp",
+  "skin": "blueprint",
+  "sfx": {
+    "enabled": true,
+    "volume": 1,
+    "pack": "procedural"
+  },
+  "theme": {
+    "name": "blossom",
+    "label": "Blossom",
+    "bg_from": "#FAF1EC",
+    "bg_to": "#FAF1EC",
+    "accent": "#D95970",
+    "accent2": "#B84760",
+    "text": "#221A18",
+    "muted": "#8A7A75",
+    "panel": "#F3E6DF"
+  },
+  "scenes": [
+    {
+      "scene_id": "t1",
+      "order": 1,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "The road here took thirty years."
+      },
+      "layout_template": "timeline_card",
+      "transition": "none",
+      "style": {
+        "kicker": "THE ROAD"
+      },
+      "slots": {
+        "slot_timeline": {
+          "content_type": "timeline_nodes",
+          "heading": "Thirty Years In Six Stops",
+          "nodes": [
+            {
+              "date": "1998",
+              "label": "Founded in a garage"
+            },
+            {
+              "date": "2004",
+              "label": "First million users"
+            },
+            {
+              "date": "2010",
+              "label": "Goes public"
+            },
+            {
+              "date": "2016",
+              "label": "Peak market share"
+            },
+            {
+              "date": "2021",
+              "label": "The pivot"
+            },
+            {
+              "date": "2026",
+              "label": "The rebound"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "t2",
+      "order": 2,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "The pipeline has four moving parts."
+      },
+      "layout_template": "step_flow",
+      "transition": "fade",
+      "style": {
+        "kicker": "THE PIPELINE"
+      },
+      "slots": {
+        "slot_steps": {
+          "content_type": "steps",
+          "heading": "How It Works",
+          "items": [
+            {
+              "label": "Collect data",
+              "icon": "database"
+            },
+            {
+              "label": "Train model",
+              "icon": "brain"
+            },
+            {
+              "label": "Review output",
+              "icon": "search"
+            },
+            {
+              "label": "Ship it",
+              "icon": "rocket"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "t3",
+      "order": 3,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "The redesign speaks for itself."
+      },
+      "layout_template": "before_after",
+      "transition": "fade",
+      "slots": {
+        "slot_before": {
+          "content_type": "image",
+          "camera_move": "static",
+          "asset_request": {
+            "description": "the old interface"
+          },
+          "asset_ref": {
+            "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAB4CAIAAAD6wG44AAABLklEQVR4nO3RAQkAIBDAwA9mEnMa0BQijIMLMNicvQib7wU8ZXCcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEXl9azodq6OP0AAAAASUVORK5CYII=",
+            "type": "image",
+            "width": 160,
+            "height": 120
+          },
+          "label": "Before"
+        },
+        "slot_after": {
+          "content_type": "image",
+          "camera_move": "static",
+          "asset_request": {
+            "description": "the new interface"
+          },
+          "asset_ref": {
+            "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAB4CAIAAAD6wG44AAABLklEQVR4nO3RAQkAIBDAwA9mEnMa0BQijIMLMNicvQib7wU8ZXCcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEXl9azodq6OP0AAAAASUVORK5CYII=",
+            "type": "image",
+            "width": 160,
+            "height": 120
+          },
+          "label": "After"
+        }
+      }
+    },
+    {
+      "scene_id": "t4",
+      "order": 4,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "Counting down the launches that mattered."
+      },
+      "layout_template": "list_ranking",
+      "transition": "fade",
+      "style": {
+        "kicker": "THE COUNTDOWN"
+      },
+      "slots": {
+        "slot_ranking": {
+          "content_type": "ranking",
+          "heading": "Launches That Mattered",
+          "items": [
+            "The flop nobody remembers",
+            "The sleeper hit",
+            "The record breaker"
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "t5",
+      "order": 5,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "Seventy eight percent said they would switch."
+      },
+      "layout_template": "progress_meter",
+      "transition": "fade",
+      "style": {
+        "kicker": "THE VERDICT"
+      },
+      "slots": {
+        "slot_meter": {
+          "content_type": "meter",
+          "value_pct": 78,
+          "label": "of players said they would switch",
+          "unit": "%"
+        }
+      }
+    },
+    {
+      "scene_id": "t6",
+      "order": 6,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "We were wrong about everything except the timing."
+      },
+      "layout_template": "quote_portrait",
+      "transition": "fade",
+      "slots": {
+        "slot_portrait": {
+          "content_type": "image",
+          "camera_move": "static",
+          "asset_request": {
+            "description": "portrait of the founder"
+          },
+          "asset_ref": {
+            "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAB4CAIAAAD6wG44AAABLklEQVR4nO3RAQkAIBDAwA9mEnMa0BQijIMLMNicvQib7wU8ZXCcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEGxxkcZ3CcwXEXl9azodq6OP0AAAAASUVORK5CYII=",
+            "type": "image",
+            "width": 160,
+            "height": 120
+          }
+        },
+        "slot_quote": {
+          "content_type": "explanation_box",
+          "heading": "The Founder",
+          "body": "We were wrong about everything except the timing."
+        }
+      }
+    }
+  ]
+}

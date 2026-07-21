@@ -13,6 +13,24 @@ import { PropSprite } from './PropSprite';
 import { SceneClockProvider } from './SceneClock';
 import { SfxCue, SfxName, sfxDuration } from '../sfx';
 
+/** The mood most scenes of this journey carry (ties → first seen). */
+const dominantMood = (scenes: Scene[]): string => {
+  const counts = new Map<string, number>();
+  for (const s of scenes) {
+    const m = s.mood ?? 'neutral';
+    counts.set(m, (counts.get(m) ?? 0) + 1);
+  }
+  let best = 'neutral';
+  let n = 0;
+  for (const [m, c] of counts) {
+    if (c > n) {
+      best = m;
+      n = c;
+    }
+  }
+  return best;
+};
+
 /** Which whoosh a flight deserves, from its story relation / treatment. */
 const flightSound = (item: CanvasItem | undefined): { name: SfxName; volume: number } => {
   const treatment = item?.treatment ?? 'canvas_hop';
@@ -167,8 +185,11 @@ export const CanvasJourney: React.FC<{
     <AbsoluteFill style={{ overflow: 'hidden' }}>
       {/* The flat colour field. Stays in viewport space (doesn't fly with the
           world). There used to be a second, parallax dot grid layered on top of
-          it; one grid, pinned to the world, sells the depth on its own. */}
-      <AmbientBackground />
+          it; one grid, pinned to the world, sells the depth on its own.
+          The mood field (§11.5) keys off the journey's DOMINANT mood — one
+          screen-space field for the whole flight; per-station switching would
+          pop mid-flight with no cut to hide it. */}
+      <AmbientBackground mood={dominantMood(scenes)} />
 
       {/* Camera roll: the world rotates a few degrees around the viewport
           center mid-flight and always lands level — a banked-turn feel.

@@ -1,0 +1,139 @@
+{
+  "project_id": "fixture-layer-stack",
+  "aspect_ratio": "9:16",
+  "composition_mode": "slides",
+  "captions": {
+    "enabled": false
+  },
+  "font_pack": "editorial",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": {
+    "enabled": false
+  },
+  "theme": {
+    "name": "glacier",
+    "label": "Glacier",
+    "bg_from": "#F4F8FB",
+    "bg_to": "#F4F8FB",
+    "accent": "#3E8FD8",
+    "accent2": "#2C6FB0",
+    "text": "#14202B",
+    "muted": "#7C8B98",
+    "panel": "#E9F0F6"
+  },
+  "scenes": [
+    {
+      "scene_id": "l1",
+      "order": 1,
+      "duration_seconds": 8,
+      "narration": {
+        "text": "The atmosphere is really five stacked shells. The exosphere sits on top, then the thermosphere, the mesosphere, the stratosphere, and finally the troposphere where all our weather lives."
+      },
+      "layout_template": "layer_stack",
+      "transition": "none",
+      "slots": {
+        "slot_layers": {
+          "content_type": "layers",
+          "heading": "Five Shells Of Air",
+          "layers": [
+            {
+              "label": "Exosphere",
+              "caption": "fades into space"
+            },
+            {
+              "label": "Thermosphere",
+              "caption": "auroras and satellites"
+            },
+            {
+              "label": "Mesosphere",
+              "caption": "meteors burn up here"
+            },
+            {
+              "label": "Stratosphere",
+              "caption": "home of the ozone layer"
+            },
+            {
+              "label": "Troposphere",
+              "caption": "all weather happens here"
+            }
+          ],
+          "highlight_index": 4,
+          "caption": "Not to scale \u2014 the troposphere is the thinnest"
+        }
+      },
+      "style": {
+        "kicker": "THE ATMOSPHERE"
+      }
+    },
+    {
+      "scene_id": "l2",
+      "order": 2,
+      "duration_seconds": 6,
+      "narration": {
+        "text": "A road is three layers: asphalt, base, and subgrade."
+      },
+      "layout_template": "layer_stack",
+      "transition": "fade",
+      "slots": {
+        "slot_layers": {
+          "content_type": "layers",
+          "layers": [
+            {
+              "label": "Asphalt"
+            },
+            {
+              "label": "Base course"
+            },
+            {
+              "label": "Subgrade"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scene_id": "l3",
+      "order": 3,
+      "duration_seconds": 9,
+      "narration": {
+        "text": "Six layers, worst case, with the longest labels the clamp allows on every single slab of the whole stack."
+      },
+      "layout_template": "layer_stack",
+      "transition": "fade",
+      "slots": {
+        "slot_layers": {
+          "content_type": "layers",
+          "heading": "A Deliberately Overstuffed Worst Case Heading",
+          "layers": [
+            {
+              "label": "Application presentation",
+              "caption": "where the user-facing software actually runs"
+            },
+            {
+              "label": "Session and transport la",
+              "caption": "connections opened, ordered and torn down"
+            },
+            {
+              "label": "Network routing layer xx",
+              "caption": "finds a path across the whole internet"
+            },
+            {
+              "label": "Data link layer framing",
+              "caption": "frames bits for one hop of the journey"
+            },
+            {
+              "label": "Physical copper and glas",
+              "caption": "volts and light pulses on real cables"
+            },
+            {
+              "label": "Physical copper and glas",
+              "caption": "repeated label on purpose \u2014 stacks repeat"
+            }
+          ],
+          "highlight_index": 2
+        }
+      }
+    }
+  ]
+}
