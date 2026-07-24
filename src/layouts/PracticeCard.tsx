@@ -9,7 +9,7 @@ import { fitText } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
-import { MathText, parseMath, mathWidthUnits } from '../math/mathText';
+import { MathText, InlineMathText, parseMath, mathWidthUnits } from '../math/mathText';
 import { looksLikeProse } from '../math/prose';
 import { KineticText } from '../components/KineticText';
 import { SfxCue } from '../sfx';
@@ -176,7 +176,11 @@ export const PracticeCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                 color: theme.text,
               }}
             >
-              {prompt}
+              {/* Worded problems still quote notation ("a rope of length
+                  sqrt{50} m"), and this branch is chosen precisely because the
+                  line is a SENTENCE — InlineMathText typesets the math inside
+                  it without giving up prose wrapping. */}
+              <InlineMathText text={prompt} />
             </div>
           ) : (
             <MathText
@@ -212,7 +216,11 @@ export const PracticeCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               Hint
             </span>
             <span style={{ fontFamily: BODY_FONT, fontSize: metaFs, lineHeight: 1.35, color: theme.muted }}>
-              {hint}
+              {/* A hint is prose that usually carries a formula ("plug a, b, c
+                  into x = (-b +- sqrt{b^2-4ac})/(2a)") — InlineMathText draws
+                  the powers and the radical while still wrapping as a
+                  sentence. Raw, the notation showed as source. */}
+              <InlineMathText text={hint} />
             </span>
           </div>
         ) : null}

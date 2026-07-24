@@ -1,0 +1,588 @@
+{
+ "project_id": "formula-anatomy-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "tech",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "r1",
+   "order": 1,
+   "duration_seconds": 9,
+   "layout_template": "formula_anatomy",
+   "narration": {
+    "text": "The distance is the square root of the horizontal leg squared plus the vertical leg squared."
+   },
+   "narration_words": [
+    {
+     "word": "The",
+     "start": 0.3,
+     "end": 0.59
+    },
+    {
+     "word": "distance",
+     "start": 0.66,
+     "end": 0.95
+    },
+    {
+     "word": "is",
+     "start": 1.02,
+     "end": 1.31
+    },
+    {
+     "word": "the",
+     "start": 1.38,
+     "end": 1.67
+    },
+    {
+     "word": "square",
+     "start": 1.74,
+     "end": 2.03
+    },
+    {
+     "word": "root",
+     "start": 2.1,
+     "end": 2.39
+    },
+    {
+     "word": "of",
+     "start": 2.46,
+     "end": 2.75
+    },
+    {
+     "word": "the",
+     "start": 2.82,
+     "end": 3.11
+    },
+    {
+     "word": "horizontal",
+     "start": 3.18,
+     "end": 3.47
+    },
+    {
+     "word": "leg",
+     "start": 3.54,
+     "end": 3.83
+    },
+    {
+     "word": "squared",
+     "start": 3.9,
+     "end": 4.19
+    },
+    {
+     "word": "plus",
+     "start": 4.26,
+     "end": 4.55
+    },
+    {
+     "word": "the",
+     "start": 4.62,
+     "end": 4.91
+    },
+    {
+     "word": "vertical",
+     "start": 4.98,
+     "end": 5.27
+    },
+    {
+     "word": "leg",
+     "start": 5.34,
+     "end": 5.63
+    },
+    {
+     "word": "squared.",
+     "start": 5.7,
+     "end": 5.99
+    }
+   ],
+   "slots": {
+    "slot_formula": {
+     "content_type": "formula",
+     "formula": "d = sqrt{run^2 + rise^2}",
+     "heading": "Distance on a grid",
+     "parts": [
+      {
+       "match": "run^2",
+       "label": "horizontal leg squared"
+      },
+      {
+       "match": "rise^2",
+       "label": "vertical leg squared"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "scene_id": "r2",
+   "order": 2,
+   "duration_seconds": 14,
+   "layout_template": "math_steps",
+   "narration": {
+    "text": "Substituting gives six plus or minus the square root of twenty, over two. That simplifies to three plus or minus root five."
+   },
+   "narration_words": [
+    {
+     "word": "Substituting",
+     "start": 0.3,
+     "end": 0.59
+    },
+    {
+     "word": "gives",
+     "start": 0.66,
+     "end": 0.95
+    },
+    {
+     "word": "six",
+     "start": 1.02,
+     "end": 1.31
+    },
+    {
+     "word": "plus",
+     "start": 1.38,
+     "end": 1.67
+    },
+    {
+     "word": "or",
+     "start": 1.74,
+     "end": 2.03
+    },
+    {
+     "word": "minus",
+     "start": 2.1,
+     "end": 2.39
+    },
+    {
+     "word": "the",
+     "start": 2.46,
+     "end": 2.75
+    },
+    {
+     "word": "square",
+     "start": 2.82,
+     "end": 3.11
+    },
+    {
+     "word": "root",
+     "start": 3.18,
+     "end": 3.47
+    },
+    {
+     "word": "of",
+     "start": 3.54,
+     "end": 3.83
+    },
+    {
+     "word": "twenty,",
+     "start": 3.9,
+     "end": 4.19
+    },
+    {
+     "word": "over",
+     "start": 4.26,
+     "end": 4.55
+    },
+    {
+     "word": "two.",
+     "start": 4.62,
+     "end": 4.91
+    },
+    {
+     "word": "That",
+     "start": 4.98,
+     "end": 5.27
+    },
+    {
+     "word": "simplifies",
+     "start": 5.34,
+     "end": 5.63
+    },
+    {
+     "word": "to",
+     "start": 5.7,
+     "end": 5.99
+    },
+    {
+     "word": "three",
+     "start": 6.06,
+     "end": 6.35
+    },
+    {
+     "word": "plus",
+     "start": 6.42,
+     "end": 6.71
+    },
+    {
+     "word": "or",
+     "start": 6.78,
+     "end": 7.07
+    },
+    {
+     "word": "minus",
+     "start": 7.14,
+     "end": 7.43
+    },
+    {
+     "word": "root",
+     "start": 7.5,
+     "end": 7.79
+    },
+    {
+     "word": "five.",
+     "start": 7.86,
+     "end": 8.15
+    }
+   ],
+   "slots": {
+    "slot_math": {
+     "content_type": "math_steps",
+     "heading": "Quadratic formula",
+     "steps": [
+      {
+       "expr": "x^2 - 6x + 4 = 0",
+       "note": "state the equation"
+      },
+      {
+       "expr": "x = (6 +- sqrt{36 - 16}) / 2",
+       "note": "substitute a, b, c"
+      },
+      {
+       "expr": "x = (6 +- sqrt{20}) / 2",
+       "note": "simplify under the root"
+      },
+      {
+       "expr": "x = 3 +- sqrt{5}",
+       "note": "divide through"
+      }
+     ],
+     "rule": {
+      "name": "Quadratic Formula",
+      "formula": "x = (-b +- sqrt{b^2 - 4ac}) / (2a)",
+      "why": "it solves any quadratic"
+     }
+    }
+   }
+  },
+  {
+   "scene_id": "r3",
+   "order": 3,
+   "duration_seconds": 12,
+   "layout_template": "practice_card",
+   "narration": {
+    "text": "Now you try this one. Pause here and work it through. The answer is one and three."
+   },
+   "narration_words": [
+    {
+     "word": "Now",
+     "start": 0.3,
+     "end": 0.59
+    },
+    {
+     "word": "you",
+     "start": 0.66,
+     "end": 0.95
+    },
+    {
+     "word": "try",
+     "start": 1.02,
+     "end": 1.31
+    },
+    {
+     "word": "this",
+     "start": 1.38,
+     "end": 1.67
+    },
+    {
+     "word": "one.",
+     "start": 1.74,
+     "end": 2.03
+    },
+    {
+     "word": "Pause",
+     "start": 2.1,
+     "end": 2.39
+    },
+    {
+     "word": "here",
+     "start": 2.46,
+     "end": 2.75
+    },
+    {
+     "word": "and",
+     "start": 2.82,
+     "end": 3.11
+    },
+    {
+     "word": "work",
+     "start": 3.18,
+     "end": 3.47
+    },
+    {
+     "word": "it",
+     "start": 3.54,
+     "end": 3.83
+    },
+    {
+     "word": "through.",
+     "start": 3.9,
+     "end": 4.19
+    },
+    {
+     "word": "The",
+     "start": 4.26,
+     "end": 4.55
+    },
+    {
+     "word": "answer",
+     "start": 4.62,
+     "end": 4.91
+    },
+    {
+     "word": "is",
+     "start": 4.98,
+     "end": 5.27
+    },
+    {
+     "word": "one",
+     "start": 5.34,
+     "end": 5.63
+    },
+    {
+     "word": "and",
+     "start": 5.7,
+     "end": 5.99
+    },
+    {
+     "word": "three.",
+     "start": 6.06,
+     "end": 6.35
+    }
+   ],
+   "slots": {
+    "slot_practice": {
+     "content_type": "practice",
+     "prompt": "Solve x^2 - 4x + 3 = 0",
+     "answer": "x = 1 or x = 3",
+     "hint": "Plug into x = (-b +- sqrt{b^2 - 4ac}) / (2a)",
+     "heading": "Your turn"
+    }
+   }
+  },
+  {
+   "scene_id": "r4",
+   "order": 4,
+   "duration_seconds": 11,
+   "layout_template": "common_mistake",
+   "narration": {
+    "text": "People drop the radical here. But the twenty must stay under the root sign."
+   },
+   "narration_words": [
+    {
+     "word": "People",
+     "start": 0.3,
+     "end": 0.59
+    },
+    {
+     "word": "drop",
+     "start": 0.66,
+     "end": 0.95
+    },
+    {
+     "word": "the",
+     "start": 1.02,
+     "end": 1.31
+    },
+    {
+     "word": "radical",
+     "start": 1.38,
+     "end": 1.67
+    },
+    {
+     "word": "here.",
+     "start": 1.74,
+     "end": 2.03
+    },
+    {
+     "word": "But",
+     "start": 2.1,
+     "end": 2.39
+    },
+    {
+     "word": "the",
+     "start": 2.46,
+     "end": 2.75
+    },
+    {
+     "word": "twenty",
+     "start": 2.82,
+     "end": 3.11
+    },
+    {
+     "word": "must",
+     "start": 3.18,
+     "end": 3.47
+    },
+    {
+     "word": "stay",
+     "start": 3.54,
+     "end": 3.83
+    },
+    {
+     "word": "under",
+     "start": 3.9,
+     "end": 4.19
+    },
+    {
+     "word": "the",
+     "start": 4.26,
+     "end": 4.55
+    },
+    {
+     "word": "root",
+     "start": 4.62,
+     "end": 4.91
+    },
+    {
+     "word": "sign.",
+     "start": 4.98,
+     "end": 5.27
+    }
+   ],
+   "slots": {
+    "slot_mistake": {
+     "content_type": "mistake",
+     "wrong": "x = (6 +- 20) / 2",
+     "correct": "x = (6 +- sqrt{20}) / 2",
+     "why": "sqrt{20} must stay under the radical.",
+     "heading": "Watch the root"
+    }
+   }
+  },
+  {
+   "scene_id": "r5",
+   "order": 5,
+   "duration_seconds": 10,
+   "layout_template": "math_steps",
+   "narration": {
+    "text": "The paren form and the bare form must both draw a real radical sign here."
+   },
+   "narration_words": [
+    {
+     "word": "The",
+     "start": 0.3,
+     "end": 0.59
+    },
+    {
+     "word": "paren",
+     "start": 0.66,
+     "end": 0.95
+    },
+    {
+     "word": "form",
+     "start": 1.02,
+     "end": 1.31
+    },
+    {
+     "word": "and",
+     "start": 1.38,
+     "end": 1.67
+    },
+    {
+     "word": "the",
+     "start": 1.74,
+     "end": 2.03
+    },
+    {
+     "word": "bare",
+     "start": 2.1,
+     "end": 2.39
+    },
+    {
+     "word": "form",
+     "start": 2.46,
+     "end": 2.75
+    },
+    {
+     "word": "must",
+     "start": 2.82,
+     "end": 3.11
+    },
+    {
+     "word": "both",
+     "start": 3.18,
+     "end": 3.47
+    },
+    {
+     "word": "draw",
+     "start": 3.54,
+     "end": 3.83
+    },
+    {
+     "word": "a",
+     "start": 3.9,
+     "end": 4.19
+    },
+    {
+     "word": "real",
+     "start": 4.26,
+     "end": 4.55
+    },
+    {
+     "word": "radical",
+     "start": 4.62,
+     "end": 4.91
+    },
+    {
+     "word": "sign",
+     "start": 4.98,
+     "end": 5.27
+    },
+    {
+     "word": "here.",
+     "start": 5.34,
+     "end": 5.63
+    }
+   ],
+   "slots": {
+    "slot_math": {
+     "content_type": "math_steps",
+     "heading": "Raw spellings (renderer net)",
+     "steps": [
+      {
+       "expr": "c = sqrt(225)",
+       "note": "paren form"
+      },
+      {
+       "expr": "c = sqrt 225",
+       "note": "bare form"
+      },
+      {
+       "expr": "c = 15",
+       "note": "answer"
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

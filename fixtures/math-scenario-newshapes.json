@@ -1,0 +1,107 @@
+{
+  "project_id": 9040,
+  "aspect_ratio": "9:16",
+  "composition_mode": "slides",
+  "captions": { "enabled": false },
+  "font_pack": "tech",
+  "motion_style": "crisp",
+  "skin": "flat",
+  "sfx": { "pack": "procedural" },
+  "theme": {
+    "name": "glacier",
+    "bg_from": "#0B1620",
+    "bg_to": "#0B1620",
+    "text": "#E8F1F7",
+    "muted": "#8FA9BC",
+    "accent": "#4FC3E8",
+    "paper": "#0B1620",
+    "panel": "#12222F"
+  },
+  "scenes": [
+    {
+      "scene_id": "s1",
+      "order": 1,
+      "duration_seconds": 11,
+      "narration": {
+        "text": "Two cars leave at the same time. Car A holds sixty kilometres an hour, Car B eighty. Which one reaches the town of three hundred kilometres first?"
+      },
+      "layout_template": "scenario_diagram",
+      "transition": "none",
+      "style": { "kicker": "THE SETUP" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "A vs B",
+          "layout": "compare",
+          "entities": [
+            { "label": "Car A", "value": "60 km/h", "sprite": "a blue sedan car, side view" },
+            { "label": "Car B", "value": "80 km/h", "sprite": "a red sports car, side view", "emphasis": "key" }
+          ],
+          "connectors": [
+            { "label": "60 km/h" },
+            { "label": "80 km/h" }
+          ],
+          "question": "who wins?"
+        }
+      }
+    },
+    {
+      "scene_id": "s2",
+      "order": 2,
+      "duration_seconds": 11,
+      "narration": {
+        "text": "A bag holds red and blue marbles. On the first draw, there is a sixty percent chance of red and forty percent of blue. What is the probability of drawing red?"
+      },
+      "layout_template": "scenario_diagram",
+      "transition": "none",
+      "style": { "kicker": "THE SETUP" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "The Draw",
+          "layout": "split",
+          "entities": [
+            { "label": "Bag", "icon": "box", "value": "10 marbles" },
+            { "label": "Red", "icon": "circle-dot", "value": "6", "emphasis": "key" },
+            { "label": "Blue", "icon": "circle-dot", "value": "4" }
+          ],
+          "connectors": [
+            { "label": "0.6" },
+            { "label": "0.4" }
+          ],
+          "question": "P(red) = ?"
+        }
+      }
+    },
+    {
+      "scene_id": "s3",
+      "order": 3,
+      "duration_seconds": 11,
+      "narration": {
+        "text": "Water cycles through four stages and returns to the reservoir. If each stage takes fifteen minutes, how long is one full loop?"
+      },
+      "layout_template": "scenario_diagram",
+      "transition": "none",
+      "style": { "kicker": "THE SETUP" },
+      "slots": {
+        "slot_scenario": {
+          "content_type": "scenario",
+          "heading": "The Loop",
+          "layout": "cycle",
+          "entities": [
+            { "label": "Reservoir", "icon": "droplet", "value": "15 min" },
+            { "label": "Pump", "icon": "cog", "value": "15 min" },
+            { "label": "Filter", "icon": "cog", "value": "15 min" },
+            { "label": "Return", "icon": "flag", "value": "15 min" }
+          ],
+          "connectors": [
+            { "label": "15 min" },
+            { "label": "15 min" },
+            { "label": "15 min" }
+          ],
+          "question": "T = ?"
+        }
+      }
+    }
+  ]
+}

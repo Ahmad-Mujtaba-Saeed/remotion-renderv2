@@ -40,9 +40,12 @@ import { SfxCue } from '../sfx';
  * on a taller, narrower stage.
  */
 
-type ScenarioLayout = 'line' | 'arc' | 'climb' | 'fall';
+type ScenarioLayout = 'line' | 'arc' | 'climb' | 'fall' | 'compare' | 'split' | 'cycle';
 
 type Pt = { x: number; y: number };
+
+const CURVE_LAYOUTS: ScenarioLayout[] = ['arc', 'climb', 'fall'];
+const KNOWN_LAYOUTS: ScenarioLayout[] = ['arc', 'climb', 'fall', 'compare', 'split', 'cycle'];
 
 export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
   const slot = scene.slots['slot_scenario'] ?? Object.values(scene.slots)[0];
@@ -62,8 +65,10 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
   const question = (slot.question ?? '').trim();
   const heading = (slot.heading ?? '').trim();
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
-  const layout: ScenarioLayout =
-    slot.layout === 'arc' || slot.layout === 'climb' || slot.layout === 'fall' ? slot.layout : 'line';
+  const layout: ScenarioLayout = KNOWN_LAYOUTS.includes(slot.layout as ScenarioLayout)
+    ? (slot.layout as ScenarioLayout)
+    : 'line';
+  const curveShaped = CURVE_LAYOUTS.includes(layout);
 
   const portrait = height > width;
   const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
@@ -92,6 +97,10 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
     const valueP = easeOutQuint(clamp01((frame - boxAt(i) - f30(fps, 6)) / f30(fps, 9)));
     const value = (e.value ?? '').trim();
     const sprite = (e.sprite_url ?? '').trim();
+    // Emphasis lifts one actor out of the crowd — the star of the question,
+    // the "winner", the branch that pays off — with an accent frame and label.
+    const emphasized = e.emphasis === 'key' || e.emphasis === 'accent';
+    const frameColor = emphasized ? theme.accent : theme.text;
 
     return (
       <div
@@ -130,7 +139,7 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                 fontFamily: displayFont,
                 fontWeight: 800,
                 fontSize: 30 * u,
-                color: theme.text,
+                color: frameColor,
                 textAlign: 'center',
               }}
             >
@@ -142,7 +151,7 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
             style={{
               width: boxW,
               height: boxH,
-              border: `${Math.max(2.5, 4 * u)}px solid ${theme.text}`,
+              border: `${Math.max(2.5, (emphasized ? 5 : 4) * u)}px solid ${frameColor}`,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -160,7 +169,7 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                 fontFamily: displayFont,
                 fontWeight: 800,
                 fontSize: (shaped ? 30 : 34) * u,
-                color: theme.text,
+                color: frameColor,
                 textAlign: 'center',
                 padding: `0 ${16 * u}px`,
               }}
@@ -378,6 +387,15 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
 
   const toPath = (pts: Pt[]): string =>
     pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+  // A two-barb arrowhead centred at `base`, opening back along `theta` (the
+  // direction the stroke is travelling). Shared by every layout that ends a
+  // line in an arrow — the same measured head the shaped stage draws.
+  const arrowBarb = (base: Pt, theta: number, size = 15 * u, into = (Math.PI * 30) / 180): string => {
+    const p1 = { x: base.x + size * Math.cos(theta + Math.PI + into), y: base.y + size * Math.sin(theta + Math.PI + into) };
+    const p2 = { x: base.x + size * Math.cos(theta + Math.PI - into), y: base.y + size * Math.sin(theta + Math.PI - into) };
+    return `${p1.x.toFixed(1)},${p1.y.toFixed(1)} ${base.x.toFixed(1)},${base.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  };
 
   const shapedStage = (): React.ReactNode => {
     const sw = Math.max(2.5, 4 * u);
@@ -630,10 +648,306 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
     );
   };
 
+  // ==================== COMPARE (parallel lanes) ===========================
+  // Two or more contenders each run on their own horizontal track, stacked so
+  // the viewer weighs them side by side. Each lane draws its own arrow and
+  // carries its rate/price on the connector; the question lands underneath.
+
+  const compareStage = (): React.ReactNode => {
+    const sw = Math.max(2.5, 4 * u);
+    const laneH = boxH + (portrait ? 100 : 92) * u;
+    const CW = (portrait ? 900 : 1500) * u;
+    const qZone = question ? 96 * u : 14 * u;
+    const CH = n * laneH + qZone;
+    const leftX = boxW / 2 + 16 * u; // box centre column
+    const trackX0 = boxW + 40 * u; // track starts past the box
+    const trackX1 = CW - 60 * u; // finish line
+    const boxCenterY = (i: number): number => i * laneH + 20 * u + boxH / 2;
+
+    const svgBits: React.ReactNode[] = [];
+    const overlays: React.ReactNode[] = [];
+    for (let i = 0; i < n; i++) {
+      const cy = boxCenterY(i);
+      const p = easeInOutQuint(clamp01((frame - connAt(i)) / f30(fps, 16)));
+      const tipX = trackX0 + (trackX1 - trackX0) * p;
+      svgBits.push(
+        <g key={`lane${i}`}>
+          <line x1={trackX0} y1={cy} x2={tipX - (p > 0.8 ? 10 * u : 0)} y2={cy} stroke={theme.text} strokeWidth={sw} strokeLinecap="round" />
+          {p > 0.8 ? (
+            <polyline
+              points={arrowBarb({ x: tipX, y: cy }, 0)}
+              stroke={theme.text}
+              strokeWidth={sw}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={clamp01((p - 0.8) / 0.2)}
+            />
+          ) : null}
+        </g>
+      );
+
+      overlays.push(
+        <div key={`box${i}`} style={{ position: 'absolute', left: leftX, top: i * laneH + 20 * u, transform: 'translateX(-50%)' }}>
+          {entityInner(entities[i], i, { x: 0, y: 0 })}
+        </div>
+      );
+
+      const c = connectors[i] ?? {};
+      const cLabel = (c.label ?? '').trim();
+      if (cLabel) {
+        const labelP = easeOutQuint(clamp01((frame - connAt(i) - f30(fps, 6)) / f30(fps, 9)));
+        overlays.push(
+          <div
+            key={`clab${i}`}
+            style={{
+              position: 'absolute',
+              left: (trackX0 + trackX1) / 2,
+              top: cy - 30 * u,
+              transform: 'translate(-50%, -50%)',
+              fontFamily: MONO_FONT,
+              fontSize: 25 * u,
+              color: theme.accent,
+              opacity: labelP,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <InlineMathText text={cLabel} />
+          </div>
+        );
+      }
+    }
+
+    return (
+      <div style={{ position: 'relative', width: CW, height: CH }}>
+        <svg width={CW} height={CH} viewBox={`0 0 ${CW} ${CH}`} fill="none" style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
+          {svgBits}
+        </svg>
+        {overlays}
+        {questionChip ? (
+          <div style={{ position: 'absolute', left: CW / 2, top: n * laneH + qZone / 2, transform: 'translate(-50%, -50%)' }}>
+            {questionChip}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
+  // ==================== SPLIT (one source → outcomes) ======================
+  // The first actor is the SOURCE; the rest fan out to the right as the
+  // outcomes/branches. The source shoots a straight arrow to each, and the
+  // connector on that gap carries the branch's probability / share.
+
+  const splitStage = (): React.ReactNode => {
+    const sw = Math.max(2.5, 4 * u);
+    const branchN = Math.max(1, n - 1);
+    const laneH = boxH + (portrait ? 96 : 92) * u;
+    const SWs = (portrait ? 900 : 1400) * u;
+    const SHs = Math.max(branchN * laneH, boxH + 120 * u);
+    const srcX = boxW / 2 + 20 * u;
+    const srcY = SHs / 2;
+    const brX = SWs - boxW / 2 - 20 * u;
+    const brY = (j: number): number =>
+      branchN === 1 ? SHs / 2 : boxH / 2 + 24 * u + (j * (SHs - boxH - 48 * u)) / (branchN - 1);
+
+    const svgBits: React.ReactNode[] = [];
+    const overlays: React.ReactNode[] = [];
+    for (let j = 0; j < branchN; j++) {
+      const a: Pt = { x: srcX + boxW / 2 + 8 * u, y: srcY };
+      const b: Pt = { x: brX - boxW / 2 - 8 * u, y: brY(j) };
+      const p = easeInOutQuint(clamp01((frame - connAt(j)) / f30(fps, 16)));
+      const theta = Math.atan2(b.y - a.y, b.x - a.x);
+      const end: Pt = { x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * p };
+      svgBits.push(
+        <g key={`br${j}`}>
+          <line
+            x1={a.x}
+            y1={a.y}
+            x2={end.x - (p > 0.85 ? 10 * u * Math.cos(theta) : 0)}
+            y2={end.y - (p > 0.85 ? 10 * u * Math.sin(theta) : 0)}
+            stroke={theme.text}
+            strokeWidth={sw}
+            strokeLinecap="round"
+          />
+          {p > 0.85 ? (
+            <polyline
+              points={arrowBarb(b, theta)}
+              stroke={theme.text}
+              strokeWidth={sw}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={clamp01((p - 0.85) / 0.15)}
+            />
+          ) : null}
+        </g>
+      );
+      const c = connectors[j] ?? {};
+      const cLabel = (c.label ?? '').trim();
+      if (cLabel) {
+        const labelP = easeOutQuint(clamp01((frame - connAt(j) - f30(fps, 6)) / f30(fps, 9)));
+        overlays.push(
+          <div
+            key={`brl${j}`}
+            style={{
+              position: 'absolute',
+              left: (a.x + b.x) / 2,
+              top: (a.y + b.y) / 2 - 20 * u,
+              transform: 'translate(-50%, -50%)',
+              fontFamily: MONO_FONT,
+              fontSize: 24 * u,
+              color: theme.accent,
+              opacity: labelP,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <InlineMathText text={cLabel} />
+          </div>
+        );
+      }
+    }
+
+    return (
+      <div style={{ position: 'relative', width: SWs, height: SHs }}>
+        <svg width={SWs} height={SHs} viewBox={`0 0 ${SWs} ${SHs}`} fill="none" style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
+          {svgBits}
+        </svg>
+        <div style={{ position: 'absolute', left: srcX, top: srcY, transform: 'translate(-50%, -50%)' }}>
+          {entityInner(entities[0], 0, { x: 0, y: 0 })}
+        </div>
+        {entities.slice(1).map((e, j) => (
+          <div key={`bre${j}`} style={{ position: 'absolute', left: brX, top: brY(j), transform: 'translate(-50%, -50%)' }}>
+            {entityInner(e, j + 1, { x: 0, y: 0 })}
+          </div>
+        ))}
+        {overlays}
+        {questionChip ? (
+          <div style={{ position: 'absolute', left: srcX, top: SHs - 4 * u, transform: 'translate(-50%, -50%)' }}>
+            {questionChip}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
+  // ==================== CYCLE (closed loop) ================================
+  // Stages sit around a ring and hand off clockwise, the last arc closing back
+  // to the first — the drawing IS the "and round we go again" the problem
+  // describes. The question rests in the middle of the loop.
+
+  const cycleStage = (): React.ReactNode => {
+    const sw = Math.max(2.5, 4 * u);
+    const CS = (portrait ? 900 : 820) * u; // square stage
+    const cx = CS / 2;
+    const cy = CS / 2;
+    const R = CS / 2 - Math.max(boxW, boxH) * 0.62; // ring radius: boxes sit inside
+    const angleAt = (i: number): number => (-90 + (i * 360) / n) * (Math.PI / 180);
+    const posAt = (i: number): Pt => ({ x: cx + R * Math.cos(angleAt(i)), y: cy + R * Math.sin(angleAt(i)) });
+
+    const stepRad = (2 * Math.PI) / n;
+    const inset = Math.min(0.42, (Math.max(boxW, boxH) * 0.7) / (2 * R * stepRad));
+    const arcR = R * 0.9;
+    const sampleArc = (a0: number, a1: number, steps = 24): Pt[] => {
+      const pts: Pt[] = [];
+      for (let s = 0; s <= steps; s++) {
+        const a = a0 + (a1 - a0) * (s / steps);
+        pts.push({ x: cx + arcR * Math.cos(a), y: cy + arcR * Math.sin(a) });
+      }
+      return pts;
+    };
+
+    const svgBits: React.ReactNode[] = [];
+    const overlays: React.ReactNode[] = [];
+    for (let i = 0; i < n; i++) {
+      const a0 = angleAt(i) + stepRad * inset;
+      const a1 = angleAt(i) + stepRad * (1 - inset);
+      const pts = sampleArc(a0, a1);
+      const len = polyLength(pts);
+      // Non-closing arcs ride their source box's beat; the closing arc waits a
+      // touch so the loop visibly "comes back" last.
+      const p = easeInOutQuint(
+        clamp01((frame - connAt(Math.min(i, n - 2)) - (i === n - 1 ? f30(fps, 8) : 0)) / f30(fps, 16))
+      );
+      const e1 = pts[pts.length - 1];
+      const e0 = pts[pts.length - 2] ?? pts[0];
+      const theta = Math.atan2(e1.y - e0.y, e1.x - e0.x);
+      svgBits.push(
+        <g key={`arc${i}`}>
+          <path
+            d={toPath(pts)}
+            stroke={theme.text}
+            strokeWidth={sw}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={len}
+            strokeDashoffset={(1 - p) * len}
+          />
+          {p > 0.82 ? (
+            <polyline
+              points={arrowBarb(e1, theta)}
+              stroke={theme.text}
+              strokeWidth={sw}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={clamp01((p - 0.82) / 0.18)}
+            />
+          ) : null}
+        </g>
+      );
+      // connector i labels the arc from box i to box i+1 (the closing arc,
+      // i === n-1, has no connector of its own).
+      const c = connectors[i] ?? {};
+      const cLabel = (c.label ?? '').trim();
+      if (cLabel && i < n - 1) {
+        const mid = pts[Math.floor(pts.length / 2)];
+        const outward = Math.atan2(mid.y - cy, mid.x - cx);
+        overlays.push(
+          <div
+            key={`arcl${i}`}
+            style={{
+              position: 'absolute',
+              left: mid.x + Math.cos(outward) * 26 * u,
+              top: mid.y + Math.sin(outward) * 26 * u,
+              transform: 'translate(-50%, -50%)',
+              fontFamily: MONO_FONT,
+              fontSize: 23 * u,
+              color: theme.accent,
+              opacity: easeOutQuint(clamp01((frame - connAt(i) - f30(fps, 6)) / f30(fps, 9))),
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <InlineMathText text={cLabel} />
+          </div>
+        );
+      }
+    }
+
+    return (
+      <div style={{ position: 'relative', width: CS, height: CS }}>
+        <svg width={CS} height={CS} viewBox={`0 0 ${CS} ${CS}`} fill="none" style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
+          {svgBits}
+        </svg>
+        {entities.map((e, i) => {
+          const pos = posAt(i);
+          return (
+            <div key={`ce${i}`} style={{ position: 'absolute', left: pos.x, top: pos.y, transform: 'translate(-50%, -50%)' }}>
+              {entityInner(e, i, { x: 0, y: 0 })}
+            </div>
+          );
+        })}
+        {overlays}
+        {questionChip ? (
+          <div style={{ position: 'absolute', left: cx, top: cy, transform: 'translate(-50%, -50%)' }}>{questionChip}</div>
+        ) : null}
+      </div>
+    );
+  };
+
   // ============================== Compose ===================================
 
   const chain: React.ReactNode[] = [];
-  if (!shaped) {
+  if (layout === 'line') {
     entities.forEach((e, i) => {
       chain.push(lineEntity(e, i));
       if (i < n - 1) chain.push(lineConnector(i));
@@ -682,8 +996,14 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
           </h1>
         ) : null}
 
-        {shaped ? (
+        {curveShaped ? (
           shapedStage()
+        ) : layout === 'compare' ? (
+          compareStage()
+        ) : layout === 'split' ? (
+          splitStage()
+        ) : layout === 'cycle' ? (
+          cycleStage()
         ) : (
           <div
             style={{
@@ -697,7 +1017,7 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
           </div>
         )}
 
-        {!shaped && question ? questionChip : null}
+        {layout === 'line' && question ? questionChip : null}
       </div>
     </AbsoluteFill>
   );

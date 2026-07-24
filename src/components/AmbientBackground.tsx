@@ -5,6 +5,15 @@ import { useTheme, isLightTheme, useSkin } from '../theme';
 
 const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
 
+/** `#rrggbb` → `rgba(r,g,b,alpha)`. Used to wash a light scheme's ambient
+ *  backdrop toward its own paper so the scheme's dark ink stays readable. */
+const withAlpha = (hex: string, alpha: number): string => {
+  const h = hex.replace('#', '').trim();
+  if (h.length < 6) return `rgba(0,0,0,${alpha})`;
+  const n = parseInt(h.slice(0, 6), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+};
+
 // ---------------------------------------------------------------------------
 // Mood backdrop field (§11.5). ONE moving thing, barely: a hairline/dot
 // texture on the flat colour field, keyed to the scene's mood, drifting at
@@ -169,11 +178,27 @@ export const AmbientBackground: React.FC<{ imageUrl?: string; grid?: boolean; mo
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                filter: 'blur(26px) brightness(0.4) saturate(0.9)',
+                // The backdrop is a MOOD wash, never a competing picture, and it
+                // must never swallow the copy. On a DARK scheme (light ink) it
+                // darkens so white text reads; on a LIGHT scheme (dark ink) it
+                // must instead stay PALE — a bright, low-saturation ghost — or
+                // the scheme's near-black text lands invisibly on a dark field
+                // (the bone-scheme "can't see the heading" bug). Same
+                // luminance-flip convention as hairline()/inkOn()/Vignette.
+                filter: isLightTheme(theme)
+                  ? 'blur(26px) brightness(1.12) saturate(0.75)'
+                  : 'blur(26px) brightness(0.4) saturate(0.9)',
                 transform: `scale(${lerp(1.12, 1.2, p)})`,
               }}
             />
           </AbsoluteFill>
+          {/* Legibility wash. A light scheme lays its own paper over the image
+              at high opacity so the ambient reads as a faint watermark and the
+              dark ink keeps full contrast; a dark scheme keeps the plain
+              vignette it always had. */}
+          {isLightTheme(theme) ? (
+            <AbsoluteFill style={{ background: withAlpha(theme.bg_from, 0.74) }} />
+          ) : null}
           <Vignette />
         </>
       ) : null}

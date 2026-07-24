@@ -9,7 +9,7 @@ import { useScaleUnit } from '../responsive';
 import { fitText } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
 
@@ -38,6 +38,7 @@ export const VennCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { fps, height, width } = useVideoConfig();
   const { frame, durationInFrames } = useSceneClock();
   const meta = useSceneMeta();
+  const reveal = useCardReveal();
 
   if (!slot) return null;
 
@@ -51,7 +52,7 @@ export const VennCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const caption = (slot.caption ?? '').trim();
   const overlapLabel = (slot.overlap_label ?? '').trim();
-  const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
+  const headIn = reveal.ease(clamp01(frame / reveal.headFrames));
 
   // ---- Geometry ------------------------------------------------------------
   const three = sets.length === 3;
@@ -109,7 +110,7 @@ export const VennCard: React.FC<{ scene: Scene }> = ({ scene }) => {
     sets.map((s) => s.label.trim()),
     scene.narration_words,
     fps,
-    { first: circleAt + f30(fps, 12), step: f30(fps, 11) }
+    { first: circleAt + reveal.first, step: reveal.step }
   );
 
   /*
@@ -301,8 +302,8 @@ export const VennCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               const pop = spring({
                 frame: Math.max(0, frame - overlapAt),
                 fps,
-                config: SPRINGS.pop,
-                durationInFrames: Math.round(fps * 0.45),
+                config: reveal.config,
+                durationInFrames: reveal.popFrames,
               });
               if (pop <= 0.001) return null;
               const boxW = r * (three ? 1.15 : 1.05);

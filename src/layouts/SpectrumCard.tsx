@@ -9,7 +9,7 @@ import { useScaleUnit } from '../responsive';
 import { fitText } from '../typography';
 import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
 
@@ -32,6 +32,7 @@ export const SpectrumCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { fps, height, width } = useVideoConfig();
   const { frame } = useSceneClock();
   const meta = useSceneMeta();
+  const reveal = useCardReveal();
 
   if (!slot) return null;
   const items: SpectrumItem[] = (slot.spectrum_items ?? [])
@@ -45,7 +46,7 @@ export const SpectrumCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const heading = (slot.heading ?? '').trim();
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const caption = (slot.caption ?? '').trim();
-  const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
+  const headIn = reveal.ease(clamp01(frame / reveal.headFrames));
 
   const highlight =
     typeof slot.highlight_index === 'number' && items[slot.highlight_index] !== undefined
@@ -74,7 +75,7 @@ export const SpectrumCard: React.FC<{ scene: Scene }> = ({ scene }) => {
     items.map((it) => it.label.trim()),
     scene.narration_words,
     fps,
-    { first: axisAt + f30(fps, 18), step: f30(fps, 13) }
+    { first: axisAt + reveal.first, step: reveal.step }
   );
 
   // ---- Chip placement: alternate above/below in x order, then de-overlap ---
@@ -209,8 +210,8 @@ export const SpectrumCard: React.FC<{ scene: Scene }> = ({ scene }) => {
             const pop = spring({
               frame: Math.max(0, frame - at[p.i]),
               fps,
-              config: SPRINGS.pop,
-              durationInFrames: Math.round(fps * 0.4),
+              config: reveal.config,
+              durationInFrames: reveal.popFrames,
             });
             const chipP = easeOutQuint(clamp01((frame - at[p.i] - f30(fps, 6)) / f30(fps, 10)));
             const isStar = p.i === highlight;

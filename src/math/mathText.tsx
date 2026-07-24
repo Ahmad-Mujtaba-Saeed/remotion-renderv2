@@ -167,12 +167,32 @@ export const parseMath = (input: string): MathNode[] => {
       i = next;
       continue;
     }
-    if (s.startsWith('sqrt{', i)) {
-      flush();
-      const [body, next] = readGroup(s, i + 4);
-      nodes.push({ kind: 'sqrt', body: parseMath(body) });
-      i = next;
-      continue;
+    // Radicals arrive in three spellings. `sqrt{x}` is the documented one, but
+    // models write `sqrt(x)` more often, and a unicode "√" is transliterated
+    // upstream into "sqrt " + radicand. The PHP validator now canonicalises all
+    // three, so this is the net for anything it never saw (user-edited steps,
+    // older storyboards) — without it the literal letters "sqrt" were drawn.
+    if (/^sqrt/i.test(s.slice(i, i + 4)) && !/[A-Za-z]/.test(s[i - 1] ?? '')) {
+      let j = i + 4;
+      while (s[j] === ' ') j++;
+      const open = s[j];
+      if (open === '{' || open === '(') {
+        flush();
+        const [body, next] = open === '{' ? readGroup(s, j) : readParens(s, j);
+        nodes.push({ kind: 'sqrt', body: parseMath(body) });
+        i = next;
+        continue;
+      }
+      // Bare radicand: a number or a lone variable with its exponent. A letter
+      // followed by more letters is a word ("the sqrt of both sides"), which
+      // must stay prose.
+      const m = /^(?:\d+\.?\d*|[A-Za-z](?![A-Za-z]))(?:\^(?:\{[^}]*\}|[A-Za-z0-9.]+))?/.exec(s.slice(j));
+      if (m) {
+        flush();
+        nodes.push({ kind: 'sqrt', body: parseMath(m[0]) });
+        i = j + m[0].length;
+        continue;
+      }
     }
     if (s[i] === '^' || s[i] === '_') {
       const kind = s[i] === '^' ? 'sup' : 'sub';
@@ -447,14 +467,22 @@ export const InlineMathText: React.FC<{ text: string }> = ({ text }) => {
               {render(n.body)}
             </sub>
           );
+        // Fractions and radicals stay INLINE here (a stacked fraction cannot
+        // sit inside a wrapping sentence), but their contents are rendered
+        // recursively rather than flattened to plain text — otherwise a hint
+        // reading "√(b^2 - 4ac)" printed the caret instead of the square.
         case 'frac':
           return (
             <React.Fragment key={i}>
-              {mathToPlain(n.num)}/{mathToPlain(n.den)}
+              {render(n.num)}/{render(n.den)}
             </React.Fragment>
           );
         case 'sqrt':
-          return <React.Fragment key={i}>√({mathToPlain(n.body)})</React.Fragment>;
+          return (
+            <React.Fragment key={i}>
+              √({render(n.body)})
+            </React.Fragment>
+          );
       }
     });
   return <>{render(parseMath(text))}</>;

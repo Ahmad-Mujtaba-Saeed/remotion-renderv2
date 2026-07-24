@@ -1,0 +1,139 @@
+{
+ "project_id": "formula-anatomy-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "tech",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "a1",
+   "order": 1,
+   "duration_seconds": 9,
+   "layout_template": "geometry_diagram",
+   "narration": {
+    "text": "And here they are on the line - the values we solved for, in their places."
+   },
+   "narration_words": [
+    {
+     "word": "And",
+     "start": 0.3,
+     "end": 0.59
+    },
+    {
+     "word": "here",
+     "start": 0.66,
+     "end": 0.95
+    },
+    {
+     "word": "they",
+     "start": 1.02,
+     "end": 1.31
+    },
+    {
+     "word": "are",
+     "start": 1.38,
+     "end": 1.67
+    },
+    {
+     "word": "on",
+     "start": 1.74,
+     "end": 2.03
+    },
+    {
+     "word": "the",
+     "start": 2.1,
+     "end": 2.39
+    },
+    {
+     "word": "line",
+     "start": 2.46,
+     "end": 2.75
+    },
+    {
+     "word": "-",
+     "start": 2.82,
+     "end": 3.11
+    },
+    {
+     "word": "the",
+     "start": 3.18,
+     "end": 3.47
+    },
+    {
+     "word": "values",
+     "start": 3.54,
+     "end": 3.83
+    },
+    {
+     "word": "we",
+     "start": 3.9,
+     "end": 4.19
+    },
+    {
+     "word": "solved",
+     "start": 4.26,
+     "end": 4.55
+    },
+    {
+     "word": "for,",
+     "start": 4.62,
+     "end": 4.91
+    },
+    {
+     "word": "in",
+     "start": 4.98,
+     "end": 5.27
+    },
+    {
+     "word": "their",
+     "start": 5.34,
+     "end": 5.63
+    },
+    {
+     "word": "places.",
+     "start": 5.7,
+     "end": 5.99
+    }
+   ],
+   "slots": {
+    "slot_geometry": {
+     "content_type": "geometry",
+     "shape": "number_line",
+     "heading": "See the Answer",
+     "x_min": -2,
+     "x_max": 7,
+     "marks": [
+      {
+       "x": 0.7639,
+       "label": "x = 0.76"
+      },
+      {
+       "x": 5.2361,
+       "label": "x = 5.24"
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

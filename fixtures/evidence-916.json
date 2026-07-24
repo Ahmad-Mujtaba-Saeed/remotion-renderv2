@@ -1,0 +1,378 @@
+{
+ "project_id": "evidence-card-demo-916",
+ "aspect_ratio": "9:16",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "tech",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "s1",
+   "order": 1,
+   "duration_seconds": 12,
+   "layout_template": "evidence_card",
+   "narration": {
+    "text": "According to a Harvard study, people who took a short daily walk lived on average two years longer than those who did not."
+   },
+   "narration_words": [
+    {
+     "word": "According",
+     "start": 0.3,
+     "end": 0.57
+    },
+    {
+     "word": "to",
+     "start": 0.64,
+     "end": 0.91
+    },
+    {
+     "word": "a",
+     "start": 0.98,
+     "end": 1.25
+    },
+    {
+     "word": "Harvard",
+     "start": 1.32,
+     "end": 1.59
+    },
+    {
+     "word": "study,",
+     "start": 1.66,
+     "end": 1.93
+    },
+    {
+     "word": "people",
+     "start": 2,
+     "end": 2.27
+    },
+    {
+     "word": "who",
+     "start": 2.34,
+     "end": 2.61
+    },
+    {
+     "word": "took",
+     "start": 2.68,
+     "end": 2.95
+    },
+    {
+     "word": "a",
+     "start": 3.02,
+     "end": 3.29
+    },
+    {
+     "word": "short",
+     "start": 3.36,
+     "end": 3.63
+    },
+    {
+     "word": "daily",
+     "start": 3.7,
+     "end": 3.97
+    },
+    {
+     "word": "walk",
+     "start": 4.04,
+     "end": 4.31
+    },
+    {
+     "word": "lived",
+     "start": 4.38,
+     "end": 4.65
+    },
+    {
+     "word": "on",
+     "start": 4.72,
+     "end": 4.99
+    },
+    {
+     "word": "average",
+     "start": 5.06,
+     "end": 5.33
+    },
+    {
+     "word": "two",
+     "start": 5.4,
+     "end": 5.67
+    },
+    {
+     "word": "years",
+     "start": 5.74,
+     "end": 6.01
+    },
+    {
+     "word": "longer",
+     "start": 6.08,
+     "end": 6.35
+    },
+    {
+     "word": "than",
+     "start": 6.42,
+     "end": 6.69
+    },
+    {
+     "word": "those",
+     "start": 6.76,
+     "end": 7.03
+    },
+    {
+     "word": "who",
+     "start": 7.1,
+     "end": 7.37
+    },
+    {
+     "word": "did",
+     "start": 7.44,
+     "end": 7.71
+    },
+    {
+     "word": "not.",
+     "start": 7.78,
+     "end": 8.05
+    }
+   ],
+   "slots": {
+    "slot_evidence": {
+     "content_type": "evidence",
+     "kicker": "According to",
+     "heading": "",
+     "finding": "A short daily walk added two years of life expectancy.",
+     "source": "Harvard University",
+     "year": "2021",
+     "sample": "12,000 adults",
+     "caption": "Observational — association, not proof"
+    }
+   }
+  },
+  {
+   "scene_id": "s2",
+   "order": 2,
+   "duration_seconds": 13,
+   "layout_template": "evidence_card",
+   "narration": {
+    "text": "The Lancet reviewed nearly two hundred trials and found that this single change cut the relapse rate by almost a third across every group they measured, which is a much larger effect than anyone had expected going in."
+   },
+   "narration_words": [
+    {
+     "word": "The",
+     "start": 0.3,
+     "end": 0.57
+    },
+    {
+     "word": "Lancet",
+     "start": 0.64,
+     "end": 0.91
+    },
+    {
+     "word": "reviewed",
+     "start": 0.98,
+     "end": 1.25
+    },
+    {
+     "word": "nearly",
+     "start": 1.32,
+     "end": 1.59
+    },
+    {
+     "word": "two",
+     "start": 1.66,
+     "end": 1.93
+    },
+    {
+     "word": "hundred",
+     "start": 2,
+     "end": 2.27
+    },
+    {
+     "word": "trials",
+     "start": 2.34,
+     "end": 2.61
+    },
+    {
+     "word": "and",
+     "start": 2.68,
+     "end": 2.95
+    },
+    {
+     "word": "found",
+     "start": 3.02,
+     "end": 3.29
+    },
+    {
+     "word": "that",
+     "start": 3.36,
+     "end": 3.63
+    },
+    {
+     "word": "this",
+     "start": 3.7,
+     "end": 3.97
+    },
+    {
+     "word": "single",
+     "start": 4.04,
+     "end": 4.31
+    },
+    {
+     "word": "change",
+     "start": 4.38,
+     "end": 4.65
+    },
+    {
+     "word": "cut",
+     "start": 4.72,
+     "end": 4.99
+    },
+    {
+     "word": "the",
+     "start": 5.06,
+     "end": 5.33
+    },
+    {
+     "word": "relapse",
+     "start": 5.4,
+     "end": 5.67
+    },
+    {
+     "word": "rate",
+     "start": 5.74,
+     "end": 6.01
+    },
+    {
+     "word": "by",
+     "start": 6.08,
+     "end": 6.35
+    },
+    {
+     "word": "almost",
+     "start": 6.42,
+     "end": 6.69
+    },
+    {
+     "word": "a",
+     "start": 6.76,
+     "end": 7.03
+    },
+    {
+     "word": "third",
+     "start": 7.1,
+     "end": 7.37
+    },
+    {
+     "word": "across",
+     "start": 7.44,
+     "end": 7.71
+    },
+    {
+     "word": "every",
+     "start": 7.78,
+     "end": 8.05
+    },
+    {
+     "word": "group",
+     "start": 8.12,
+     "end": 8.39
+    },
+    {
+     "word": "they",
+     "start": 8.46,
+     "end": 8.73
+    },
+    {
+     "word": "measured,",
+     "start": 8.8,
+     "end": 9.07
+    },
+    {
+     "word": "which",
+     "start": 9.14,
+     "end": 9.41
+    },
+    {
+     "word": "is",
+     "start": 9.48,
+     "end": 9.75
+    },
+    {
+     "word": "a",
+     "start": 9.82,
+     "end": 10.09
+    },
+    {
+     "word": "much",
+     "start": 10.16,
+     "end": 10.43
+    },
+    {
+     "word": "larger",
+     "start": 10.5,
+     "end": 10.77
+    },
+    {
+     "word": "effect",
+     "start": 10.84,
+     "end": 11.11
+    },
+    {
+     "word": "than",
+     "start": 11.18,
+     "end": 11.45
+    },
+    {
+     "word": "anyone",
+     "start": 11.52,
+     "end": 11.79
+    },
+    {
+     "word": "had",
+     "start": 11.86,
+     "end": 12.13
+    },
+    {
+     "word": "expected",
+     "start": 12.2,
+     "end": 12.47
+    },
+    {
+     "word": "going",
+     "start": 12.54,
+     "end": 12.81
+    },
+    {
+     "word": "in.",
+     "start": 12.88,
+     "end": 13.15
+    }
+   ],
+   "slots": {
+    "slot_evidence": {
+     "content_type": "evidence",
+     "kicker": "The evidence",
+     "finding": "Across one hundred and ninety-three trials, the intervention cut relapse rates by thirty-one percent in every measured group.",
+     "source": "The Lancet",
+     "year": "2019–2023",
+     "sample": "n = 193 trials"
+    }
+   }
+  }
+ ]
+}

@@ -9,7 +9,7 @@ import { useScaleUnit } from '../responsive';
 import { fitText } from '../typography';
 import { clamp01, easeOutCubic, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { MathText, parseMath, mathWidthUnits } from '../math/mathText';
+import { MathText, InlineMathText, parseMath, mathWidthUnits } from '../math/mathText';
 import { looksLikeProse } from '../math/prose';
 import { KineticText } from '../components/KineticText';
 import { SfxCue } from '../sfx';
@@ -105,7 +105,9 @@ export const CommonMistake: React.FC<{ scene: Scene }> = ({ scene }) => {
   const line = (text: string, color: string): React.ReactNode =>
     proseLines ? (
       <span style={{ fontFamily: displayFont, fontWeight: 800, fontSize: lineFs, lineHeight: 1.25, color }}>
-        {text}
+        {/* Worded lines carry notation too ("take sqrt{20} out of the root") —
+            typeset it inline rather than printing the source. */}
+        <InlineMathText text={text} />
       </span>
     ) : (
       <MathText
@@ -227,7 +229,10 @@ export const CommonMistake: React.FC<{ scene: Scene }> = ({ scene }) => {
               transform: `translateY(${(1 - whyIn) * 8 * u}px)`,
             }}
           >
-            {why}
+            {/* The explanation quotes the very notation the two lines differ
+                in ("sqrt{20} must stay under the radical"), so it is prose
+                with math in it — same treatment as a practice hint. */}
+            <InlineMathText text={why} />
           </div>
         ) : null}
 

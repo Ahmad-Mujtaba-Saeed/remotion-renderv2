@@ -57,6 +57,9 @@ export interface ScenarioEntity {
   sprite?: string;
   /** Resolved alpha-PNG URL — when present the sprite replaces the icon box. */
   sprite_url?: string;
+  /** Lifts one actor out of the crowd (the star of the question, the winner,
+   *  the pay-off branch) with an accent frame + label. */
+  emphasis?: 'key' | 'accent';
 }
 
 /** The relationship riding the gap between two adjacent entities. Positional:
@@ -187,7 +190,11 @@ export type CameraMove =
   | 'tilt_zoom'
   | 'zoom_in_snap'
   | 'pan_up_zoom_in'
-  | 'hover';
+  | 'hover'
+  | 'arc_pan'
+  | 'whip_settle'
+  | 'pedestal_up'
+  | 'pedestal_down';
 
 export type TransitionType =
   | 'none'
@@ -259,6 +266,45 @@ export interface SpectrumItem {
   position: number;
 }
 
+/** One item on a quadrant_map: x is 0..1 from the LEFT pole, y is 0..1 from
+ *  the BOTTOM pole (so y reads UP, the way a chart does — the renderer flips
+ *  it into screen space). */
+export interface QuadrantItem {
+  label: string;
+  x: number;
+  y: number;
+}
+
+/** Optional names for the four boxes of a quadrant_map ("Quick wins"). */
+export interface QuadrantZones {
+  top_left?: string;
+  top_right?: string;
+  bottom_left?: string;
+  bottom_right?: string;
+}
+
+/** One thing on a scale_comparison. `scale` is the LINEAR fraction of the
+ *  biggest item (0..1) and `ratio` is how many times bigger that biggest one
+ *  is — both computed by the validator, so the drawn size is never a guess. */
+export interface ScaleItem {
+  label: string;
+  value: number;
+  scale: number;
+  ratio: number;
+  note?: string;
+}
+
+/** One branch of a proportion_flow. `share` is 0..1 and is COMPUTED by the
+ *  validator from `value` over the sum — the renderer draws widths from it and
+ *  never from anything a model wrote, so the bar cannot disagree with the
+ *  figure printed beside it. */
+export interface ProportionBranch {
+  label: string;
+  value: number;
+  share: number;
+  note?: string;
+}
+
 /** One slab of a layer_stack; array order is TOP FIRST and is the content. */
 export interface LayerItem {
   label: string;
@@ -281,6 +327,17 @@ export interface DecisionBranch {
   outcome?: string;
   question?: string;
   branches?: DecisionLeaf[];
+}
+
+/**
+ * One branch of a hierarchy_card. It hangs under the root and may itself carry
+ * a second level of sub-parts (grandchildren, label only) — never deeper; the
+ * validator caps the depth so the org chart always has somewhere for every node.
+ */
+export interface HierarchyChild {
+  label: string;
+  caption?: string;
+  children?: { label: string }[];
 }
 
 /** One line of a receipt_card; value is a plain number (negative = discount). */
@@ -346,8 +403,39 @@ export interface Slot {
   // spectrum (spectrum_card): a labelled axis with items placed along it
   axis?: { left_label?: string; right_label?: string };
   spectrum_items?: SpectrumItem[];
+  // quadrant (quadrant_map): the 2x2 matrix — two axes, optional zone names
+  x_axis?: { left_label?: string; right_label?: string };
+  y_axis?: { bottom_label?: string; top_label?: string };
+  quadrant_items?: QuadrantItem[];
+  zones?: QuadrantZones;
+  // scale (scale_comparison): 2-3 things at true relative size. `to_scale` is
+  // the validator's verdict on whether the spread FITS in one frame — false
+  // means the renderer must state the ratio instead of drawing it.
+  // The card's own "square"|"circle" rides the `shape` field declared further
+  // down for geometry_diagram — same type, and a slot is only ever one content
+  // type (the `question` precedent).
+  scale_items?: ScaleItem[];
+  to_scale?: boolean;
+  // evidence (evidence_card): the "according to..." beat. `source` (declared
+  // above for chart provenance — one slot, one content type) is the named study
+  // or institution; the validator guarantees it actually names someone or the
+  // card degrades to text rather than fabricate a citation.
+  finding?: string;
+  year?: string;
+  sample?: string;
+  // proportion (proportion_flow): one whole splitting into its parts. Named
+  // `slices` because `branches` belongs to decision_tree and `parts` to
+  // formula_anatomy — one slot key, one shape. The validator does the rename.
+  source_label?: string;
+  slices?: ProportionBranch[];
   // layers (layer_stack): flat slabs stacked top first, order preserved
   layers?: LayerItem[];
+  // hierarchy (hierarchy_card): one root over 2-4 branches, each optionally
+  // with its own second level. `root` and `children` are free field names (no
+  // other content type claims them), so the model writes them and the clamp
+  // keeps them — no rename needed.
+  root?: string;
+  children?: HierarchyChild[];
   // venn (venn_card): 2-3 overlapping sets and what sits in the middle
   sets?: VennSet[];
   overlap_label?: string;
@@ -467,7 +555,9 @@ export interface Slot {
   connectors?: ScenarioConnector[];
   question?: string;
   /** scenario: the SHAPE of the sketch — 'line' (default), 'arc' (up and
-   *  back down: projectiles), 'climb' (rising), 'fall' (dropping). */
+   *  back down: projectiles), 'climb' (rising), 'fall' (dropping),
+   *  'compare' (parallel lanes: A vs B), 'split' (one source → outcomes:
+   *  probability trees / shares), 'cycle' (a closed loop of stages). */
   layout?: string;
   // function_plot: y = f(x) in calculator syntax; marks sit on the curve
   expression?: string;

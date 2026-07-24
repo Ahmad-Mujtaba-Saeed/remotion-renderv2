@@ -1,0 +1,536 @@
+{
+ "project_id": "proportion-flow-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "tech",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "p1",
+   "order": 1,
+   "duration_seconds": 13,
+   "layout_template": "proportion_flow",
+   "narration": {
+    "text": "Follow every tax dollar. Forty two cents go to health and pensions. Twenty eight cents fund schools. Nineteen cents keep the roads and the grid alive. Eleven cents service the debt, before a single new thing is built."
+   },
+   "narration_words": [
+    {
+     "word": "Follow",
+     "start": 0.3,
+     "end": 0.57
+    },
+    {
+     "word": "every",
+     "start": 0.64,
+     "end": 0.91
+    },
+    {
+     "word": "tax",
+     "start": 0.98,
+     "end": 1.25
+    },
+    {
+     "word": "dollar.",
+     "start": 1.32,
+     "end": 1.59
+    },
+    {
+     "word": "Forty",
+     "start": 1.66,
+     "end": 1.93
+    },
+    {
+     "word": "two",
+     "start": 2,
+     "end": 2.27
+    },
+    {
+     "word": "cents",
+     "start": 2.34,
+     "end": 2.61
+    },
+    {
+     "word": "go",
+     "start": 2.68,
+     "end": 2.95
+    },
+    {
+     "word": "to",
+     "start": 3.02,
+     "end": 3.29
+    },
+    {
+     "word": "health",
+     "start": 3.36,
+     "end": 3.63
+    },
+    {
+     "word": "and",
+     "start": 3.7,
+     "end": 3.97
+    },
+    {
+     "word": "pensions.",
+     "start": 4.04,
+     "end": 4.31
+    },
+    {
+     "word": "Twenty",
+     "start": 4.38,
+     "end": 4.65
+    },
+    {
+     "word": "eight",
+     "start": 4.72,
+     "end": 4.99
+    },
+    {
+     "word": "cents",
+     "start": 5.06,
+     "end": 5.33
+    },
+    {
+     "word": "fund",
+     "start": 5.4,
+     "end": 5.67
+    },
+    {
+     "word": "schools.",
+     "start": 5.74,
+     "end": 6.01
+    },
+    {
+     "word": "Nineteen",
+     "start": 6.08,
+     "end": 6.35
+    },
+    {
+     "word": "cents",
+     "start": 6.42,
+     "end": 6.69
+    },
+    {
+     "word": "keep",
+     "start": 6.76,
+     "end": 7.03
+    },
+    {
+     "word": "the",
+     "start": 7.1,
+     "end": 7.37
+    },
+    {
+     "word": "roads",
+     "start": 7.44,
+     "end": 7.71
+    },
+    {
+     "word": "and",
+     "start": 7.78,
+     "end": 8.05
+    },
+    {
+     "word": "the",
+     "start": 8.12,
+     "end": 8.39
+    },
+    {
+     "word": "grid",
+     "start": 8.46,
+     "end": 8.73
+    },
+    {
+     "word": "alive.",
+     "start": 8.8,
+     "end": 9.07
+    },
+    {
+     "word": "Eleven",
+     "start": 9.14,
+     "end": 9.41
+    },
+    {
+     "word": "cents",
+     "start": 9.48,
+     "end": 9.75
+    },
+    {
+     "word": "service",
+     "start": 9.82,
+     "end": 10.09
+    },
+    {
+     "word": "the",
+     "start": 10.16,
+     "end": 10.43
+    },
+    {
+     "word": "debt,",
+     "start": 10.5,
+     "end": 10.77
+    },
+    {
+     "word": "before",
+     "start": 10.84,
+     "end": 11.11
+    },
+    {
+     "word": "a",
+     "start": 11.18,
+     "end": 11.45
+    },
+    {
+     "word": "single",
+     "start": 11.52,
+     "end": 11.79
+    },
+    {
+     "word": "new",
+     "start": 11.86,
+     "end": 12.13
+    },
+    {
+     "word": "thing",
+     "start": 12.2,
+     "end": 12.47
+    },
+    {
+     "word": "is",
+     "start": 12.54,
+     "end": 12.81
+    },
+    {
+     "word": "built.",
+     "start": 12.88,
+     "end": 13.15
+    }
+   ],
+   "slots": {
+    "slot_proportion": {
+     "content_type": "proportion",
+     "heading": "Where every tax dollar goes",
+     "source_label": "Every tax dollar",
+     "unit": "¢",
+     "total": 100,
+     "slices": [
+      {
+       "label": "Health and pensions",
+       "value": 42,
+       "share": 0.42,
+       "note": "The biggest single line"
+      },
+      {
+       "label": "Schools",
+       "value": 28,
+       "share": 0.28
+      },
+      {
+       "label": "Roads and grid",
+       "value": 19,
+       "share": 0.19
+      },
+      {
+       "label": "Debt interest",
+       "value": 11,
+       "share": 0.11,
+       "note": "Paid before anything is built"
+      }
+     ],
+     "highlight_index": 3,
+     "caption": "Shares computed from the figures"
+    }
+   }
+  },
+  {
+   "scene_id": "p2",
+   "order": 2,
+   "duration_seconds": 13,
+   "layout_template": "proportion_flow",
+   "narration": {
+    "text": "A working day, all twenty four hours of it. Sleep takes seven and a half. Work takes eight. Commuting eats another hour. Chores and meals take three. What is left, the four and a half hours that are actually yours, is the part nobody plans."
+   },
+   "narration_words": [
+    {
+     "word": "A",
+     "start": 0.3,
+     "end": 0.57
+    },
+    {
+     "word": "working",
+     "start": 0.64,
+     "end": 0.91
+    },
+    {
+     "word": "day,",
+     "start": 0.98,
+     "end": 1.25
+    },
+    {
+     "word": "all",
+     "start": 1.32,
+     "end": 1.59
+    },
+    {
+     "word": "twenty",
+     "start": 1.66,
+     "end": 1.93
+    },
+    {
+     "word": "four",
+     "start": 2,
+     "end": 2.27
+    },
+    {
+     "word": "hours",
+     "start": 2.34,
+     "end": 2.61
+    },
+    {
+     "word": "of",
+     "start": 2.68,
+     "end": 2.95
+    },
+    {
+     "word": "it.",
+     "start": 3.02,
+     "end": 3.29
+    },
+    {
+     "word": "Sleep",
+     "start": 3.36,
+     "end": 3.63
+    },
+    {
+     "word": "takes",
+     "start": 3.7,
+     "end": 3.97
+    },
+    {
+     "word": "seven",
+     "start": 4.04,
+     "end": 4.31
+    },
+    {
+     "word": "and",
+     "start": 4.38,
+     "end": 4.65
+    },
+    {
+     "word": "a",
+     "start": 4.72,
+     "end": 4.99
+    },
+    {
+     "word": "half.",
+     "start": 5.06,
+     "end": 5.33
+    },
+    {
+     "word": "Work",
+     "start": 5.4,
+     "end": 5.67
+    },
+    {
+     "word": "takes",
+     "start": 5.74,
+     "end": 6.01
+    },
+    {
+     "word": "eight.",
+     "start": 6.08,
+     "end": 6.35
+    },
+    {
+     "word": "Commuting",
+     "start": 6.42,
+     "end": 6.69
+    },
+    {
+     "word": "eats",
+     "start": 6.76,
+     "end": 7.03
+    },
+    {
+     "word": "another",
+     "start": 7.1,
+     "end": 7.37
+    },
+    {
+     "word": "hour.",
+     "start": 7.44,
+     "end": 7.71
+    },
+    {
+     "word": "Chores",
+     "start": 7.78,
+     "end": 8.05
+    },
+    {
+     "word": "and",
+     "start": 8.12,
+     "end": 8.39
+    },
+    {
+     "word": "meals",
+     "start": 8.46,
+     "end": 8.73
+    },
+    {
+     "word": "take",
+     "start": 8.8,
+     "end": 9.07
+    },
+    {
+     "word": "three.",
+     "start": 9.14,
+     "end": 9.41
+    },
+    {
+     "word": "What",
+     "start": 9.48,
+     "end": 9.75
+    },
+    {
+     "word": "is",
+     "start": 9.82,
+     "end": 10.09
+    },
+    {
+     "word": "left,",
+     "start": 10.16,
+     "end": 10.43
+    },
+    {
+     "word": "the",
+     "start": 10.5,
+     "end": 10.77
+    },
+    {
+     "word": "four",
+     "start": 10.84,
+     "end": 11.11
+    },
+    {
+     "word": "and",
+     "start": 11.18,
+     "end": 11.45
+    },
+    {
+     "word": "a",
+     "start": 11.52,
+     "end": 11.79
+    },
+    {
+     "word": "half",
+     "start": 11.86,
+     "end": 12.13
+    },
+    {
+     "word": "hours",
+     "start": 12.2,
+     "end": 12.47
+    },
+    {
+     "word": "that",
+     "start": 12.54,
+     "end": 12.81
+    },
+    {
+     "word": "are",
+     "start": 12.88,
+     "end": 13.15
+    },
+    {
+     "word": "actually",
+     "start": 13.22,
+     "end": 13.49
+    },
+    {
+     "word": "yours,",
+     "start": 13.56,
+     "end": 13.83
+    },
+    {
+     "word": "is",
+     "start": 13.9,
+     "end": 14.17
+    },
+    {
+     "word": "the",
+     "start": 14.24,
+     "end": 14.51
+    },
+    {
+     "word": "part",
+     "start": 14.58,
+     "end": 14.85
+    },
+    {
+     "word": "nobody",
+     "start": 14.92,
+     "end": 15.19
+    },
+    {
+     "word": "plans.",
+     "start": 15.26,
+     "end": 15.53
+    }
+   ],
+   "slots": {
+    "slot_proportion": {
+     "content_type": "proportion",
+     "source_label": "A 24-hour day",
+     "slices": [
+      {
+       "label": "Sleep",
+       "value": 7.5,
+       "share": 0.3125
+      },
+      {
+       "label": "Work",
+       "value": 8,
+       "share": 0.3333
+      },
+      {
+       "label": "Chores and meals",
+       "value": 3,
+       "share": 0.125
+      },
+      {
+       "label": "Commuting",
+       "value": 1,
+       "share": 0.0417
+      },
+      {
+       "label": "Actually yours",
+       "value": 4.5,
+       "share": 0.1875,
+       "note": "The part nobody plans"
+      }
+     ],
+     "highlight_index": 4
+    }
+   }
+  }
+ ]
+}

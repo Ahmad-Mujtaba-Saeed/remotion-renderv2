@@ -179,6 +179,119 @@ export const CASES: SweepCase[] = [
     at: 0.9,
   },
   {
+    template: 'quadrant_map',
+    slots: {
+      slot_quadrant: {
+        content_type: 'quadrant',
+        heading: long(56),
+        x_axis: { left_label: long(18), right_label: long(18) },
+        y_axis: { bottom_label: long(18), top_label: long(18) },
+        // Worst case for this card is a CLUSTER: four items in one corner with
+        // maximum-length labels, which is exactly the shape a real finding
+        // takes ("everything safe is also low-return").
+        quadrant_items: [
+          { label: long(20), x: 0.06, y: 0.08 },
+          { label: long(20), x: 0.12, y: 0.14 },
+          { label: long(18), x: 0.18, y: 0.2 },
+          { label: long(20), x: 0.24, y: 0.26 },
+          { label: long(16), x: 0.94, y: 0.93 },
+          { label: long(20), x: 0.97, y: 0.05 },
+        ],
+        zones: {
+          top_left: long(16),
+          top_right: long(16),
+          bottom_left: long(16),
+          bottom_right: long(16),
+        },
+        highlight_index: 4,
+        caption: long(64),
+      },
+    },
+  },
+  {
+    template: 'scale_comparison',
+    slots: {
+      slot_scale: {
+        content_type: 'scale',
+        heading: long(56),
+        unit: 'metres',
+        shape: 'square',
+        // Worst case is RATIO MODE with three maximum-length labels and notes:
+        // the biggest drawn full size, two markers with chips beside it.
+        scale_items: [
+          { label: long(24), value: 12000, scale: 1, ratio: 1, note: long(40) },
+          { label: long(24), value: 30, scale: 0.0025, ratio: 400, note: long(40) },
+          { label: long(22), value: 1.8, scale: 0.00015, ratio: 6667, note: long(40) },
+        ],
+        to_scale: false,
+        highlight_index: 2,
+        caption: long(64),
+      },
+    },
+  },
+  {
+    template: 'evidence_card',
+    slots: {
+      slot_evidence: {
+        content_type: 'evidence',
+        // Worst case is every field at its cap: a 160-char finding wrapping to
+        // the line budget against the accent rule, a 48-char source, and both
+        // metadata chips at full length wrapping the attribution row.
+        heading: long(60),
+        finding: long(160),
+        source: long(48),
+        year: '2019–2023',
+        sample: long(40),
+        caption: long(80),
+      },
+    },
+  },
+  {
+    template: 'hierarchy_card',
+    slots: {
+      // Worst case is the DENSEST org chart the clamp allows: four branches,
+      // each at its label cap with a full caption AND its own four grandchildren
+      // at their cap — the portrait sweep is where a too-tall tree overflows.
+      slot_hierarchy: {
+        content_type: 'hierarchy',
+        heading: long(52),
+        root: long(28),
+        highlight_index: 2,
+        caption: long(60),
+        children: [
+          { label: long(22), caption: long(40), children: [{ label: long(18) }, { label: long(18) }, { label: long(18) }, { label: long(18) }] },
+          { label: long(22), caption: long(40), children: [{ label: long(18) }, { label: long(18) }, { label: long(18) }, { label: long(18) }] },
+          { label: long(20), caption: long(40), children: [{ label: long(18) }, { label: long(18) }, { label: long(18) }, { label: long(18) }] },
+          { label: long(22), caption: long(40), children: [{ label: long(18) }, { label: long(18) }, { label: long(18) }, { label: long(18) }] },
+        ],
+      },
+    },
+  },
+  {
+    template: 'proportion_flow',
+    slots: {
+      slot_proportion: {
+        content_type: 'proportion',
+        heading: long(56),
+        source_label: long(24),
+        unit: '$',
+        total: 1000,
+        // Worst case is a LOPSIDED split at maximum label length: one part
+        // takes almost everything and the rest are slivers too thin to print a
+        // percentage inside — exactly the shape a real breakdown takes.
+        slices: [
+          { label: long(24), value: 880, share: 0.88, note: long(40) },
+          { label: long(24), value: 70, share: 0.07, note: long(40) },
+          { label: long(22), value: 30, share: 0.03, note: long(40) },
+          { label: long(24), value: 12, share: 0.012, note: long(40) },
+          { label: long(20), value: 8, share: 0.008, note: long(40) },
+        ],
+        highlight_index: 3,
+        caption: long(64),
+      },
+    },
+  },
+  {
     template: 'spectrum_card',
     slots: {
       slot_spectrum: {
@@ -323,7 +436,7 @@ export const CASES: SweepCase[] = [
         content_type: 'formula',
         heading: long(52),
         formula: 'x = frac{-b pm sqrt{b^2 - 4*a*c}}{2*a}',
-        parts: [
+        slices: [
           { match: 'b^2 - 4*a*c', label: long(48) },
           { match: '2*a', label: long(44) },
           { match: 'pm', label: long(40) },

@@ -1,0 +1,90 @@
+{
+ "project_id": "hierarchy-card-916-demo",
+ "aspect_ratio": "9:16",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "tech",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "blossom",
+  "label": "Blossom",
+  "bg_from": "#FBF4F2",
+  "bg_to": "#FBF4F2",
+  "accent": "#D2517A",
+  "accent2": "#B33E64",
+  "text": "#2A1B21",
+  "muted": "#8A7078",
+  "panel": "#FFFFFF"
+ },
+ "scenes": [
+  {
+   "scene_id": "s1",
+   "order": 1,
+   "duration_seconds": 15,
+   "layout_template": "hierarchy_card",
+   "narration": {
+    "text": "A multinational is organised into four divisions, and each of those divisions is itself split into four regional teams that report upward through the same structure."
+   },
+   "slots": {
+    "slot_hierarchy": {
+     "content_type": "hierarchy",
+     "kicker": "Worst case",
+     "heading": "A large organisation with four deep divisions",
+     "root": "Multinational Holdings Group",
+     "highlight_index": 2,
+     "caption": "Four divisions, four teams each",
+     "children": [
+      {
+       "label": "Operations Division",
+       "caption": "Runs the day to day of the business",
+       "children": [
+        { "label": "North Region Team" },
+        { "label": "South Region Team" },
+        { "label": "East Region Team" },
+        { "label": "West Region Team" }
+       ]
+      },
+      {
+       "label": "Commercial Division",
+       "caption": "Owns revenue, pricing and partnerships",
+       "children": [
+        { "label": "Enterprise Sales" },
+        { "label": "Mid Market Sales" },
+        { "label": "Channel Partners" },
+        { "label": "Renewals Desk" }
+       ]
+      },
+      {
+       "label": "Technology Division",
+       "caption": "Builds and runs every product platform",
+       "children": [
+        { "label": "Platform Group" },
+        { "label": "Product Group" },
+        { "label": "Security Group" },
+        { "label": "Data Group" }
+       ]
+      },
+      {
+       "label": "Corporate Division",
+       "caption": "Finance, legal, people and facilities",
+       "children": [
+        { "label": "Finance Office" },
+        { "label": "Legal Office" },
+        { "label": "People Office" },
+        { "label": "Facilities Office" }
+       ]
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

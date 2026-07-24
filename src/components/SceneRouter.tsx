@@ -30,7 +30,12 @@ import { MythFact } from '../layouts/MythFact';
 import { FormulaAnatomy } from '../layouts/FormulaAnatomy';
 import { CycleDiagram } from '../layouts/CycleDiagram';
 import { SpectrumCard } from '../layouts/SpectrumCard';
+import { QuadrantMap } from '../layouts/QuadrantMap';
+import { ProportionFlow } from '../layouts/ProportionFlow';
+import { ScaleComparison } from '../layouts/ScaleComparison';
+import { EvidenceCard } from '../layouts/EvidenceCard';
 import { LayerStack } from '../layouts/LayerStack';
+import { HierarchyCard } from '../layouts/HierarchyCard';
 import { VennCard } from '../layouts/VennCard';
 import { TermCard } from '../layouts/TermCard';
 import { ReceiptCard } from '../layouts/ReceiptCard';
@@ -156,6 +161,16 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <CycleDiagram scene={scene} />;
     case 'spectrum_card':
       return <SpectrumCard scene={scene} />;
+    case 'quadrant_map':
+      return <QuadrantMap scene={scene} />;
+    case 'proportion_flow':
+      return <ProportionFlow scene={scene} />;
+    case 'scale_comparison':
+      return <ScaleComparison scene={scene} />;
+    case 'evidence_card':
+      return <EvidenceCard scene={scene} />;
+    case 'hierarchy_card':
+      return <HierarchyCard scene={scene} />;
     case 'layer_stack':
       return <LayerStack scene={scene} />;
     case 'venn_card':

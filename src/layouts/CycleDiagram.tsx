@@ -9,7 +9,7 @@ import { useScaleUnit } from '../responsive';
 import { fitText } from '../typography';
 import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
 
@@ -30,6 +30,7 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { fps, width, height } = useVideoConfig();
   const { frame } = useSceneClock();
   const meta = useSceneMeta();
+  const reveal = useCardReveal();
 
   if (!slot) return null;
   const items = (slot.items ?? [])
@@ -41,7 +42,7 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
   const heading = (slot.heading ?? '').trim();
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const caption = (slot.caption ?? '').trim();
-  const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
+  const headIn = reveal.ease(clamp01(frame / reveal.headFrames));
 
   const n = items.length;
   const discR = 52 * u;
@@ -59,7 +60,7 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
     items.map((it) => it.label ?? ''),
     scene.narration_words,
     fps,
-    { first: f30(fps, 16), step: f30(fps, 14) }
+    { first: reveal.first, step: reveal.step }
   );
   const step = f30(fps, 14);
 
@@ -206,8 +207,8 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
             const pop = spring({
               frame: Math.max(0, frame - at[i]),
               fps,
-              config: SPRINGS.pop,
-              durationInFrames: Math.round(fps * 0.4),
+              config: reveal.config,
+              durationInFrames: reveal.popFrames,
             });
             const labelP = easeOutQuint(clamp01((frame - at[i] - f30(fps, 4)) / f30(fps, 10)));
             return (

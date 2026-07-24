@@ -29,6 +29,7 @@ export const CameraMove: React.FC<{
 };
 
 const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
+const clampP = (p: number) => Math.max(0, Math.min(1, p));
 
 function transformFor(move: CameraMoveType, p: number): string {
   switch (move) {
@@ -62,6 +63,31 @@ function transformFor(move: CameraMoveType, p: number): string {
     case 'pan_up_zoom_in':
       // Climb + push — made for tall subjects and 9:16 portrait frames.
       return `scale(${lerp(1.1, 1.22, p)}) translateY(${lerp(4, -4, p)}%)`;
+    case 'arc_pan': {
+      // A filmic arced move: the frame pans left→right while bowing gently
+      // through a shallow parabola, so the drift traces a curve instead of a
+      // straight line. Zoom holds — the arc is the whole gesture.
+      const tx = lerp(-4.5, 4.5, p);
+      const ty = -2.4 * Math.sin(Math.PI * p); // rise into the middle, settle level
+      return `scale(1.13) translate(${tx}%, ${ty}%)`;
+    }
+    case 'whip_settle': {
+      // A fast lateral throw that overshoots its mark and catches: 80% of the
+      // travel lands in the first third on a hard easeOut, then a sin² settle
+      // eases the last few percent back — the camera "arrives with weight".
+      const lead = 1 - Math.pow(1 - Math.min(1, p / 0.34), 3);
+      const overshoot = 1.6 * Math.sin(Math.PI * clampP((p - 0.34) / 0.28)) ** 2;
+      const tx = lerp(-6, 5, lead) + overshoot; // past 5%, then eased back
+      return `scale(1.12) translateX(${tx}%)`;
+    }
+    case 'pedestal_up':
+      // A true vertical dolly: the frame RISES while pushing in a touch, the
+      // way a camera on a column reveals a tall subject top-down. Distinct from
+      // pan_up (no push) — the coupled zoom is what sells the climb.
+      return `scale(${lerp(1.08, 1.2, p)}) translateY(${lerp(6, -3, p)}%)`;
+    case 'pedestal_down':
+      // The descent: sink while easing OUT, giving a subject room as we drop.
+      return `scale(${lerp(1.2, 1.08, p)}) translateY(${lerp(-6, 3, p)}%)`;
     case 'hover': {
       // Two full breaths per scene, ±1.5% around a fixed over-scale: motion
       // that never leaves the frame, for diagrams/maps that must stay legible.

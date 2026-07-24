@@ -8,8 +8,9 @@ import { useSurfaceStyle } from '../components/Surface';
 import { useScaleUnit } from '../responsive';
 import { fitText } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
-import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { f30, idleScale } from '../motion/choreo';
+import { useCardReveal } from '../motion/cardReveal';
+import { pointAlong } from '../motion/draw';
 
 /** A node placed on the grid: a question to ask or an outcome to land on. */
 interface Node {
@@ -57,6 +58,7 @@ export const DecisionTree: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { fps, height, width } = useVideoConfig();
   const { frame } = useSceneClock();
   const meta = useSceneMeta();
+  const reveal = useCardReveal();
 
   if (!slot) return null;
 
@@ -68,7 +70,7 @@ export const DecisionTree: React.FC<{ scene: Scene }> = ({ scene }) => {
   const heading = (slot.heading ?? '').trim();
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const caption = (slot.caption ?? '').trim();
-  const headIn = easeOutQuint(clamp01(frame / f30(fps, 10)));
+  const headIn = reveal.ease(clamp01(frame / reveal.headFrames));
 
   // ---- Columns: one per ending ---------------------------------------------
   const spans = branches.map((b) => (b.branches && b.branches.length === 2 ? 2 : 1));
@@ -213,6 +215,20 @@ export const DecisionTree: React.FC<{ scene: Scene }> = ({ scene }) => {
                 />
               );
             })}
+            {/* The nib: an accent dot riding each connector's draw frontier,
+                gone the instant the line lands — the pen tip the eye follows. */}
+            {edges.map((e, i) => {
+              const p = easeOutQuint(clamp01((frame - e.at + f30(fps, 8)) / f30(fps, 12)));
+              if (p <= 0.02 || p >= 0.98) return null;
+              const y1 = e.from.y + nodeFs * 1.5;
+              const y2 = e.to.y - nodeFs * 1.4;
+              const midYY = y1 + (y2 - y1) * 0.5;
+              const [nx, ny] = pointAlong(
+                [[e.from.x, y1], [e.from.x, midYY], [e.to.x, midYY], [e.to.x, y2]],
+                p
+              );
+              return <circle key={`nib-${i}`} cx={nx} cy={ny} r={Math.max(3, 3.2 * u)} fill={theme.accent} />;
+            })}
           </svg>
 
           {/* Answer chips sit on the horizontal run of their connector. */}
@@ -256,12 +272,17 @@ export const DecisionTree: React.FC<{ scene: Scene }> = ({ scene }) => {
             const pop = spring({
               frame: Math.max(0, frame - n.at),
               fps,
-              config: SPRINGS.pop,
-              durationInFrames: Math.round(fps * 0.4),
+              config: reveal.config,
+              durationInFrames: reveal.popFrames,
             });
             if (pop <= 0.001 || n.text === '') return null;
             const isOutcome = n.kind === 'outcome';
             const fs = i === 0 ? rootFs : nodeFs;
+            // The root question is the anchor — it takes the ±0.3% idle breath
+            // so the tree is never a fully frozen frame (Law 6), and the landing
+            // kicker rides the style's overshoot.
+            const kick = Math.min(1.03 + reveal.overshoot, 0.97 + pop * (0.06 + reveal.overshoot * 1.5));
+            const scaleV = kick * (i === 0 ? idleScale(frame, fps) : 1);
             return (
               <div
                 key={i}
@@ -285,7 +306,7 @@ export const DecisionTree: React.FC<{ scene: Scene }> = ({ scene }) => {
                   fontWeight: isOutcome ? 800 : 700,
                   lineHeight: 1.22,
                   opacity: Math.min(1, pop),
-                  transform: `scale(${Math.min(1.03, 0.97 + pop * 0.06)})`,
+                  transform: `scale(${scaleV})`,
                 }}
               >
                 {n.text}

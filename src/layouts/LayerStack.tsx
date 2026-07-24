@@ -6,9 +6,9 @@ import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, isLightTheme, hairline, inkOn, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { fitText, fitGroup } from '../typography';
-import { clamp01, easeOutQuint } from '../motion/easing';
-import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { clamp01 } from '../motion/easing';
+import { f30, idleScale } from '../motion/choreo';
+import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
 
@@ -31,6 +31,7 @@ export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { fps, height, width } = useVideoConfig();
   const { frame } = useSceneClock();
   const meta = useSceneMeta();
+  const reveal = useCardReveal();
 
   if (!slot) return null;
   const layers: LayerItem[] = (slot.layers ?? [])
@@ -42,7 +43,7 @@ export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
   const heading = (slot.heading ?? '').trim();
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const caption = (slot.caption ?? '').trim();
-  const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
+  const headIn = reveal.ease(clamp01(frame / reveal.headFrames));
 
   const highlight =
     typeof slot.highlight_index === 'number' && layers[slot.highlight_index] !== undefined
@@ -94,7 +95,7 @@ export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
     layers.map((l) => l.label.trim()),
     scene.narration_words,
     fps,
-    { first: f30(fps, 14), step: f30(fps, 12) }
+    { first: reveal.first, step: reveal.step }
   );
 
   // Depth shading: each slab is the panel colour pulled a step further toward
@@ -146,11 +147,14 @@ export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
             const settle = spring({
               frame: Math.max(0, frame - at[i]),
               fps,
-              config: SPRINGS.pop,
-              durationInFrames: Math.round(fps * 0.5),
+              config: reveal.config,
+              durationInFrames: reveal.popFrames,
             });
             const visible = clamp01(settle);
             const isStar = i === highlight;
+            // The highlighted slab (or the top slab when none) takes the ±0.3%
+            // idle breath, so a settled stack is never a dead frame (Law 6).
+            const isHero = highlight !== null ? isStar : i === 0;
             const cap = (layer.caption ?? '').trim();
             return (
               <div
@@ -171,7 +175,9 @@ export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
                   // Slabs drop INTO the stack from just above their seat — the
                   // motion of laying a layer down, kept small enough to never
                   // cross the slab above.
-                  transform: `translateY(${(1 - Math.min(1, settle)) * -slabH * 0.35}px)`,
+                  transform: `translateY(${(1 - Math.min(1, settle)) * -slabH * 0.35}px)${
+                    isHero ? ` scale(${idleScale(frame, fps)})` : ''
+                  }`,
                 }}
               >
                 {/* Depth: deeper slabs sit a step darker. Painted as an inset

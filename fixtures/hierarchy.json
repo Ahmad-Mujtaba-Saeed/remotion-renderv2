@@ -1,0 +1,138 @@
+{
+ "project_id": "hierarchy-card-demo",
+ "aspect_ratio": "16:9",
+ "composition_mode": "slides",
+ "captions": {
+  "enabled": false
+ },
+ "font_pack": "tech",
+ "motion_style": "crisp",
+ "skin": "flat",
+ "sfx": {
+  "enabled": false,
+  "volume": 1,
+  "pack": "procedural"
+ },
+ "theme": {
+  "name": "midnight",
+  "label": "Midnight",
+  "bg_from": "#101623",
+  "bg_to": "#101623",
+  "accent": "#5EC9E8",
+  "accent2": "#3FA6C4",
+  "text": "#EDF3F8",
+  "muted": "#7C8B9C",
+  "panel": "#1A2333"
+ },
+ "scenes": [
+  {
+   "scene_id": "s1",
+   "order": 1,
+   "duration_seconds": 14,
+   "layout_template": "hierarchy_card",
+   "narration": {
+    "text": "The US government splits into three branches. The legislative branch — the Senate and the House — writes the laws. The executive branch, led by the president and the cabinet, enforces them. And the judicial branch interprets them."
+   },
+   "narration_words": [
+    { "word": "The", "start": 0.3, "end": 0.5 },
+    { "word": "US", "start": 0.5, "end": 0.8 },
+    { "word": "government", "start": 0.8, "end": 1.3 },
+    { "word": "splits", "start": 1.3, "end": 1.7 },
+    { "word": "into", "start": 1.7, "end": 1.9 },
+    { "word": "three", "start": 1.9, "end": 2.2 },
+    { "word": "branches.", "start": 2.2, "end": 2.7 },
+    { "word": "The", "start": 3.4, "end": 3.6 },
+    { "word": "legislative", "start": 3.6, "end": 4.3 },
+    { "word": "branch", "start": 4.3, "end": 4.7 },
+    { "word": "writes", "start": 4.7, "end": 5.1 },
+    { "word": "the", "start": 5.1, "end": 5.3 },
+    { "word": "laws.", "start": 5.3, "end": 5.8 },
+    { "word": "The", "start": 6.6, "end": 6.8 },
+    { "word": "executive", "start": 6.8, "end": 7.5 },
+    { "word": "branch", "start": 7.5, "end": 7.9 },
+    { "word": "enforces", "start": 7.9, "end": 8.5 },
+    { "word": "them.", "start": 8.5, "end": 9.0 },
+    { "word": "And", "start": 9.8, "end": 10.1 },
+    { "word": "the", "start": 10.1, "end": 10.3 },
+    { "word": "judicial", "start": 10.3, "end": 11.0 },
+    { "word": "branch", "start": 11.0, "end": 11.4 },
+    { "word": "interprets", "start": 11.4, "end": 12.0 },
+    { "word": "them.", "start": 12.0, "end": 12.5 }
+   ],
+   "slots": {
+    "slot_hierarchy": {
+     "content_type": "hierarchy",
+     "kicker": "The structure",
+     "heading": "Three branches of government",
+     "root": "The US Government",
+     "highlight_index": 1,
+     "caption": "Separated powers, checks and balances",
+     "children": [
+      {
+       "label": "Legislative",
+       "caption": "Writes the laws",
+       "children": [
+        { "label": "The Senate" },
+        { "label": "The House" }
+       ]
+      },
+      {
+       "label": "Executive",
+       "caption": "Enforces the laws",
+       "children": [
+        { "label": "President" },
+        { "label": "The Cabinet" }
+       ]
+      },
+      {
+       "label": "Judicial",
+       "caption": "Interprets the laws",
+       "children": [
+        { "label": "Supreme Court" },
+        { "label": "Lower Courts" }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "scene_id": "s2",
+   "order": 2,
+   "duration_seconds": 11,
+   "layout_template": "hierarchy_card",
+   "narration": {
+    "text": "Every animal cell has three main parts: the nucleus that holds its DNA, the cytoplasm that fills it, and the membrane that wraps around the outside."
+   },
+   "narration_words": [
+    { "word": "Every", "start": 0.3, "end": 0.6 },
+    { "word": "animal", "start": 0.6, "end": 1.0 },
+    { "word": "cell", "start": 1.0, "end": 1.4 },
+    { "word": "has", "start": 1.4, "end": 1.7 },
+    { "word": "three", "start": 1.7, "end": 2.0 },
+    { "word": "main", "start": 2.0, "end": 2.3 },
+    { "word": "parts:", "start": 2.3, "end": 2.8 },
+    { "word": "the", "start": 3.4, "end": 3.6 },
+    { "word": "nucleus", "start": 3.6, "end": 4.2 },
+    { "word": "the", "start": 5.2, "end": 5.4 },
+    { "word": "cytoplasm", "start": 5.4, "end": 6.1 },
+    { "word": "and", "start": 7.2, "end": 7.5 },
+    { "word": "the", "start": 7.5, "end": 7.7 },
+    { "word": "membrane", "start": 7.7, "end": 8.4 }
+   ],
+   "slots": {
+    "slot_hierarchy": {
+     "content_type": "hierarchy",
+     "kicker": "Anatomy",
+     "heading": "The parts of a cell",
+     "root": "An Animal Cell",
+     "children": [
+      { "label": "Nucleus", "caption": "Holds the DNA" },
+      { "label": "Cytoplasm", "caption": "Fills the cell" },
+      { "label": "Membrane", "caption": "Wraps the outside" }
+     ]
+    }
+   }
+  }
+ ]
+}
