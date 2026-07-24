@@ -9,7 +9,7 @@ import { useScaleUnit } from '../responsive';
 import { fitText, fitGroup } from '../typography';
 import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
 
 /**
@@ -24,6 +24,7 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
+  const reveal = useCardReveal();
   const { fps, width, height } = useVideoConfig();
   const { frame } = useSceneClock();
   const meta = useSceneMeta();
@@ -45,7 +46,7 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
     weight: 700,
   });
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
-  const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
+  const headIn = reveal.ease(clamp01(frame / reveal.headFrames));
 
   const stepGap = f30(fps, 14);
   const firstAt = f30(fps, 14);
@@ -56,8 +57,8 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
     const pop = spring({
       frame: Math.max(0, frame - nodeAt(i)),
       fps,
-      config: SPRINGS.pop,
-      durationInFrames: Math.round(fps * 0.4),
+      config: reveal.config,
+      durationInFrames: reveal.popFrames,
     });
     const labelP = easeOutQuint(clamp01((frame - nodeAt(i) - f30(fps, 4)) / f30(fps, 10)));
     // The connecting segment INTO this node draws just before it pops.

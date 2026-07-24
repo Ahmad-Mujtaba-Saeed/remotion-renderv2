@@ -327,6 +327,17 @@ export const FormulaAnatomy: React.FC<{ scene: Scene }> = ({ scene }) => {
                     strokeDasharray={len}
                     strokeDashoffset={(1 - lineP) * len}
                   />
+                  {/* The nib: a pen tip riding the leader's draw frontier as it
+                      runs from the underline into the chip, gone once it lands —
+                      the same write-cursor the flowchart/cycle cards use. */}
+                  {lineP > 0.06 && lineP < 0.94 ? (
+                    <circle
+                      cx={cx + (x2 - cx) * lineP}
+                      cy={underY + (y2 - underY) * lineP}
+                      r={Math.max(3, chipFs * 0.12)}
+                      fill={theme.accent}
+                    />
+                  ) : null}
                 </g>
               );
             })}

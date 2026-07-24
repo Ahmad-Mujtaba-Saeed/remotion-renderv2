@@ -6,9 +6,9 @@ import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { fitText, fitGroup, lineCount } from '../typography';
-import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
+import { clamp01, easeInOutSine } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
 
 /** Golden-section anchor for the active node (fraction of the frame axis). */
@@ -26,6 +26,7 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
+  const reveal = useCardReveal();
   const { fps, width, height } = useVideoConfig();
   const { frame, durationInFrames } = useSceneClock();
   const meta = useSceneMeta();
@@ -37,7 +38,7 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const portrait = height > width;
   const heading = (slot.heading ?? '').trim();
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
-  const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
+  const headIn = reveal.ease(clamp01(frame / reveal.headFrames));
 
   /*
    * The heading is solved against the column, and — because the solver can
@@ -123,8 +124,8 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
     const pop = spring({
       frame: Math.max(0, frame - nodeAt(i)),
       fps,
-      config: SPRINGS.pop,
-      durationInFrames: Math.round(fps * 0.4),
+      config: reveal.config,
+      durationInFrames: reveal.popFrames,
     });
     const isActive = Math.round(activeF) === i && frame >= nodeAt(i);
     const dot = isActive ? theme.accent : theme.text;

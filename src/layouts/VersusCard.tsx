@@ -8,7 +8,7 @@ import { useScaleUnit } from '../responsive';
 import { fitGroup } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { useCardReveal } from '../motion/cardReveal';
 import { parseCountable, rollText } from '../motion/CountUp';
 import { SfxCue } from '../sfx';
 
@@ -18,7 +18,7 @@ import { SfxCue } from '../sfx';
  *   f0   centre seam (ink hairline) draws top→bottom (10f)
  *   f4   left media panel slides in from the left (clip reveal, 14f)
  *   f8   right panel from the right (Law 3: offset, never simultaneous)
- *   f16  VS badge: solid accent circle, ink "VS", SPRINGS.pop + whoosh_impact
+ *   f16  VS badge: solid accent circle, ink "VS", reveal.config pop + whoosh_impact
  *   f22+ stat rows alternate L,R every 10f (numeric tokens count up)
  *   end  verdict row floods accent (solid wipe) + stamp — only when present
  *
@@ -32,6 +32,7 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
+  const reveal = useCardReveal();
   const { fps, width, height } = useVideoConfig();
   const { frame, durationInFrames } = useSceneClock();
   const win = useSceneWindow();
@@ -60,8 +61,8 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const badgeIn = spring({
     frame: Math.max(0, frame - badgeAt),
     fps,
-    config: SPRINGS.pop,
-    durationInFrames: Math.round(fps * 0.45),
+    config: reveal.config,
+    durationInFrames: reveal.popFrames,
   });
 
   const panel = (slot: Slot | undefined, side: VersusSide, isLeft: boolean): React.ReactNode => {

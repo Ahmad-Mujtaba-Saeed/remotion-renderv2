@@ -175,6 +175,12 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
               const y2 = py(arc.a2);
               const b1 = arc.ang + (Math.PI * 5) / 6;
               const b2 = arc.ang - (Math.PI * 5) / 6;
+              // The nib: a pen tip riding the draw frontier while the arc grows,
+              // gone the instant the arrowhead lands — the same write-cursor the
+              // flowchart cards use (src/motion/draw.ts), placed by angle here
+              // since the arc is swept, not a polyline.
+              const nibA = arc.a1 + (arc.a2 - arc.a1) * arc.p;
+              const showNib = arc.p > 0.03 && arc.p < 0.96;
               return (
                 <g key={i}>
                   <path
@@ -196,6 +202,9 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                       strokeLinejoin="round"
                       opacity={arc.headP}
                     />
+                  ) : null}
+                  {showNib ? (
+                    <circle cx={px(nibA)} cy={py(nibA)} r={Math.max(4, strokeW * 1.2)} fill={theme.accent} />
                   ) : null}
                 </g>
               );

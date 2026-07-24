@@ -7,7 +7,7 @@ import { useTheme, useDisplayFont, hairline, MONO_FONT, BODY_FONT } from '../the
 import { useScaleUnit } from '../responsive';
 import { clamp01, easeOutExpo, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { useCardReveal } from '../motion/cardReveal';
 import { parseCountable, CountableToken } from '../motion/CountUp';
 import { SfxCue } from '../sfx';
 
@@ -58,6 +58,7 @@ export const BigCounter: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
+  const reveal = useCardReveal();
   const { fps } = useVideoConfig();
   const { frame } = useSceneClock();
   const win = useSceneWindow();
@@ -84,11 +85,11 @@ export const BigCounter: React.FC<{ scene: Scene }> = ({ scene }) => {
   const unitIn = spring({
     frame: Math.max(0, frame - unitAt),
     fps,
-    config: SPRINGS.pop,
-    durationInFrames: Math.round(fps * 0.4),
+    config: reveal.config,
+    durationInFrames: reveal.popFrames,
   });
 
-  const kickerIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
+  const kickerIn = reveal.ease(clamp01(frame / reveal.headFrames));
   const supportIn = easeOutQuint(clamp01((frame - unitAt - f30(fps, 4)) / f30(fps, 12)));
   const sparkP = easeOutQuint(clamp01((frame - unitAt - f30(fps, 8)) / f30(fps, 20)));
 

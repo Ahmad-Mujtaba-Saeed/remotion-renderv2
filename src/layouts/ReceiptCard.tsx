@@ -8,7 +8,7 @@ import { useScaleUnit } from '../responsive';
 import { fitText } from '../typography';
 import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
 
@@ -45,6 +45,7 @@ export const ReceiptCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
+  const reveal = useCardReveal();
   const { fps, height, width } = useVideoConfig();
   const { frame } = useSceneClock();
   const meta = useSceneMeta();
@@ -71,7 +72,7 @@ export const ReceiptCard: React.FC<{ scene: Scene }> = ({ scene }) => {
     return money ? `${sign}${unit}${groupNumber(v)}` : `${sign}${groupNumber(v)}${unit ? ` ${unit}` : ''}`;
   };
 
-  const headIn = easeOutQuint(clamp01(frame / f30(fps, 10)));
+  const headIn = reveal.ease(clamp01(frame / reveal.headFrames));
   const at = calloutRevealSchedule(
     rows.map((r) => r.label.trim()),
     scene.narration_words,
@@ -197,8 +198,8 @@ export const ReceiptCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           const pop = spring({
             frame: Math.max(0, frame - totalAt),
             fps,
-            config: SPRINGS.pop,
-            durationInFrames: Math.round(fps * 0.45),
+            config: reveal.config,
+            durationInFrames: reveal.popFrames,
           });
           if (pop <= 0.001) return null;
           return (

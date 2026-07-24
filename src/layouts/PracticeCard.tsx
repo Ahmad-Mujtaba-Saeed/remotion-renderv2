@@ -8,7 +8,7 @@ import { useScaleUnit } from '../responsive';
 import { fitText } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
-import { SPRINGS } from '../motion/springs';
+import { useCardReveal } from '../motion/cardReveal';
 import { MathText, InlineMathText, parseMath, mathWidthUnits } from '../math/mathText';
 import { looksLikeProse } from '../math/prose';
 import { KineticText } from '../components/KineticText';
@@ -38,6 +38,7 @@ export const PracticeCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
+  const reveal = useCardReveal();
   const { fps, height, width } = useVideoConfig();
   const { frame } = useSceneClock();
   const win = useSceneWindow();
@@ -57,7 +58,7 @@ export const PracticeCard: React.FC<{ scene: Scene }> = ({ scene }) => {
 
   // ---- Timing: land, work, reveal -----------------------------------------
   const total = Math.max(1, Math.round((scene.duration_seconds || 10) * fps));
-  const headIn = easeOutQuint(clamp01(frame / f30(fps, 10)));
+  const headIn = reveal.ease(clamp01(frame / reveal.headFrames));
   const promptAt = f30(fps, 12);
   const hintAt = promptAt + f30(fps, 16);
   const barAt = hintAt + f30(fps, 6);
@@ -307,11 +308,12 @@ const AnswerStamp: React.FC<{
   font: string;
   metaFs: number;
 }> = ({ answer, size, local, fps, u, accent, font, metaFs }) => {
+  const reveal = useCardReveal();
   const pop = spring({
     frame: Math.max(0, local),
     fps,
-    config: SPRINGS.pop,
-    durationInFrames: Math.round(fps * 0.4),
+    config: reveal.config,
+    durationInFrames: reveal.popFrames,
   });
   if (local < 0) return null;
 
