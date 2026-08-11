@@ -55,6 +55,26 @@ const resolveSfxPack = (requested: string | undefined): 'procedural' | 'studio' 
   return complete ? 'studio' : 'procedural';
 };
 
+/**
+ * Surface the headless browser's console in OUR log.
+ *
+ * Everything the composition fetches — the music bed, every image, every
+ * narration wav — is loaded by Chrome inside the render, so when one of them
+ * 404s or has the wrong content type, Chrome is the only thing that knows.
+ * Without this the server log shows a clean `[render] done in 84s` for a video
+ * that came out silent, and the actual message ("Could not play audio…") is
+ * discarded. Errors and warnings always print; set RENDER_BROWSER_LOG=all to
+ * see React's chatter too.
+ *
+ * @param tag  which pass is speaking, so a preview and a render are telling
+ *             apart in a busy log
+ */
+const browserLogger = (tag: string) => (log: { type: string; text: string }) => {
+  const noisy = process.env.RENDER_BROWSER_LOG === 'all';
+  if (!noisy && log.type !== 'error' && log.type !== 'warning') return;
+  console.log(`[${tag}][browser:${log.type}] ${log.text}`);
+};
+
 export const renderExplainer = async (req: RenderRequest): Promise<string> => {
   const fps = req.fps ?? 30;
   const width = req.width ?? 1920;
@@ -82,6 +102,10 @@ export const renderExplainer = async (req: RenderRequest): Promise<string> => {
     outputLocation: req.outputPath,
     inputProps,
     onProgress: ({ progress }) => req.onProgress?.(progress),
+    // A failed asset fetch (a missing music bed, a 404 image) is only ever
+    // reported inside the browser — without this it is thrown away and the
+    // render "succeeds" silently.
+    onBrowserLog: browserLogger('render'),
     chromiumOptions: { gl: 'angle' },
     // Optional override for memory-constrained hosts (default: Remotion's).
     concurrency: process.env.RENDER_CONCURRENCY ? parseInt(process.env.RENDER_CONCURRENCY, 10) : null,
@@ -150,6 +174,7 @@ export const renderPreviewStill = async (req: PreviewRequest): Promise<string> =
     output: req.outputPath,
     imageFormat: 'png',
     scale: req.scale ?? 0.5,
+    onBrowserLog: browserLogger('preview'),
     chromiumOptions: { gl: 'angle' },
     timeoutInMilliseconds: 120000,
   });
