@@ -7,7 +7,8 @@
     "start": "tsx src/server.ts",
     "dev": "tsx watch src/server.ts",
     "studio": "remotion studio src/remotion/index.ts",
-    "render:sample": "tsx src/render.ts sample.json out/sample.mp4"
+    "render:sample": "tsx src/render.ts sample.json out/sample.mp4",
+    "previews:styles": "tsx scripts/style-previews.ts ../b_f7Z3xSZkLVx/public/style-previews"
   },
   "dependencies": {
     "@remotion/bundler": "^4.0.286",
