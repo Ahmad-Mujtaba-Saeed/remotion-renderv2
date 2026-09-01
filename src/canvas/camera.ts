@@ -113,8 +113,16 @@ export interface CameraTrack {
 
 /** Relations that earn a longer, more expressive travel window. */
 const isLongFlight = (item: CanvasItem): boolean =>
-  (item.treatment ?? '') === 'pull_reveal' ||
-  ['callback', 'new_chapter', 'contrast'].includes(item.relation ?? '');
+  (item.treatment ?? '') !== 'same_frame' &&
+  ((item.treatment ?? '') === 'pull_reveal' ||
+    ['callback', 'new_chapter', 'contrast'].includes(item.relation ?? ''));
+
+/**
+ * A scene that holds the frame: the validator has already placed it exactly
+ * where its predecessor sat, so there is nowhere to fly. Its "travel" window
+ * is only the crossfade between the two cards.
+ */
+const isHold = (item: CanvasItem | undefined): boolean => (item?.treatment ?? '') === 'same_frame';
 
 export const buildCamera = (
   plan: CanvasPlan,
@@ -139,13 +147,18 @@ export const buildCamera = (
     const travel =
       i === 0
         ? Math.min(Math.round(fps * 1.0), Math.round(frames * 0.4))
-        : smash
-          ? clamp(Math.round(frames * 0.14), Math.round(fps * 0.5), Math.round(fps * 0.9))
-          : clamp(
-              Math.round(frames * (long ? 0.34 : 0.24)),
-              Math.round(fps * 0.8),
-              Math.round(fps * (long ? 2.4 : 1.7))
-            );
+        : isHold(items[i])
+          ? // Not a flight — a cut. Long enough for the two cards to change
+            // over cleanly, short enough that it reads as an edit, not a
+            // dissolve.
+            clamp(Math.round(frames * 0.08), Math.round(fps * 0.3), Math.round(fps * 0.55))
+          : smash
+            ? clamp(Math.round(frames * 0.14), Math.round(fps * 0.5), Math.round(fps * 0.9))
+            : clamp(
+                Math.round(frames * (long ? 0.34 : 0.24)),
+                Math.round(fps * 0.8),
+                Math.round(fps * (long ? 2.4 : 1.7))
+              );
     windows.push({ start: cursor, frames, travel: Math.min(travel, Math.round(frames * 0.45)) });
     cursor += frames;
   });
@@ -347,8 +360,24 @@ export const buildCamera = (
       const fromState = sceneEndState(i - 1);
       const from: [number, number] = [fromState.x, fromState.y];
       const to: [number, number] = [item.x, item.y];
-      const treatment = item.treatment ?? 'canvas_hop';
+      const treatment = item.treatment ?? 'same_frame';
       const relation: SceneRelation = item.relation ?? 'continues';
+
+      if (treatment === 'same_frame') {
+        // THE QUIET CUT. Both regions occupy the same world box, so there is
+        // no journey to make — but the previous scene's hold move will have
+        // drifted the camera a little off its framing, and starting the new
+        // card from that drifted pose would read as a nudge. Ease back to the
+        // clean framing over the changeover and stop. No bezier, no dip, and
+        // above all no roll: a cut that tilts the horizon is a flight.
+        const e = easeInOutSine(t);
+        return {
+          x: lerp(fromState.x, item.x, e),
+          y: lerp(fromState.y, item.y, e),
+          scale: Math.exp(lerp(Math.log(fromState.scale), Math.log(fits[i]), e)),
+          rot: 0,
+        };
+      }
 
       if (treatment === 'zoom_nest') {
         // DIVE with anticipation: a breath outward (classic animation antic),

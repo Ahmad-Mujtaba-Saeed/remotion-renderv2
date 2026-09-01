@@ -31,10 +31,66 @@ const dominantMood = (scenes: Scene[]): string => {
   return best;
 };
 
-/** Which whoosh a flight deserves, from its story relation / treatment. */
-const flightSound = (item: CanvasItem | undefined): { name: SfxName; volume: number } => {
-  const treatment = item?.treatment ?? 'canvas_hop';
+/**
+ * The direction a QUIET CUT moves, read off the scene's own transition.
+ *
+ * With the flight budget spent (§3.3) most cuts no longer move the camera at
+ * all, and a pure crossfade between two cards in the same frame is a
+ * dissolve — the flattest edit there is. So the `transition` the planner
+ * already chose, which until now did nothing in canvas mode (it drives the
+ * TransitionSeries in SLIDES mode only), finally means something here: the
+ * arriving card enters from the direction the cut implies, the departing one
+ * leaves the opposite way, and the relation's signature transition therefore
+ * reads on screen without a single camera move.
+ *
+ * Returns the arriving card's offset as a fraction of its own size, plus a
+ * zoom. The departing card takes the negative.
+ */
+const cutMotion = (transition: string | undefined): { dx: number; dy: number; zoom: number } => {
+  switch (transition) {
+    case 'push_left':
+    case 'stack_push':
+    case 'split_slide':
+      return { dx: 0.16, dy: 0, zoom: 1 };
+    case 'push_right':
+      return { dx: -0.16, dy: 0, zoom: 1 };
+    case 'push_up':
+    case 'wipe_up':
+      return { dx: 0, dy: 0.16, zoom: 1 };
+    case 'push_down':
+      return { dx: 0, dy: -0.16, zoom: 1 };
+    // A whip is the same gesture, harder and further.
+    case 'whip_pan':
+      return { dx: 0.26, dy: 0, zoom: 1 };
+    // The two zooms are the only cuts that are about depth rather than
+    // direction, so they scale instead of sliding.
+    case 'zoom_through':
+      return { dx: 0, dy: 0, zoom: 0.9 };
+    case 'zoom_out_in':
+      return { dx: 0, dy: 0, zoom: 1.1 };
+    // Diagonal and column wipes read as a slight diagonal drift.
+    case 'mask_wipe_diagonal':
+    case 'column_reveal':
+    case 'line_sweep':
+      return { dx: 0.08, dy: 0.05, zoom: 1 };
+    // fade / none / match_dissolve / the circle wipe: a true dissolve is the
+    // right answer for a callback or a soft beat. The card's own reveal
+    // carries it.
+    default:
+      return { dx: 0, dy: 0, zoom: 1 };
+  }
+};
+
+/**
+ * Which whoosh a flight deserves, from its story relation / treatment.
+ *
+ * Null for a scene that holds the frame: there is no flight, and a whoosh
+ * over a cut is the sound of a move the audience cannot see.
+ */
+const flightSound = (item: CanvasItem | undefined): { name: SfxName; volume: number } | null => {
+  const treatment = item?.treatment ?? 'same_frame';
   const relation = item?.relation ?? 'continues';
+  if (treatment === 'same_frame') return null;
   if (treatment === 'kinetic_break') return { name: 'whoosh_impact', volume: 1 };
   if (treatment === 'zoom_nest') return { name: 'whoosh_deep', volume: 1 };
   if (relation === 'consequence') return { name: 'whoosh_impact', volume: 1 };
@@ -113,6 +169,8 @@ export const CanvasJourney: React.FC<{
   const alphas = new Array<number>(scenes.length).fill(0);
   // 0..1 birth progress of the arriving scene (drives its condense-in pop).
   const enters = new Array<number>(scenes.length).fill(1);
+  // Changeover motion for a quiet cut — see cutMotion(). Empty on a flight.
+  const shifts = new Array<{ dx: number; dy: number; zoom: number } | undefined>(scenes.length).fill(undefined);
 
   if (inTravel) {
     const t = local / Math.max(1, aw.travel);
@@ -127,6 +185,24 @@ export const CanvasJourney: React.FC<{
       // The parent's picture carries most of the dive, then hands over.
       alphas[active - 1] = 1 - smooth((t - 0.62) / 0.38);
       // Deeper ancestors of the parent were already gone; leave them at 0.
+    } else if ((arriving?.treatment ?? '') === 'same_frame') {
+      // THE QUIET CUT. Both cards sit in the same box, so the changeover is
+      // the edit: the arriving card slides in over a fast ease while the
+      // departing one clears the frame the other way. Faster than a flight's
+      // crossfade on purpose — a cut that lingers is a dissolve.
+      const e = smooth(t);
+      alphas[active] = smooth(t / 0.55);
+      enters[active] = alphas[active];
+      alphas[active - 1] = 1 - smooth((t - 0.25) / 0.6);
+
+      const motion = cutMotion(scenes[active].transition);
+      shifts[active] = { dx: motion.dx * (1 - e), dy: motion.dy * (1 - e), zoom: 1 + (motion.zoom - 1) * (1 - e) };
+      // The outgoing card leaves the way the new one came from.
+      shifts[active - 1] = {
+        dx: -motion.dx * e * 0.7,
+        dy: -motion.dy * e * 0.7,
+        zoom: 1 - (motion.zoom - 1) * e * 0.7,
+      };
     } else {
       alphas[active] = smooth(t / 0.32);
       enters[active] = alphas[active];
@@ -265,7 +341,16 @@ export const CanvasJourney: React.FC<{
           // Nested scenes materialise mid-dive, so their content must spring
           // in earlier or the newborn region arrives as an empty plate; a
           // contrast scene must be readable DURING the shared-frame beat.
-          const contentDelay = item!.parent_id ? 0.35 : item!.relation === 'contrast' ? 0.38 : 0.55;
+          const contentDelay =
+            item!.treatment === 'same_frame'
+              ? // On a cut there is no landing to wait for: the card is the
+                // edit, so its own choreography starts as the changeover does.
+                0.15
+              : item!.parent_id
+                ? 0.35
+                : item!.relation === 'contrast'
+                  ? 0.38
+                  : 0.55;
           return (
             <SceneRegion
               key={scene.scene_id}
@@ -277,6 +362,7 @@ export const CanvasJourney: React.FC<{
               lod={lodFor(item!.w)}
               alpha={alphas[i]}
               enter={enters[i]}
+              shift={shifts[i]}
               clock={{
                 // Content starts revealing just before touchdown so the region
                 // is alive the moment the camera lands. The cold open (scene 1)
@@ -325,7 +411,9 @@ export const CanvasJourney: React.FC<{
         const w = camera.windows[i];
         if (!w || w.travel <= 0) return null;
         const item = itemByScene.get(scene.scene_id);
-        const { name, volume } = flightSound(item);
+        const sound = flightSound(item);
+        if (!sound) return null;
+        const { name, volume } = sound;
         const travelSec = w.travel / fps;
         const rate = Math.max(0.8, Math.min(1.45, sfxDuration(name) / Math.max(0.5, travelSec)));
         return (

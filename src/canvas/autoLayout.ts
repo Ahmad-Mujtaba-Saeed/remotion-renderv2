@@ -21,14 +21,44 @@ const baseCardFor = (aspectRatio?: string): { w: number; h: number } => {
 const overlaps = (a: CanvasItem, b: CanvasItem, gap: number): boolean =>
   Math.abs(a.x - b.x) < (a.w + b.w) / 2 + gap && Math.abs(a.y - b.y) < (a.h + b.h) / 2 + gap;
 
+/**
+ * One scene in the fallback layout, one flight every FLIGHT_EVERY scenes.
+ *
+ * Mirrors the PHP validator's flight budget rather than its old placement: a
+ * flight is punctuation, so most scenes here sit exactly where the previous
+ * one sits and change over with a cut. Only the scenes that fly get their own
+ * stretch of canvas.
+ */
+const FLIGHT_EVERY = 4;
+
 const autoItem = (sceneId: string, i: number, placed: CanvasItem[], base: { w: number; h: number }): CanvasItem => {
   const { w, h } = base;
+  const flies = i === 0 || i % FLIGHT_EVERY === 0;
+  const previous = placed[placed.length - 1];
+
+  if (!flies && previous) {
+    return {
+      scene_id: sceneId,
+      treatment: 'same_frame',
+      x: previous.x,
+      y: previous.y,
+      w: previous.w,
+      h: previous.h,
+      rotation: 0,
+      emphasis: 'normal',
+      hold_move: (['breathe', 'push_in', 'drift', 'orbit', 'rise'] as const)[i % 5],
+      props: [],
+      depth: previous.depth ?? 0,
+      parent_id: null,
+    };
+  }
+
   const jx = seeded(i, 1) * 0.12 - 0.06;
   const jy = seeded(i, 2) * 0.12 - 0.06;
   const swing = i % 2 === 0 ? -0.85 : 0.85;
 
-  // Scenes live FAR apart — each one should feel alone in its own stretch of
-  // space, with real travel between stops (mirrors the PHP validator).
+  // A scene that DOES fly lives far from its neighbour — the flight should
+  // feel like real travel, because it is now the rare beat that earns one.
   const item: CanvasItem = {
     scene_id: sceneId,
     treatment: i === 0 ? 'hero_open' : 'canvas_hop',
@@ -45,6 +75,9 @@ const autoItem = (sceneId: string, i: number, placed: CanvasItem[], base: { w: n
   };
 
   for (const other of placed) {
+    // A region deliberately stacked on another (a quiet cut) is not an
+    // overlap to resolve — only genuinely distinct stations are pushed apart.
+    if (other.treatment === 'same_frame' || item.treatment === 'same_frame') continue;
     while (overlaps(item, other, 480)) {
       item.x += w * 0.35;
       item.y += h * 0.2;
@@ -150,7 +183,7 @@ export const normalizePlan = (
   scenes.forEach((scene, i) => {
     const existing = usePlan ? byScene.get(scene.scene_id) : undefined;
     if (existing) {
-      existing.treatment = i === 0 ? 'hero_open' : (existing.treatment ?? 'canvas_hop');
+      existing.treatment = i === 0 ? 'hero_open' : (existing.treatment ?? 'same_frame');
       existing.depth = existing.depth ?? 0;
       existing.props = existing.props ?? [];
       items.push(existing);

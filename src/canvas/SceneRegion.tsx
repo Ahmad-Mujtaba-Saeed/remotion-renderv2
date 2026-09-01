@@ -39,8 +39,16 @@ export const SceneRegion: React.FC<{
   alpha?: number;
   /** Birth progress (0..1) while the scene materialises mid-flight. */
   enter?: number;
+  /**
+   * Changeover motion for a QUIET CUT (treatment `same_frame`), in fractions
+   * of the region's own size plus a zoom multiplier. On a cut the camera does
+   * not move, so this is the whole edit: the arriving card comes in from the
+   * direction its transition implies and the departing one leaves the other
+   * way. Zero for a scene the camera flew to — there the flight IS the edit.
+   */
+  shift?: { dx: number; dy: number; zoom: number };
   clock: SceneClockWindow;
-}> = ({ item, scene, index = 0, count = 1, focus, lod, alpha = 1, enter = 1, clock }) => {
+}> = ({ item, scene, index = 0, count = 1, focus, lod, alpha = 1, enter = 1, shift, clock }) => {
   const { width: designW } = useVideoConfig();
   const theme = useTheme();
 
@@ -58,6 +66,10 @@ export const SceneRegion: React.FC<{
   const pop = 1 + 0.015 * focus + 0.05 * (1 - born);
   const settleY = (1 - born) * item.h * 0.02;
 
+  const dx = (shift?.dx ?? 0) * item.w;
+  const dy = (shift?.dy ?? 0) * item.h;
+  const zoom = shift?.zoom ?? 1;
+
   return (
     <div
       style={{
@@ -67,7 +79,7 @@ export const SceneRegion: React.FC<{
         width: item.w,
         height: item.h,
         opacity,
-        transform: `translateY(${settleY}px) scale(${pop})`,
+        transform: `translate(${dx}px, ${settleY + dy}px) scale(${pop * zoom})`,
         transformOrigin: 'center center',
       }}
     >

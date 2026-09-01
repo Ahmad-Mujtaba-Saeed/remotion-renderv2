@@ -6,6 +6,8 @@ export type ContentType =
   | 'video'
   | 'text_block'
   | 'explanation_box'
+  // The escape hatch: a fragment the planner authored, sanitised in PHP.
+  | 'custom_html'
   // Structured Tier A card contents (copilot.md §5, M4):
   | 'versus'
   | 'chart'
@@ -367,6 +369,11 @@ export interface Slot {
   reveal?: 'sequential' | 'all_at_once';
   // explanation_box
   body?: string;
+  // custom_html (custom_card): a fragment the planner authored, already
+  // sanitised and scoped by Support\CustomHtml on the PHP side. Never
+  // re-sanitised here — see CustomCard.
+  html?: string;
+  css?: string;
   // versus (versus_card slot_versus)
   left?: VersusSide;
   right?: VersusSide;
@@ -689,6 +696,10 @@ export type HoldMove = 'breathe' | 'push_in' | 'drift' | 'orbit' | 'rise' | 'swa
 
 /** How the camera reaches (and treats) a scene — the motion language. */
 export type Treatment =
+  // The DEFAULT: no flight at all. The next card takes the frame this one is
+  // in, and the card's own reveal carries the beat. See the flight budget in
+  // CanvasPlanValidator — a flight is punctuation, not grammar.
+  | 'same_frame'
   | 'hero_open'
   | 'canvas_hop'
   | 'zoom_nest'

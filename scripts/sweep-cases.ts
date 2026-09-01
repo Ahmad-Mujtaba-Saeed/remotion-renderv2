@@ -417,6 +417,20 @@ export const CASES: SweepCase[] = [
   { template: 'quote_portrait', slots: { slot_portrait: img('a portrait, shoulders up'), slot_quote: { content_type: 'text_block', heading: long(120), bullets: ['— Someone With A Long Name'] } } },
   { template: 'phone_mockup', slots: { slot_screen: { ...img('an app feed'), frame: 'phone' } } },
   { template: 'photo_stack', slots: { slot_photo_1: img('a street scene'), slot_photo_2: img('a market stall'), slot_photo_3: img('a train platform'), slot_photo_4: img('a rooftop') } },
+  // Worst case for the grid is SIX cells (landscape's cap) with captions at
+  // the clamp and a heading that has to wrap — the shape most likely to
+  // squeeze the cells into slivers or push the last row off frame.
+  {
+    template: 'image_grid',
+    slots: {
+      slot_image_1: { ...img('a hand-painted shop sign'), label: long(24), heading: long(52) },
+      slot_image_2: { ...img('a neon bar sign at night'), label: long(22) },
+      slot_image_3: { ...img('a carved wooden signpost'), label: long(20) },
+      slot_image_4: { ...img('an enamel station sign'), label: long(24) },
+      slot_image_5: { ...img('a chalkboard menu'), label: long(18) },
+      slot_image_6: { ...img('a motorway gantry sign'), label: long(24) },
+    },
+  },
   {
     template: 'labeled_diagram',
     slots: {
@@ -424,6 +438,32 @@ export const CASES: SweepCase[] = [
         ...img('one clean centred object on a plain background'),
         heading: long(52),
         callout_suggestions: [long(18), long(16), long(14), long(12)],
+      },
+    },
+  },
+
+  // The escape hatch at its worst: a table wider than the canvas, a long
+  // sentence in a cell, and cues on half the elements. The card is measured
+  // and scaled to fit, so what is under test is whether that scaling holds.
+  {
+    template: 'custom_card',
+    at: 0.95,
+    slots: {
+      slot_custom: {
+        content_type: 'custom_html',
+        heading: long(52),
+        caption: long(80),
+        html:
+          '<div class="wrap"><h3 data-at="0.10">Contravention</h3>' +
+          '<table><tr><th>Code</th><th>Meaning</th><th>Charge</th></tr>' +
+          '<tr data-at="0.30"><td>BS 24</td><td>' + long(70) + '</td><td>£70</td></tr>' +
+          '<tr data-at="0.50"><td>BS 25</td><td>' + long(60) + '</td><td>£130</td></tr></table>' +
+          '<p class="note" data-at="0.75" data-anim="pop">' + long(90) + '</p>' +
+          '<svg viewBox="0 0 200 20" width="200" height="20" data-at="0.9" data-anim="grow">' +
+          '<line x1="0" y1="10" x2="190" y2="10" stroke="#5EC9E8" stroke-width="3"/></svg></div>',
+        css:
+          '.wrap { border: 2px solid var(--line); padding: 30px; background: var(--panel); }' +
+          '.note { color: var(--muted); font-family: var(--font-mono); font-size: 24px; }',
       },
     },
   },
