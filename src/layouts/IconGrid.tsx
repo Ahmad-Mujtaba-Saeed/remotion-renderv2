@@ -72,7 +72,15 @@ export const IconGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
           padding: `${30 * u}px ${16 * u}px`,
         }}
       >
-        <IconStroke name={item.icon} progress={drawP} size={104 * u} color={color} strokeWidth={1.8} />
+        <IconStroke
+          name={item.icon}
+          progress={drawP}
+          size={104 * u}
+          color={color}
+          strokeWidth={1.8}
+          life="float"
+          seed={i}
+        />
         {item.label ? (
           <div
             style={{

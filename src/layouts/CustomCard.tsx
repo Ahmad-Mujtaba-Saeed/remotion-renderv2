@@ -8,6 +8,7 @@ import { useScaleUnit } from '../responsive';
 import { fitText } from '../typography';
 import { clamp01 } from '../motion/easing';
 import { useCardReveal } from '../motion/cardReveal';
+import { spokenAt } from '../motion/narrationBeats';
 
 /**
  * custom_card — the escape hatch.
@@ -170,10 +171,9 @@ export const CustomCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   // both lands on the spoken word — the narration is the more precise cue, and
   // equal specificity means the later rule wins.
   for (const cue of wordCues) {
-    const hit = words.find((w) => w.word.toLowerCase().replace(/[^a-z0-9-]/g, '').startsWith(cue));
     // A word that is never spoken must not hide its element forever: with no
     // match the cue falls back to the motion style's own opening beat.
-    const at = hit ? Math.round(hit.start * fps) : reveal.first;
+    const at = spokenAt(words, cue, fps) ?? reveal.first;
     revealCss.push(cueRules(`[data-word="${cue}"]`, progressAt(at)));
   }
 

@@ -35,7 +35,7 @@ export const BoardFigure: React.FC<{
         }}
       >
         <RegionStyleProvider value={{ frameless: true, mediaRadius: 6, aspect: boxW / Math.max(1, boxH) }}>
-          <SceneMetaProvider value={{ index, count, style: scene.style }}>
+          <SceneMetaProvider value={{ index, count, style: scene.style, words: scene.narration_words }}>
             <SceneLayout scene={scene} />
           </SceneMetaProvider>
         </RegionStyleProvider>

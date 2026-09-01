@@ -128,6 +128,8 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
           >
             {step.icon ? (
               <IconStroke
+                life="float"
+                seed={i}
                 name={step.icon}
                 progress={clamp01((frame - nodeAt(i) - f30(fps, 2)) / f30(fps, 10))}
                 size={52 * u}

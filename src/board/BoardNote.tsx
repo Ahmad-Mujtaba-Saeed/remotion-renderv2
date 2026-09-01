@@ -1,8 +1,10 @@
 import React from 'react';
+import { useVideoConfig } from 'remotion';
 import { Scene } from '../types';
 import { useSceneClock } from '../canvas/SceneClock';
 import { useTheme, useDisplayFont, MONO_FONT } from '../theme';
 import { clamp01, easeOutQuint, easeOutCubic } from '../motion/easing';
+import { f30 } from '../motion/choreo';
 import { InlineMathText } from '../math/mathText';
 
 /** Best-effort title/body/bullets out of an arbitrary text scene's slots. */
@@ -50,10 +52,14 @@ export const BoardNote: React.FC<{
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const { frame } = useSceneClock();
+  const { fps } = useVideoConfig();
   const { title, body, bullets } = extractNote(scene);
 
-  const rise = easeOutQuint(clamp01(frame / 14));
-  const bodyIn = easeOutCubic(clamp01((frame - 8) / 16));
+  // Authored at 30fps, scaled with f30 — the last card in the tree that still
+  // hardcoded raw frame counts, which meant a 60fps render played its entrance
+  // at double speed.
+  const rise = easeOutQuint(clamp01(frame / f30(fps, 14)));
+  const bodyIn = easeOutCubic(clamp01((frame - f30(fps, 8)) / f30(fps, 16)));
   const kicker =
     variant === 'concept'
       ? ((scene.style?.kicker ?? 'concept').toString().trim() || 'concept')

@@ -1,6 +1,53 @@
 // Shape of the shot list Laravel sends. Mirrors the PHP ExplainerRegistry /
 // ShotListValidator output, so the validator on the PHP side is the contract.
 
+/**
+ * One primitive of a drawn motif (`vector_motif`). Coordinates live in the
+ * fixed 100x100 logical view; `Support\VectorMotif` guarantees every field is
+ * present, in range, and one of the legal enum values, so the renderer reads
+ * them without defending itself.
+ */
+export interface MotifShape {
+  id: string;
+  kind: 'circle' | 'rect' | 'line' | 'arrow' | 'path' | 'icon' | 'label';
+  /** Semantic colours, resolved against the active theme by the renderer. */
+  stroke: 'accent' | 'ink' | 'muted' | 'paper' | 'none';
+  fill: 'accent' | 'ink' | 'muted' | 'paper' | 'none';
+  width: number;
+  opacity: number;
+  /** Entrance shape. Strokes default to `draw`, solids to `pop`. */
+  anim: 'draw' | 'pop' | 'rise' | 'fade' | 'sweep';
+  /** Land at this 0..1 point of the scene. */
+  at?: number;
+  /** Land when the narrator says this word (beats the fraction when both). */
+  word?: string;
+  /** A sustained loop for the settled shape (motion/sustain.ts). */
+  life?: 'breathe' | 'float' | 'sway' | 'orbit' | 'pulse';
+  // circle
+  cx?: number;
+  cy?: number;
+  r?: number;
+  // rect
+  w?: number;
+  h?: number;
+  round?: number;
+  // line / arrow
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+  // path
+  d?: string;
+  // icon / label / rect origin
+  x?: number;
+  y?: number;
+  /** icon box size, or label type size, in view units. */
+  size?: number;
+  name?: string;
+  text?: string;
+  anchor?: 'start' | 'middle' | 'end';
+}
+
 export type ContentType =
   | 'image'
   | 'video'
@@ -8,6 +55,9 @@ export type ContentType =
   | 'explanation_box'
   // The escape hatch: a fragment the planner authored, sanitised in PHP.
   | 'custom_html'
+  // A drawing of the beat's subject, authored by a focused pass and repaired
+  // by Support\VectorMotif (iter 62).
+  | 'vector_motif'
   // Structured Tier A card contents (copilot.md §5, M4):
   | 'versus'
   | 'chart'
@@ -374,6 +424,12 @@ export interface Slot {
   // re-sanitised here — see CustomCard.
   html?: string;
   css?: string;
+  // vector_motif: the beat's subject in one sentence (what the drawing pass
+  // was asked for) and the shapes it produced. Every number is already clamped
+  // into the 100x100 view by Support\VectorMotif — the renderer fits their
+  // bounding box to the stage and never re-validates.
+  subject?: string;
+  shapes?: MotifShape[];
   // versus (versus_card slot_versus)
   left?: VersusSide;
   right?: VersusSide;
@@ -823,6 +879,11 @@ export interface ShotList {
       renders; the renderer only obeys an explicit true, so payloads from
       before the field existed render byte-identically. */
   backdrop?: { enabled?: boolean } | null;
+  /** Camera motion blur (§2.10): stacked shutter samples of the canvas world
+      on fast flights, so a hop that crosses half the frame in one frame smears
+      instead of strobing. Defaults ON — an explicit `false` restores the
+      single-sample render exactly. */
+  motion_blur?: { enabled?: boolean } | null;
   /** Active font pack name ('editorial' | 'classic' | 'tech'); resolved by
       Laravel ('auto' never reaches the renderer). Missing = editorial. */
   font_pack?: string | null;

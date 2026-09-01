@@ -33,7 +33,11 @@ export const presentationFor = (
   theme?: Theme | null,
   /** Entering scene's media focal point (§8 smart crop) — the circle wipe
       opens from the subject instead of dead centre when known. */
-  focus?: { fx?: number; fy?: number } | null
+  focus?: { fx?: number; fy?: number } | null,
+  /** The transition's own length in frames — only the whip needs it, to size
+      its motion-blur shutter (§2.10). A presentation cannot read this for
+      itself: inside one, `useVideoConfig()` reports the scene's sequence. */
+  frames?: number
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): TransitionPresentation<any> => {
   switch (t) {
@@ -54,7 +58,7 @@ export const presentationFor = (
     case 'zoom_out_in':
       return zoomOutIn();
     case 'whip_pan':
-      return whipPan();
+      return whipPan({ frames });
     case 'mask_wipe_circle':
       return maskWipeCircle(focus ? { fx: focus.fx, fy: focus.fy } : {});
     case 'mask_wipe_diagonal':

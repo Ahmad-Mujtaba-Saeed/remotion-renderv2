@@ -8,6 +8,7 @@ import { useScaleUnit } from '../responsive';
 import { fitText } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
+import { beatFrames } from '../motion/narrationBeats';
 import { SPRINGS } from '../motion/springs';
 import { MathText, parseMath, mathToPlain, mathWidthUnits } from '../math/mathText';
 import { StepArrows } from '../math/StepArrows';
@@ -65,29 +66,22 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
   // BEGINS — the working tracks the voice through pauses and long sentences,
   // not a metronome. Without timings: even spread, all landed by ~75%.
   const firstAt = f30(fps, heading !== '' ? 20 : 12);
+  // This card worked out narration pacing first; `motion/narrationBeats.ts` is
+  // that logic extracted so every card can have it (iter 61). The numbers stay
+  // this card's own: working lands by 85% when the voice paces it, by 75% on
+  // the even fallback, and steps never bunch tighter than 8 frames.
   const words = scene.narration_words ?? [];
-  let landAt: number[];
-  if (words.length >= steps.length && steps.length > 1) {
-    const minGap = f30(fps, 8);
-    const lastOk = Math.max(firstAt + minGap, durationInFrames * 0.85);
-    landAt = steps.map((_, i) => {
-      const w = words[Math.floor((i * words.length) / steps.length)];
-      return Math.round((w?.start ?? 0) * fps);
-    });
-    // Clamp into the scene and keep the reveals readable: never before the
-    // heading settles, never bunched tighter than 8f, never past 85%.
-    landAt[0] = Math.max(firstAt, Math.min(landAt[0], lastOk));
-    for (let i = 1; i < landAt.length; i++) {
-      landAt[i] = Math.max(landAt[i - 1] + minGap, Math.min(landAt[i], lastOk));
-    }
-  } else {
-    const lastBy = Math.max(firstAt + f30(fps, 8), durationInFrames * 0.75);
-    const gap =
-      steps.length > 1
-        ? Math.max(f30(fps, 10), Math.min(f30(fps, 46), (lastBy - firstAt) / (steps.length - 1)))
-        : 0;
-    landAt = steps.map((_, i) => Math.round(firstAt + i * gap));
-  }
+  const paced = words.length >= steps.length && steps.length > 1;
+  const landAt = beatFrames(paced ? words : undefined, steps.length, fps, {
+    first: firstAt,
+    last: paced
+      ? Math.max(firstAt + f30(fps, 8), durationInFrames * 0.85)
+      : Math.max(firstAt + f30(fps, 8), durationInFrames * 0.75),
+    minGap: paced ? f30(fps, 8) : f30(fps, 10),
+    // Unpaced, the working stays grouped: a 1.5s ceiling on the gap keeps the
+    // steps reading as one chain rather than three separate slides.
+    maxGap: f30(fps, 46),
+  });
   const stepAt = (i: number): number => landAt[i];
   const answerIdx = steps.length - 1;
   const answerAt = stepAt(answerIdx);

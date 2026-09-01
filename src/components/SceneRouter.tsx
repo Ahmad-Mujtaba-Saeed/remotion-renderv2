@@ -56,6 +56,7 @@ import { SceneMetaProvider } from './SceneMeta';
 import { clamp01, easeInOutSine, easeOutCubic, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { useMotionStyle } from '../motion/styles';
+import { useIsGhost } from '../motion/ghost';
 
 /** A gentle scale+fade entrance so each scene's content settles in — paced
     by the motion style's base duration (§2.5), so a `classic` video breathes
@@ -215,12 +216,17 @@ export const SceneRouter: React.FC<{
   count?: number;
   captions?: boolean;
 }> = ({ scene, index = 0, count = 1, captions = false }) => {
+  // A motion-blur shutter sample draws this scene again; it must not SPEAK
+  // again. See motion/ghost.tsx.
+  const ghost = useIsGhost();
   return (
     <AbsoluteFill>
-      <SceneMetaProvider value={{ index, count, style: scene.style }}>
+      <SceneMetaProvider value={{ index, count, style: scene.style, words: scene.narration_words }}>
         {/* Per-scene narration (self-hosted Kokoro). Plays from the scene start;
             scene durations are paced to the audio length on the PHP side. */}
-        {scene.narration_audio_url ? <Audio src={scene.narration_audio_url} volume={1.3} /> : null}
+        {scene.narration_audio_url && !ghost ? (
+          <Audio src={scene.narration_audio_url} volume={1.3} />
+        ) : null}
         <MidholdPush seconds={scene.duration_seconds}>
           <AmbientBackground imageUrl={scene.ambient_image_url} mood={scene.mood} />
           <Entrance>

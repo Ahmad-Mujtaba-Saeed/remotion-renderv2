@@ -7,6 +7,8 @@ import { PunchLine } from '../components/PunchLine';
 import { CaptionTrack } from '../components/CaptionTrack';
 import { normalizePlan } from './autoLayout';
 import { buildCamera } from './camera';
+import { cameraTrail } from './motionBlur';
+import { Ghost } from '../motion/ghost';
 import { Connector } from './Connector';
 import { SceneRegion } from './SceneRegion';
 import { PropSprite } from './PropSprite';
@@ -117,7 +119,12 @@ export const CanvasJourney: React.FC<{
   aspect?: string;
   /** Karaoke caption track (§4.4) — screen-space, like punchlines. */
   captions?: boolean;
-}> = ({ scenes: scenesProp, plan: planProp, aspect, captions = false }) => {
+  /**
+   * Camera motion blur (§2.10). Default ON: the flights are fast enough that
+   * hard frames strobe. Turning it off restores the exact pre-blur render.
+   */
+  motionBlur?: boolean;
+}> = ({ scenes: scenesProp, plan: planProp, aspect, captions = false, motionBlur = true }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
   const { fps, width: vw, height: vh } = useVideoConfig();
@@ -141,6 +148,15 @@ export const CanvasJourney: React.FC<{
     isLightTheme(theme) ? `rgba(23,18,14,${alpha})` : `rgba(255,255,255,${alpha})`;
 
   const cam = camera.at(frame);
+
+  // ---- Camera motion blur (§2.10) ------------------------------------------
+  // The camera peaks around 500px/frame on a long hop at 30fps; a hard-edged
+  // frame that jumps half a screen strobes. `cameraTrail` returns extra camera
+  // states across one shutter when — and only when — the frame is moving fast
+  // enough to need them, so holds (most of the video) cost nothing and render
+  // exactly as before.
+  const trail = cameraTrail(camera.at, frame, vw, vh, { enabled: motionBlur });
+  const worldSamples = trail.length ? trail : [{ cam, opacity: 1, step: 0 }];
 
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
   const smooth = (v: number) => {
@@ -257,34 +273,11 @@ export const CanvasJourney: React.FC<{
     .filter((e) => e.item)
     .sort((a, b) => (a.item!.depth ?? 0) - (b.item!.depth ?? 0) || a.i - b.i);
 
-  return (
-    <AbsoluteFill style={{ overflow: 'hidden' }}>
-      {/* The flat colour field. Stays in viewport space (doesn't fly with the
-          world). There used to be a second, parallax dot grid layered on top of
-          it; one grid, pinned to the world, sells the depth on its own.
-          The mood field (§11.5) keys off the journey's DOMINANT mood — one
-          screen-space field for the whole flight; per-station switching would
-          pop mid-flight with no cut to hide it. */}
-      <AmbientBackground mood={dominantMood(scenes)} />
-
-      {/* Camera roll: the world rotates a few degrees around the viewport
-          center mid-flight and always lands level — a banked-turn feel.
-          NO will-change anywhere on the camera path: forcing the huge world
-          into a cached compositor layer makes Chromium reuse rasters taken at
-          mid-flight scales, which is exactly the "text goes blurry when the
-          camera lands" bug. Un-promoted, every frame rasters at the true
-          accumulated scale and DOM text stays vector-crisp. */}
-      <AbsoluteFill style={{ transform: cam.rot !== 0 ? `rotate(${cam.rot}deg)` : undefined }}>
-      {/* THE WORLD — one camera transform moves everything. */}
-      <div
-        style={{
-          position: 'absolute',
-          width: plan.world.width,
-          height: plan.world.height,
-          transform: `translate(${vw / 2 - cam.x * cam.scale}px, ${vh / 2 - cam.y * cam.scale}px) scale(${cam.scale})`,
-          transformOrigin: '0 0',
-        }}
-      >
+  // Everything that lives INSIDE the camera transform, built once as an element
+  // tree and reused by every shutter sample: the ghosts must show the same
+  // content at the same instant, differing only in where the camera was.
+  const worldInner = (
+    <>
         {/* Dot grid pinned to the world: the one texture in the design, and the
             only thing that tells the eye the camera is moving across a surface
             rather than cutting between scenes. Barely there on purpose. */}
@@ -398,8 +391,53 @@ export const CanvasJourney: React.FC<{
             />
           ))
         )}
-      </div>
-      </AbsoluteFill>
+    </>
+  );
+
+  return (
+    <AbsoluteFill style={{ overflow: 'hidden' }}>
+      {/* The flat colour field. Stays in viewport space (doesn't fly with the
+          world). There used to be a second, parallax dot grid layered on top of
+          it; one grid, pinned to the world, sells the depth on its own.
+          The mood field (§11.5) keys off the journey's DOMINANT mood — one
+          screen-space field for the whole flight; per-station switching would
+          pop mid-flight with no cut to hide it. */}
+      <AmbientBackground mood={dominantMood(scenes)} />
+
+      {/* Camera roll: the world rotates a few degrees around the viewport
+          center mid-flight and always lands level — a banked-turn feel.
+          NO will-change anywhere on the camera path: forcing the huge world
+          into a cached compositor layer makes Chromium reuse rasters taken at
+          mid-flight scales, which is exactly the "text goes blurry when the
+          camera lands" bug. Un-promoted, every frame rasters at the true
+          accumulated scale and DOM text stays vector-crisp. */}
+      {/* THE WORLD — one camera transform moves everything, drawn once per
+          shutter sample so a fast flight smears instead of strobing (§2.10).
+          Below the velocity threshold this is a single sharp copy and the
+          frame is byte-identical to the pre-blur renderer. */}
+      {worldSamples.map((s) => (
+        <AbsoluteFill
+          key={`world-${s.step}`}
+          style={{
+            opacity: s.opacity < 1 ? s.opacity : undefined,
+            transform: s.cam.rot !== 0 ? `rotate(${s.cam.rot}deg)` : undefined,
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              width: plan.world.width,
+              height: plan.world.height,
+              transform: `translate(${vw / 2 - s.cam.x * s.cam.scale}px, ${vh / 2 - s.cam.y * s.cam.scale}px) scale(${s.cam.scale})`,
+              transformOrigin: '0 0',
+            }}
+          >
+            {/* Ghost copies draw the frame again; they must never speak or
+                whoosh again (motion/ghost.tsx). */}
+            {s.step === 0 ? worldInner : <Ghost>{worldInner}</Ghost>}
+          </div>
+        </AbsoluteFill>
+      ))}
 
       {/* SOUND DESIGN: every flight whooshes past, flavoured by its story
           relation (dives rumble, consequences land with a thump, reveals

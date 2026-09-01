@@ -1,5 +1,6 @@
 import type React from 'react';
 import { clamp01, easeInCubic, easeOutCubic, easeOutExpo } from './easing';
+import { sustainAt } from './sustain';
 
 /**
  * Choreography primitives (copilot.md §2.3). The Seven Laws in code form:
@@ -73,6 +74,11 @@ export const exitProgress = (frame: number, outAt: number, dur: number): number 
  * Subliminal life for ONE hero element per scene (Law 6: never frozen).
  * A ±0.3% scale breath on an 8-second period — beneath conscious notice,
  * above "frozen". Never on text blocks, never faster than 6s.
+ *
+ * This is now the `breathe` kind of `motion/sustain.ts`, called with an
+ * explicit phase so the numbers are bit-for-bit what they always were. Reach
+ * for `useSustain()` in new work — this one loop was the whole vocabulary for
+ * a settled scene, which is why every hold looked frozen.
  */
 export const idleScale = (frame: number, fps: number, seed = 0): number =>
-  1 + 0.003 * Math.sin((Math.PI * 2 * frame) / (8 * fps) + seed * Math.PI * 2);
+  sustainAt(frame / fps, { kind: 'breathe', phase: seed * Math.PI * 2 }).scale;

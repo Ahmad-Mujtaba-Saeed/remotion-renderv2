@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { Audio, Sequence, staticFile, useVideoConfig } from 'remotion';
+import { useIsGhost } from './motion/ghost';
 
 /**
  * The explainer's sound design layer. A small procedurally-generated library
@@ -133,7 +134,10 @@ export const SfxCue: React.FC<{
 }> = ({ name, at, volume = 1, playbackRate = 1 }) => {
   const { fps, durationInFrames } = useVideoConfig();
   const cfg = useSfx();
-  if (!cfg.enabled) return null;
+  // A motion-blur shutter sample re-draws the frame; it must not re-fire the
+  // sound design with it (motion/ghost.tsx).
+  const ghost = useIsGhost();
+  if (!cfg.enabled || ghost) return null;
 
   const rate = Math.max(0.5, Math.min(2, playbackRate));
   const from = Math.max(0, Math.round(at));

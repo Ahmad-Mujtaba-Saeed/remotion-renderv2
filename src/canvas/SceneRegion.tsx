@@ -94,7 +94,7 @@ export const SceneRegion: React.FC<{
           }}
         >
           <RegionStyleProvider value={{ frameless: true, mediaRadius: 6, aspect: item.w / Math.max(1, item.h) }}>
-            <SceneMetaProvider value={{ index, count, style: scene.style }}>
+            <SceneMetaProvider value={{ index, count, style: scene.style, words: scene.narration_words }}>
               <SceneClockProvider window={clock}>
                 {/* Punchlines render in CanvasJourney's screen-space layer,
                     NOT here — inside the scaled world they'd soften. */}

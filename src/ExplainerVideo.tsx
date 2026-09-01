@@ -18,6 +18,7 @@ import {
 import { normalizeChapters } from './chapters';
 import { ThemeProvider, SkinProvider, useTheme, hairline, skinTheme } from './theme';
 import { MotionStyleProvider } from './motion/styles';
+import { MotionBlurProvider } from './motion/ghost';
 import { DEFAULT_THEME } from './types';
 import { presentationFor } from './transitions';
 import { CanvasJourney } from './canvas/CanvasJourney';
@@ -176,6 +177,10 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   // here so every branch below mounts the same theme, exactly as the board
   // skins do for the math board.
   const theme = skinTheme(shotList?.skin, shotList?.theme ?? DEFAULT_THEME);
+  // Camera motion blur (§2.10): stacked shutter samples on fast flights. ON
+  // unless the payload explicitly disables it — the strobe it removes is a
+  // defect, not a style, so this one defaults on rather than opting in.
+  const motionBlurOn = shotList?.motion_blur?.enabled !== false;
   // Mood backdrop field (§11.5): only an explicit true turns it on, so
   // payloads from before the field existed render byte-identically.
   const backdropOn = shotList?.backdrop?.enabled === true;
@@ -256,6 +261,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
         <SkinProvider skin={shotList?.skin}>
         <BackdropProvider enabled={backdropOn}>
         <MotionStyleProvider style={shotList?.motion_style}>
+        <MotionBlurProvider enabled={motionBlurOn}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: bTheme.bg_from }}>
             <FontLoader pack={fontPack} />
@@ -264,6 +270,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
             <GlobalOverlays logoUrl={shotList?.brand?.logo_url} />
           </AbsoluteFill>
         </SfxProvider>
+        </MotionBlurProvider>
         </MotionStyleProvider>
         </BackdropProvider>
         </SkinProvider>
@@ -277,6 +284,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
         <SkinProvider skin={shotList?.skin}>
         <BackdropProvider enabled={backdropOn}>
         <MotionStyleProvider style={shotList?.motion_style}>
+        <MotionBlurProvider enabled={motionBlurOn}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
             <FontLoader pack={fontPack} />
@@ -286,10 +294,12 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
               plan={shotList?.canvas}
               aspect={shotList?.aspect_ratio}
               captions={captions}
+              motionBlur={motionBlurOn}
             />
             <GlobalOverlays logoUrl={shotList?.brand?.logo_url} chapterChip={shotList?.chapter_chip?.enabled === true} chapterWindowList={hybridWindows} />
           </AbsoluteFill>
         </SfxProvider>
+        </MotionBlurProvider>
         </MotionStyleProvider>
         </BackdropProvider>
         </SkinProvider>
@@ -333,6 +343,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
         <SkinProvider skin={shotList?.skin}>
         <BackdropProvider enabled={backdropOn}>
         <MotionStyleProvider style={shotList?.motion_style}>
+        <MotionBlurProvider enabled={motionBlurOn}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
             <FontLoader pack={fontPack} />
@@ -345,7 +356,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
                   nodes.push(
                     <TransitionSeries.Transition
                       key={`t-${ch.chapter.id ?? i}`}
-                      presentation={presentationFor(ch.chapter.transition_in, theme)}
+                      presentation={presentationFor(ch.chapter.transition_in, theme, null, tf)}
                       timing={linearTiming({ durationInFrames: tf })}
                     />
                   );
@@ -361,6 +372,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
                       plan={ch.chapter.canvas}
                       aspect={shotList?.aspect_ratio}
                       captions={captions}
+                      motionBlur={motionBlurOn}
                     />
                   ) : (
                     <SlidesChapter
@@ -399,6 +411,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
             <GlobalOverlays logoUrl={shotList?.brand?.logo_url} chapterChip={shotList?.chapter_chip?.enabled === true} chapterWindowList={hybridWindows} />
           </AbsoluteFill>
         </SfxProvider>
+        </MotionBlurProvider>
         </MotionStyleProvider>
         </BackdropProvider>
         </SkinProvider>
@@ -411,6 +424,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
       <SkinProvider skin={shotList?.skin}>
         <BackdropProvider enabled={backdropOn}>
       <MotionStyleProvider style={shotList?.motion_style}>
+        <MotionBlurProvider enabled={motionBlurOn}>
       <SfxProvider config={shotList?.sfx}>
         <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
           <FontLoader pack={fontPack} />
@@ -419,7 +433,8 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
           <GlobalOverlays logoUrl={shotList?.brand?.logo_url} chapterChip={shotList?.chapter_chip?.enabled === true} chapterWindowList={hybridWindows} />
         </AbsoluteFill>
       </SfxProvider>
-      </MotionStyleProvider>
+      </MotionBlurProvider>
+        </MotionStyleProvider>
       </BackdropProvider>
         </SkinProvider>
     </ThemeProvider>

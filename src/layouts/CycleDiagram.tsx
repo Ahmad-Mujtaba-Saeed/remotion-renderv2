@@ -240,6 +240,8 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                 >
                   {item.icon ? (
                     <IconStroke
+                      life="float"
+                      seed={i}
                       name={item.icon}
                       progress={clamp01((frame - at[i] - f30(fps, 2)) / f30(fps, 10))}
                       size={discR * 1.06}

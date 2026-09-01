@@ -10,11 +10,16 @@ import { selectComposition, renderStill } from '@remotion/renderer';
  * without paying for a full render.
  *
  * Usage: npx tsx scripts/probe-stills.ts <shotlist.json> <outDir> <frame> [frame...]
+ *        [--fps=60]   probe the project at another render clock; frame numbers
+ *                     are then on THAT clock (frame 240 @60 = second 4, not 8).
  */
 (async () => {
-  const [, , inFile, outDir, ...frameArgs] = process.argv;
+  const args = process.argv.slice(2);
+  const fpsArg = args.find((a) => a.startsWith('--fps='));
+  const fps = fpsArg ? parseInt(fpsArg.slice(6), 10) : 30;
+  const [inFile, outDir, ...frameArgs] = args.filter((a) => !a.startsWith('--'));
   if (!inFile || !outDir || frameArgs.length === 0) {
-    console.error('Usage: tsx scripts/probe-stills.ts <shotlist.json> <outDir> <frame...>');
+    console.error('Usage: tsx scripts/probe-stills.ts <shotlist.json> <outDir> <frame...> [--fps=60]');
     process.exit(1);
   }
 
@@ -32,7 +37,7 @@ import { selectComposition, renderStill } from '@remotion/renderer';
   // probe shows what the portrait render will actually look like.
   const aspect = shotList.aspect_ratio ?? '16:9';
   const [width, height] = aspect === '9:16' ? [1080, 1920] : aspect === '1:1' ? [1080, 1080] : [1920, 1080];
-  const inputProps = { shotList, fps: 30, width, height };
+  const inputProps = { shotList, fps, width, height };
   const composition = await selectComposition({ serveUrl, id: 'Explainer', inputProps });
   console.log(`composition: ${composition.durationInFrames} frames`);
 

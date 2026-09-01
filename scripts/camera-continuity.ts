@@ -2,6 +2,7 @@ import fs from 'fs';
 import { buildCamera } from '../src/canvas/camera';
 import { normalizePlan } from '../src/canvas/autoLayout';
 import { CanvasPlan, Scene } from '../src/types';
+import { camDisplacement, cameraTrail } from '../src/canvas/motionBlur';
 
 /**
  * Camera smoothness audit: samples the virtual camera at every frame of a
@@ -31,15 +32,10 @@ import { CanvasPlan, Scene } from '../src/types';
 
   // Screen-space displacement between consecutive frames: how far the world
   // point at the viewport centre moves, plus zoom change expressed as pixel
-  // drift at the viewport edge, plus roll as pixel drift at the edge.
-  const jump = (f: number): number => {
-    const a = camera.at(f);
-    const b = camera.at(f + 1);
-    const pan = Math.hypot(b.x - a.x, b.y - a.y) * ((a.scale + b.scale) / 2);
-    const zoom = Math.abs(Math.log(b.scale / a.scale)) * (vw / 2);
-    const roll = (Math.abs(b.rot - a.rot) * Math.PI / 180) * (vw / 2);
-    return pan + zoom + roll;
-  };
+  // drift at the viewport edge, plus roll as pixel drift at the edge. The
+  // metric lives in motionBlur.ts because the blur gate reads the SAME number
+  // — one definition of "fast" for the audit and for the shutter.
+  const jump = (f: number): number => camDisplacement(camera.at(f), camera.at(f + 1), vw, vh);
 
   const jumps: { f: number; v: number }[] = [];
   for (let f = 0; f < camera.totalFrames - 1; f++) {
@@ -79,6 +75,28 @@ import { CanvasPlan, Scene } from '../src/types';
     );
     if (at > 8 && at > Math.max(before, after) * 3.5) failures++;
   });
+
+  // Motion-blur coverage (§2.10): which frames the shutter actually fires on,
+  // and how many extra world copies they cost. This is the render-time bill
+  // for the smoothness, printed rather than guessed at.
+  let blurred = 0;
+  let ghostFrames = 0;
+  let maxGhosts = 0;
+  for (let f = 0; f < camera.totalFrames; f++) {
+    const trail = cameraTrail(camera.at, f, vw, vh);
+    if (!trail.length) continue;
+    blurred++;
+    const g = trail.length - 1;
+    ghostFrames += g;
+    if (g > maxGhosts) maxGhosts = g;
+  }
+  const pct = (100 * blurred) / Math.max(1, camera.totalFrames);
+  console.log(
+    `
+Motion blur: ${blurred}/${camera.totalFrames} frames (${pct.toFixed(1)}%), ` +
+      `${ghostFrames} ghost copies, max ${maxGhosts} ghosts on a frame ` +
+      `(+${((100 * ghostFrames) / Math.max(1, camera.totalFrames)).toFixed(1)}% world renders).`
+  );
 
   if (failures > 0) {
     console.error(`\nFAIL: ${failures} discontinuity spike(s) detected.`);

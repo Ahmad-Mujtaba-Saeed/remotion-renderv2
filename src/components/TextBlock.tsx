@@ -5,6 +5,7 @@ import { useTheme, useDisplayFont, useSkin, BODY_FONT, MONO_FONT, hairline } fro
 import { surfaceStyle } from './Surface';
 import { clamp01, easeOutCubic } from '../motion/easing';
 import { f30 } from '../motion/choreo';
+import { beatFrames } from '../motion/narrationBeats';
 import { useMotionStyle } from '../motion/styles';
 import { KineticText } from './KineticText';
 import { useScaleUnit } from '../responsive';
@@ -76,9 +77,25 @@ export const TextBlock: React.FC<{
 
   const headingIn = spring({ frame, fps, config: { damping: 200 }, durationInFrames: Math.round(fps * 0.6) });
 
+  /*
+   * PACING: the rows land on the VOICE, not on a metronome.
+   *
+   * The old spread put row i at 12% + i/n of the scene, so on a beat where the
+   * narrator lingers on point one and rushes points two and three, the frame
+   * and the sentence drifted apart — and the scene's last visible change came
+   * at a fixed 92% whatever was being said. `beatFrames` assigns each row the
+   * moment its share of the narration begins and clamps the result (never
+   * before the heading settles, never two rows on adjacent frames, never so
+   * late the row cannot be read). With no word timings it returns exactly the
+   * even spread this card always used, so those renders do not move.
+   */
   const startAt = Math.round(durationInFrames * 0.12);
   const endAt = Math.round(durationInFrames * 0.92);
-  const step = bullets.length > 0 ? (endAt - startAt) / bullets.length : 0;
+  const landAt = beatFrames(meta.words ?? undefined, bullets.length, fps, {
+    first: startAt,
+    last: endAt,
+    minGap: f30(fps, 10),
+  });
 
   // ---- Look -----------------------------------------------------------------
   const longest = bullets.reduce((m, b) => Math.max(m, b.length), 0);
@@ -206,8 +223,7 @@ export const TextBlock: React.FC<{
   const motion = useMotionStyle();
   const pointEnter = (i: number): number => {
     if (!sequential) return 1;
-    const appearFrame = Math.round(startAt + step * i);
-    return motion.ease(clamp01((frame - appearFrame) / f30(fps, motion.baseF + 4)));
+    return motion.ease(clamp01((frame - landAt[i]) / f30(fps, motion.baseF + 4)));
   };
 
   /**
@@ -217,9 +233,27 @@ export const TextBlock: React.FC<{
    */
   const pointDim = (i: number): number => {
     if (!sequential || i >= bullets.length - 1) return 0;
-    const nextAppear = Math.round(startAt + step * (i + 1));
-    return easeOutCubic(clamp01((frame - nextAppear) / f30(fps, 8)));
+    return easeOutCubic(clamp01((frame - landAt[i + 1]) / f30(fps, 8)));
   };
+
+  /**
+   * THE TRACKER (iter 61): how much row i is the row the voice is ON.
+   *
+   * Dimming already tells you which rows are behind you. This is the other
+   * half — the active row is marked, so the frame keeps changing all the way
+   * through the narration instead of settling once the last bullet has landed.
+   * It rises as the row arrives and falls as the next one does, which means
+   * something on screen is in motion at every moment of the scene.
+   */
+  const pointActive = (i: number): number => {
+    if (!sequential) return 0;
+    const inP = easeOutCubic(clamp01((frame - landAt[i]) / f30(fps, 9)));
+    const out = i < bullets.length - 1
+      ? easeOutCubic(clamp01((frame - landAt[i + 1]) / f30(fps, 9)))
+      : 0;
+    return inP * (1 - out);
+  };
+
 
   // ---- Compact banner strip: heading + bullets as a rule-separated row ------
   if (compact) {
@@ -282,6 +316,7 @@ export const TextBlock: React.FC<{
       {bullets.map((bullet, i) => {
         const enter = pointEnter(i);
         const dim = pointDim(i);
+        const active = pointActive(i);
         return (
           <li
             key={i}
@@ -312,6 +347,24 @@ export const TextBlock: React.FC<{
                 })})`,
               }}
             />
+            {/* The tracker: a solid accent bar in the numeral gutter that
+                grows on the row the narrator is on and retracts as they move
+                down the list. Absolutely positioned and scaled on Y, so it
+                needs no measurement and adds no layout — the row's own height
+                is the bar's height. Flat law: a solid rule, nothing else. */}
+            <div
+              style={{
+                position: 'absolute',
+                left: -18 * u,
+                top: 14 * u,
+                bottom: 14 * u,
+                width: 4 * u,
+                background: theme.accent,
+                transformOrigin: 'center',
+                transform: `scaleY(${active})`,
+                opacity: active,
+              }}
+            />
             <span
               style={{
                 minWidth: 78 * u,
@@ -320,7 +373,9 @@ export const TextBlock: React.FC<{
                 fontWeight: 700,
                 fontFamily: MONO_FONT,
                 fontVariantNumeric: 'tabular-nums',
-                color: theme.accent,
+                // The numeral leads the row: full accent while the voice is
+                // here, muted once it has moved on.
+                color: active > 0.5 ? theme.accent : theme.muted,
               }}
             >
               {String(i + 1).padStart(2, '0')}
@@ -338,6 +393,7 @@ export const TextBlock: React.FC<{
       {bullets.map((bullet, i) => {
         const enter = pointEnter(i);
         const dim = pointDim(i);
+        const active = pointActive(i);
         return (
           <div
             key={i}
@@ -360,12 +416,17 @@ export const TextBlock: React.FC<{
                 left: 0,
                 right: 0,
                 height: 1,
-                background: rule(),
+                // The active line's rule turns accent and runs its full
+                // width; the rest stay hairlines. Centred copy has no gutter
+                // for a tracker bar, so the separator does the marking.
+                background: active > 0.5 ? theme.accent : rule(),
                 transformOrigin: 'center',
-                transform: `scaleX(${interpolate(enter, [0.15, 1], [0, 1], {
-                  extrapolateLeft: 'clamp',
-                  extrapolateRight: 'clamp',
-                })})`,
+                transform: `scaleX(${
+                  interpolate(enter, [0.15, 1], [0, 1], {
+                    extrapolateLeft: 'clamp',
+                    extrapolateRight: 'clamp',
+                  }) * (0.34 + 0.66 * active)
+                })`,
               }}
             />
             {bullet}
