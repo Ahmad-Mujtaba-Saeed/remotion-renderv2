@@ -23,6 +23,14 @@ export interface MotifShape {
   word?: string;
   /** A sustained loop for the settled shape (motion/sustain.ts). */
   life?: 'breathe' | 'float' | 'sway' | 'orbit' | 'pulse';
+  /**
+   * Keyframes: where this shape MOVES to later in the beat (iter 63). Each
+   * step carries its own cue plus the geometry fields it changes; the renderer
+   * interpolates between them, so a shape can cross the frame while the
+   * narrator is still talking instead of arriving and standing still.
+   * Guaranteed sorted, capped, and strictly after the shape's own arrival.
+   */
+  then?: MotifStep[];
   // circle
   cx?: number;
   cy?: number;
@@ -46,6 +54,33 @@ export interface MotifShape {
   name?: string;
   text?: string;
   anchor?: 'start' | 'middle' | 'end';
+}
+
+/**
+ * One keyframe of a motif shape. Only the fields it CHANGES are present; the
+ * renderer carries everything else forward from the previous state.
+ */
+export interface MotifStep {
+  /** 0..0.95 point in the scene. */
+  at: number;
+  /** Land on this narration word instead (beats the fraction when both). */
+  word?: string;
+  cx?: number;
+  cy?: number;
+  r?: number;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+  size?: number;
+  opacity?: number;
+  /** Colour swaps land discretely — never interpolated. */
+  stroke?: MotifShape['stroke'];
+  fill?: MotifShape['fill'];
 }
 
 export type ContentType =

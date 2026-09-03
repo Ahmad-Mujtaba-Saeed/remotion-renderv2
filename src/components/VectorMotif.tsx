@@ -1,6 +1,6 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { MotifShape, Slot } from '../types';
+import { MotifShape, MotifStep, Slot } from '../types';
 import { useTheme, useSkin, BODY_FONT, MONO_FONT, isLightTheme } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { useSceneClock } from '../canvas/SceneClock';
@@ -55,6 +55,9 @@ interface Box {
   y1: number;
 }
 
+/** The numeric geometry fields a keyframe may move. */
+const GEOM = ['cx', 'cy', 'r', 'x', 'y', 'w', 'h', 'x1', 'y1', 'x2', 'y2', 'size', 'opacity'] as const;
+
 /** The bounding box of one shape, in view units. Labels count their ink. */
 const shapeBox = (s: MotifShape): Box => {
   switch (s.kind) {
@@ -102,10 +105,40 @@ const shapeBox = (s: MotifShape): Box => {
   }
 };
 
+/**
+ * The box a shape occupies across its WHOLE life, keyframes included.
+ *
+ * The fit has to be computed from this rather than from the current instant,
+ * or a shape that travels drags the framing with it: the first probe of a
+ * moving electron shifted and shrank the panel it had already left, because
+ * the union box grew every frame. The frame holds still; only the drawing
+ * moves inside it.
+ */
+const lifetimeBox = (s: MotifShape): Box => {
+  let box = shapeBox(s);
+  let state: MotifShape = s;
+  for (const step of s.then ?? []) {
+    const next: MotifShape = { ...state };
+    for (const field of GEOM) {
+      const v = step[field];
+      if (typeof v === 'number') next[field] = v;
+    }
+    state = next;
+    const b = shapeBox(state);
+    box = {
+      x0: Math.min(box.x0, b.x0),
+      y0: Math.min(box.y0, b.y0),
+      x1: Math.max(box.x1, b.x1),
+      y1: Math.max(box.y1, b.y1),
+    };
+  }
+  return box;
+};
+
 const unionBox = (shapes: MotifShape[]): Box =>
   shapes.reduce<Box>(
     (acc, s) => {
-      const b = shapeBox(s);
+      const b = lifetimeBox(s);
       return {
         x0: Math.min(acc.x0, b.x0),
         y0: Math.min(acc.y0, b.y0),
@@ -115,6 +148,59 @@ const unionBox = (shapes: MotifShape[]): Box =>
     },
     { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity }
   );
+
+/**
+ * The shape as it stands at `frame`, with its keyframes walked.
+ *
+ * Fields are carried FORWARD: a step that only moves `cx` leaves everything
+ * else where the previous state left it, so a drawing can be authored as a
+ * series of small changes rather than a series of full re-statements.
+ *
+ * Colours land discretely at their step's frame. Interpolating a theme colour
+ * would mean mixing two palette entries into a third that is in no palette —
+ * exactly the kind of off-scheme colour the semantic palette exists to make
+ * impossible.
+ */
+const shapeAt = (
+  s: MotifShape,
+  frame: number,
+  frameOf: (at: number | undefined, word: string | undefined, fallback: number) => number,
+  born: number,
+  ease: (t: number) => number,
+  settle: number
+): MotifShape => {
+  const steps = s.then ?? [];
+  if (!steps.length) return s;
+
+  let state: MotifShape = s;
+  let prevFrame = born + settle;
+
+  for (const step of steps as MotifStep[]) {
+    const at = frameOf(step.at, step.word, prevFrame + settle);
+    const to = Math.max(prevFrame + 1, at);
+    const p = ease(clamp01((frame - prevFrame) / (to - prevFrame)));
+    if (p <= 0) break;
+
+    const next: MotifShape = { ...state };
+    for (const field of GEOM) {
+      const target = step[field];
+      if (typeof target !== 'number') continue;
+      const from = state[field];
+      if (typeof from !== 'number') continue;
+      next[field] = from + (target - from) * p;
+    }
+    // Colour is a state change, not a tween: it flips once the step lands.
+    if (p >= 1) {
+      if (step.stroke) next.stroke = step.stroke;
+      if (step.fill) next.fill = step.fill;
+    }
+    state = next;
+    if (p < 1) break;
+    prevFrame = to;
+  }
+
+  return state;
+};
 
 /** The path an arrow head draws at the end of a segment, in view units. */
 const arrowHead = (s: MotifShape): string => {
@@ -178,14 +264,18 @@ export const VectorMotif: React.FC<{ slot: Slot }> = ({ slot }) => {
   const dur = f30(fps, motion.baseF + 6);
   const drawn = shapes.filter((s) => s.kind !== 'label').length || 1;
 
-  const landing = (s: MotifShape, i: number): number => {
-    // A spoken cue is the most precise thing available and outranks a
-    // fraction; a shape with neither takes its turn in document order.
-    const spoken = s.word ? spokenAt(meta.words ?? undefined, s.word, fps) : null;
+  // One cue resolver for arrivals AND keyframes: a spoken word is the most
+  // precise thing available and outranks a fraction; with neither, the caller's
+  // fallback stands.
+  const frameOf = (at: number | undefined, word: string | undefined, fallback: number): number => {
+    const spoken = word ? spokenAt(meta.words ?? undefined, word, fps) : null;
     if (spoken !== null) return spoken;
-    if (s.at !== undefined) return Math.round(first + s.at * span);
-    return Math.round(first + (i / Math.max(1, drawn)) * span * 0.8);
+    if (at !== undefined) return Math.round(first + at * span);
+    return Math.round(fallback);
   };
+
+  const landing = (s: MotifShape, i: number): number =>
+    frameOf(s.at, s.word, first + (i / Math.max(1, drawn)) * span * 0.8);
 
   // A plain sized box, NOT an AbsoluteFill: this component is a SLOT, and a
   // slot may be half a split. An absolutely-positioned fill resolves against
@@ -212,11 +302,16 @@ export const VectorMotif: React.FC<{ slot: Slot }> = ({ slot }) => {
         preserveAspectRatio="xMidYMid meet"
         fill="none"
       >
-        {shapes.map((s, i) => {
-          const at = landing(s, i);
+        {shapes.map((authored, i) => {
+          const at = landing(authored, i);
           const local = frame - at;
           const p = easeOutQuint(clamp01(local / dur));
           if (p <= 0) return null;
+
+          // Keyframes (iter 63): the shape may have moved on since it arrived.
+          // Everything below reads the CURRENT state, so the entrance, the
+          // bounding box and the sustained loop all follow it.
+          const s = shapeAt(authored, frame, frameOf, at, motion.ease, dur);
 
           const stroke = ink(s.stroke);
           const fill = ink(s.fill);

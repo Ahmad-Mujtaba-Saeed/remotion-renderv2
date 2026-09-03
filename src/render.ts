@@ -1,5 +1,4 @@
 import path from 'path';
-import os from 'os';
 import * as fsSync from 'fs';
 import { bundle } from '@remotion/bundler';
 import { selectComposition, renderMedia, renderStill } from '@remotion/renderer';
@@ -18,22 +17,81 @@ export interface RenderRequest {
 
 let bundlePromise: Promise<string> | null = null;
 
+/** Source of truth for everything staticFile() reaches for: SFX and fonts. */
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+
+/**
+ * Where the built bundle lives. NOT os.tmpdir() any more: Windows Storage
+ * Sense and every "clean up temp files" tool prune %LOCALAPPDATA%\Temp, and
+ * they happily delete the copied public/ tree out from under a bundle that
+ * otherwise still looks complete. The result was a render that got to 0% and
+ * then died on `404 .../public/sfx/shimmer.wav`, with every font 404ing on the
+ * way. Keeping it beside the project puts it outside the cleaners' reach;
+ * REMOTION_BUNDLE_DIR overrides for hosts that need it elsewhere.
+ */
+const BUNDLE_DIR = process.env.REMOTION_BUNDLE_DIR
+  ? path.resolve(process.env.REMOTION_BUNDLE_DIR)
+  : path.join(__dirname, '..', '.bundle');
+
+/** Every file under `dir`, as paths relative to it. */
+const listFilesRelative = (dir: string, base: string = dir): string[] => {
+  const out: string[] = [];
+  for (const entry of fsSync.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...listFilesRelative(full, base));
+    else out.push(path.relative(base, full));
+  }
+  return out;
+};
+
+/**
+ * Re-copy anything missing from the bundle's public/ tree and report what had
+ * to be restored. Cheap (a couple of dozen existsSync calls on a warm bundle)
+ * and it means a gutted bundle heals on the next render instead of failing
+ * every render until someone restarts the service — the memoized
+ * `bundlePromise` used to pin the damage for the life of the process.
+ */
+const repairPublicDir = (outDir: string): string[] => {
+  if (!fsSync.existsSync(PUBLIC_DIR)) return [];
+  const restored: string[] = [];
+  for (const rel of listFilesRelative(PUBLIC_DIR)) {
+    const dest = path.join(outDir, 'public', rel);
+    if (fsSync.existsSync(dest)) continue;
+    fsSync.mkdirSync(path.dirname(dest), { recursive: true });
+    fsSync.copyFileSync(path.join(PUBLIC_DIR, rel), dest);
+    restored.push(rel);
+  }
+  return restored;
+};
+
 /**
  * Bundle the Remotion project once and reuse the served bundle across renders.
  * The entry is the file that calls registerRoot.
  */
-const getServeUrl = (): Promise<string> => {
+export const getServeUrl = async (): Promise<string> => {
   if (!bundlePromise) {
     bundlePromise = bundle({
       entryPoint: path.join(__dirname, 'remotion', 'index.ts'),
-      // Keep webpack cache in a stable temp dir for faster warm renders.
-      outDir: path.join(os.tmpdir(), 'remotion-render-bundle'),
+      // Stable dir so warm renders reuse the webpack cache.
+      outDir: BUNDLE_DIR,
       // Bundled static assets (the SFX library) — explicit so it works no
       // matter which directory the server/CLI was started from.
-      publicDir: path.join(__dirname, '..', 'public'),
+      publicDir: PUBLIC_DIR,
+    }).catch((err) => {
+      // Don't pin a failed bundle for the life of the process.
+      bundlePromise = null;
+      throw err;
     });
   }
-  return bundlePromise;
+  const serveUrl = await bundlePromise;
+  const restored = repairPublicDir(serveUrl);
+  if (restored.length) {
+    console.warn(
+      `bundle: restored ${restored.length} missing public asset(s) in ${serveUrl} ` +
+        `(e.g. ${restored.slice(0, 3).join(', ')})`,
+    );
+  }
+  return serveUrl;
 };
 
 /**
