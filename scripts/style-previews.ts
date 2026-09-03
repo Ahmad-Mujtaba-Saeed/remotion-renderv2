@@ -10,6 +10,7 @@ import { selectComposition, renderMedia, renderStill } from '@remotion/renderer'
  *   npx tsx scripts/style-previews.ts <outDir> [group...]
  *   npx tsx scripts/style-previews.ts ../b_f7Z3xSZkLVx/public/style-previews
  *   npx tsx scripts/style-previews.ts ../b_f7Z3xSZkLVx/public/style-previews motion
+ *   npx tsx scripts/style-previews.ts ../b_f7Z3xSZkLVx/public/style-previews transition
  *
  * The storyboard's style pickers used to be five rows of unlabelled words with
  * a tooltip. "Bounce" tells you nothing; a two-second clip of the same card
@@ -28,7 +29,7 @@ import { selectComposition, renderMedia, renderStill } from '@remotion/renderer'
  *   <outDir>/manifest.json       what exists, for the UI to trust
  */
 
-type Group = 'motion' | 'skin' | 'composition' | 'board' | 'font';
+type Group = 'motion' | 'skin' | 'composition' | 'board' | 'font' | 'transition';
 
 /** 480x270 at 15fps for ~2.6s: readable at hover size, ~200-500KB a clip. */
 const WIDTH = 480;
@@ -134,7 +135,68 @@ const boardScenes = (): unknown[] => [
   },
 ];
 
-const OPTIONS: Record<Group, { keys: string[]; apply: (key: string) => Record<string, unknown> }> = {
+/**
+ * A transition preview is a different animal from the other groups: what is
+ * being shown is not how a scene LOOKS but what happens in the 0.55s BETWEEN
+ * two scenes. So this storyboard is deliberately two beats and nothing else,
+ * with both of them landing `all_at_once` and settling well before the cut —
+ * if the bullets were still arriving, you would be watching the motion style,
+ * not the transition.
+ *
+ * The two beats are made as unalike as the design allows (a bullet list, then
+ * one huge number) so a directional push reads as direction and a dissolve
+ * reads as a dissolve. `scene[i].transition` is the cut INTO scene i, so the
+ * option under test rides scene 2 and scene 1 is always a clean open.
+ *
+ * Transitions only exist in `slides` mode — canvas_journey plays scenes on one
+ * continuous camera with nothing between them — so the mode is pinned here.
+ */
+const transitionScenes = (key: string): unknown[] => [
+  {
+    scene_id: 'scene_1',
+    order: 1,
+    duration_seconds: 1.7,
+    narration: { text: 'One idea, settled on screen.' },
+    layout_template: 'single_focus',
+    transition: 'fade',
+    mood: 'neutral',
+    slots: {
+      slot_main: {
+        content_type: 'text_block',
+        heading: 'Before the cut',
+        bullets: ['The scene you are leaving'],
+        reveal: 'all_at_once',
+      },
+    },
+  },
+  {
+    scene_id: 'scene_2',
+    order: 2,
+    duration_seconds: 1.9,
+    narration: { text: 'And the next one arrives.' },
+    layout_template: 'stat_spotlight',
+    transition: key,
+    mood: 'confident',
+    slots: {
+      slot_stat: {
+        content_type: 'text_block',
+        heading: '84%',
+        bullets: ['the scene you are entering'],
+        reveal: 'all_at_once',
+      },
+    },
+  },
+];
+
+const OPTIONS: Record<
+  Group,
+  {
+    keys: string[];
+    apply: (key: string) => Record<string, unknown>;
+    /** Where in the clip to freeze the poster (default a quarter in). */
+    posterFrac?: number;
+  }
+> = {
   // §2.5 — the five motion presets. This is the group the whole feature is for.
   motion: {
     keys: ['crisp', 'classic', 'bounce', 'elegant', 'swiss'],
@@ -158,6 +220,37 @@ const OPTIONS: Record<Group, { keys: string[]; apply: (key: string) => Record<st
   font: {
     keys: ['editorial', 'classic', 'tech'],
     apply: (key) => ({ font_pack: key }),
+  },
+  // The cut itself (§3.1). Keys MUST stay in step with `transitions` in
+  // explainer_registry.json — the storyboard picker renders one option per
+  // registry value and shows "no preview recorded" for anything missing here.
+  transition: {
+    keys: [
+      'none',
+      'fade',
+      'push_left',
+      'push_right',
+      'push_up',
+      'push_down',
+      'wipe',
+      'wipe_up',
+      'zoom_through',
+      'zoom_out_in',
+      'whip_pan',
+      'mask_wipe_circle',
+      'mask_wipe_diagonal',
+      'column_reveal',
+      'split_slide',
+      'stack_push',
+      'line_sweep',
+      'match_dissolve',
+    ],
+    apply: (key) => ({ composition_mode: 'slides', scenes: transitionScenes(key) }),
+    // Halfway through this two-beat clip IS the cut (1.7s + 1.9s of scene
+    // minus the 0.55s overlap puts the transition either side of the middle),
+    // so the still under the loading GIF is the transition mid-flight rather
+    // than a scene sitting still.
+    posterFrac: 0.5,
   },
 };
 
@@ -189,7 +282,7 @@ const OPTIONS: Record<Group, { keys: string[]; apply: (key: string) => Record<st
     : {};
 
   for (const group of groups) {
-    const { keys, apply } = OPTIONS[group];
+    const { keys, apply, posterFrac = 0.25 } = OPTIONS[group];
     const groupDir = path.join(outDir, group);
     fs.mkdirSync(groupDir, { recursive: true });
     manifest[group] = [];
@@ -216,13 +309,14 @@ const OPTIONS: Record<Group, { keys: string[]; apply: (key: string) => Record<st
       const composition = await selectComposition({ serveUrl, id: 'Explainer', inputProps });
 
       // The poster is the frame the hover card shows the instant it opens,
-      // while the GIF is still arriving. A quarter in, so it is a settled
-      // frame rather than an empty one mid-fade.
+      // while the GIF is still arriving. A quarter in by default, so it is a
+      // settled frame rather than an empty one mid-fade — `posterFrac` moves
+      // it for groups whose whole point happens later in the clip.
       await renderStill({
         serveUrl,
         composition,
         inputProps,
-        frame: Math.min(Math.round(composition.durationInFrames * 0.25), composition.durationInFrames - 1),
+        frame: Math.min(Math.round(composition.durationInFrames * posterFrac), composition.durationInFrames - 1),
         output: path.join(groupDir, `${key}.png`),
         imageFormat: 'png',
         chromiumOptions: { gl: 'angle' },
