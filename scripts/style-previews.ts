@@ -246,20 +246,26 @@ const OPTIONS: Record<
       'match_dissolve',
     ],
     apply: (key) => ({ composition_mode: 'slides', scenes: transitionScenes(key) }),
-    // Halfway through this two-beat clip IS the cut (1.7s + 1.9s of scene
-    // minus the 0.55s overlap puts the transition either side of the middle),
-    // so the still under the loading GIF is the transition mid-flight rather
-    // than a scene sitting still.
-    posterFrac: 0.5,
+    // The clip is 47 frames (1.7s + 1.9s of scene, less the 0.55s overlap, at
+    // 15fps) and the cut occupies frames 18-26. Frame 21 — 0.44 of the way in
+    // — is the middle of it, where BOTH scenes are on screen. Half way (frame
+    // 24) is 80% through the cut, by which point a push has all but landed and
+    // the poster looks like an ordinary scene.
+    posterFrac: 0.44,
   },
 };
 
 (async () => {
-  const [, , outDirArg, ...groupArgs] = process.argv;
+  const [, , outDirArg, ...rest] = process.argv;
   if (!outDirArg) {
-    console.error('Usage: tsx scripts/style-previews.ts <outDir> [group...]');
+    console.error('Usage: tsx scripts/style-previews.ts <outDir> [--stills] [group...]');
     process.exit(1);
   }
+  // --stills re-freezes the poster frames and leaves the clips alone. Retuning
+  // where a poster sits costs seconds this way instead of re-encoding every
+  // GIF for a still nobody looks at for more than a moment.
+  const stillsOnly = rest.includes('--stills');
+  const groupArgs = rest.filter((a) => !a.startsWith('--'));
   const outDir = path.resolve(outDirArg);
   const groups = (groupArgs.length ? groupArgs : Object.keys(OPTIONS)) as Group[];
   for (const g of groups) {
@@ -321,6 +327,12 @@ const OPTIONS: Record<
         imageFormat: 'png',
         chromiumOptions: { gl: 'angle' },
       });
+
+      if (stillsOnly) {
+        manifest[group].push(key);
+        console.log(`  ${group}/${key}  poster only  ${((Date.now() - started) / 1000).toFixed(1)}s`);
+        continue;
+      }
 
       const gifPath = path.join(groupDir, `${key}.gif`);
       const result = await renderMedia({

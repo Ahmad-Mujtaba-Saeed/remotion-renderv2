@@ -2,9 +2,8 @@ import React from 'react';
 import { Composition } from 'remotion';
 import { ExplainerVideo } from '../ExplainerVideo';
 import { ThumbnailComp, ThumbnailProps } from '../ThumbnailComp';
-import { ExplainerProps, ShotList, resolveCompositionMode } from '../types';
-import { totalCanvasFrames, totalDurationInFrames, totalHybridFrames } from '../timing';
-import { normalizeChapters } from '../chapters';
+import { ExplainerProps, ShotList } from '../types';
+import { totalFramesFor } from '../timing';
 
 const EMPTY_SHOT_LIST: ShotList = { project_id: 'preview', scenes: [] };
 
@@ -31,14 +30,9 @@ export const RemotionRoot: React.FC = () => {
       calculateMetadata={({ props }) => {
         const p = props as unknown as ExplainerProps;
         const fps = p.fps || 30;
-        const scenes = p.shotList?.scenes ?? [];
-        const mode = resolveCompositionMode(p.shotList);
-        const durationInFrames =
-          mode === 'hybrid'
-            ? totalHybridFrames(normalizeChapters(p.shotList), fps)
-            : mode === 'canvas_journey' || mode === 'math_board'
-              ? totalCanvasFrames(scenes, fps)
-              : totalDurationInFrames(scenes, fps);
+        // The mode rules live in timing.ts so the dashboard's in-browser
+        // player computes the same length from the same payload.
+        const durationInFrames = totalFramesFor(p.shotList ?? EMPTY_SHOT_LIST, fps);
         return {
           durationInFrames,
           fps,

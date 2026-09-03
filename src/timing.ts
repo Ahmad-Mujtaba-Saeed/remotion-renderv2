@@ -1,4 +1,5 @@
-import { Scene, TRANSITION_SECONDS } from './types';
+import { Scene, ShotList, TRANSITION_SECONDS, resolveCompositionMode } from './types';
+import { normalizeChapters } from './chapters';
 import type { ResolvedChapter } from './chapters';
 
 export const sceneFrames = (scene: Scene, fps: number): number =>
@@ -156,4 +157,70 @@ export const narrationWindowsHybrid = (
     }
   });
   return out;
+};
+
+// ---------------------------------------------------------------------------
+// The whole-composition clock
+// ---------------------------------------------------------------------------
+
+/**
+ * Total frames for a shot list, in whatever mode it is in.
+ *
+ * This is the number `calculateMetadata` hands the renderer, lifted out of
+ * Root.tsx so that anything else needing the composition's length — the
+ * dashboard's in-browser player, above all — asks the SAME function rather
+ * than reimplementing the mode rules and drifting.
+ */
+export const totalFramesFor = (shotList: ShotList, fps: number): number => {
+  const mode = resolveCompositionMode(shotList);
+  const scenes = shotList.scenes ?? [];
+  if (mode === 'hybrid') return totalHybridFrames(normalizeChapters(shotList), fps);
+  if (mode === 'canvas_journey' || mode === 'math_board') return totalCanvasFrames(scenes, fps);
+  return totalDurationInFrames(scenes, fps);
+};
+
+/**
+ * The global start frame of every scene, in storyboard order.
+ *
+ * Scene durations do NOT lay end to end: in slides mode each transition
+ * overlaps the two scenes it joins, so every later scene sits one transition
+ * earlier than naive addition suggests, and in hybrid mode the same is true of
+ * chapters. Anything drawing a scene ruler against the playhead has to use the
+ * renderer's own arithmetic or its markers will drift further out of place with
+ * every cut — which is why this lives here beside that arithmetic, and not in
+ * whatever UI happens to need it.
+ *
+ * Returns one start frame per scene, matching `shotList.scenes` order.
+ */
+export const sceneStartFrames = (shotList: ShotList, fps: number): number[] => {
+  const mode = resolveCompositionMode(shotList);
+  const tf = transitionFrames(fps);
+
+  if (mode === 'hybrid') {
+    const chapters = normalizeChapters(shotList);
+    const windows = chapterWindows(chapters, fps);
+    const starts: number[] = [];
+    chapters.forEach((ch, ci) => {
+      const base = windows[ci]?.start ?? 0;
+      let cursor = 0;
+      ch.scenes.forEach((scene, i) => {
+        // A canvas chapter plays its scenes back to back; a slides chapter
+        // overlaps them exactly like a top-level slides run.
+        if (ch.chapter.mode !== 'canvas' && hasIncomingTransition(ch.scenes, i)) cursor -= tf;
+        starts.push(base + cursor);
+        cursor += sceneFrames(scene, fps);
+      });
+    });
+    return starts;
+  }
+
+  const scenes = shotList.scenes ?? [];
+  const overlaps = mode === 'slides';
+  let cursor = 0;
+  return scenes.map((scene, i) => {
+    if (overlaps && hasIncomingTransition(scenes, i)) cursor -= tf;
+    const start = cursor;
+    cursor += sceneFrames(scene, fps);
+    return start;
+  });
 };
