@@ -29,12 +29,40 @@ import { selectComposition, renderMedia, renderStill } from '@remotion/renderer'
  *   <outDir>/manifest.json       what exists, for the UI to trust
  */
 
-type Group = 'motion' | 'skin' | 'composition' | 'board' | 'font' | 'transition';
+type Group = 'motion' | 'skin' | 'composition' | 'board' | 'font' | 'transition' | 'scheme';
 
 /** 480x270 at 15fps for ~2.6s: readable at hover size, ~200-500KB a clip. */
 const WIDTH = 480;
 const HEIGHT = 270;
 const FPS = 15;
+
+/**
+ * The registry's colour schemes, read from the BACKEND at record time.
+ *
+ * Copying the fourteen palettes into this script would guarantee they drift
+ * the first time one is retuned, and the picker would then hover a preview of
+ * a colour the video no longer uses. remotion-render/ is a sibling of
+ * viralforgebackend/ — the same assumption the render server already makes for
+ * storage paths.
+ */
+const registrySchemes = (): { name: string; [k: string]: unknown }[] => {
+  const file = path.resolve(
+    __dirname,
+    '..',
+    '..',
+    'viralforgebackend',
+    'modules',
+    'Project',
+    'Resources',
+    'explainer_registry.json',
+  );
+  if (!fs.existsSync(file)) {
+    console.warn(`scheme group: registry not found at ${file} — skipping`);
+    return [];
+  }
+  const json = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  return (json.color_schemes ?? []) as { name: string }[];
+};
 
 const THEME = {
   name: 'indigo',
@@ -220,6 +248,16 @@ const OPTIONS: Record<
   font: {
     keys: ['editorial', 'classic', 'tech'],
     apply: (key) => ({ font_pack: key }),
+  },
+  // The fourteen palettes. `theme` is a top-level shot-list key, so the demo
+  // storyboard simply gets repainted — which is exactly what the user is
+  // choosing between, and impossible to judge from a name like "bone".
+  scheme: {
+    keys: registrySchemes().map((s) => s.name),
+    apply: (key) => {
+      const scheme = registrySchemes().find((s) => s.name === key);
+      return scheme ? { theme: scheme } : {};
+    },
   },
   // The cut itself (§3.1). Keys MUST stay in step with `transitions` in
   // explainer_registry.json — the storyboard picker renders one option per
