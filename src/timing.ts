@@ -224,3 +224,76 @@ export const sceneStartFrames = (shotList: ShotList, fps: number): number[] => {
     return start;
   });
 };
+
+/**
+ * The frame at which each scene has actually TAKEN THE SCREEN.
+ *
+ * `sceneStartFrames` returns when a scene's own clock begins, which is not
+ * when you can see it. A scene's first frames are still showing the beat
+ * before it: in slides mode the incoming transition overlaps the two scenes it
+ * joins, so at `start` the previous card is at full opacity and this one at
+ * zero; in canvas mode the camera is only just leaving the previous card and
+ * takes up to 2.4 seconds to arrive (see canvas/camera.ts `travel`).
+ *
+ * Anything that shows a still of "scene i" — a filmstrip tile — or parks the
+ * playhead on a scene the user just clicked has to use THIS frame, or it
+ * shows the neighbouring beat and the whole editor reads one card out of step.
+ *
+ * Returns one frame per scene, matching `shotList.scenes` order.
+ */
+export const sceneSettledFrames = (shotList: ShotList, fps: number): number[] => {
+  const scenes = shotList.scenes ?? [];
+  if (!scenes.length) return [];
+
+  const starts = sceneStartFrames(shotList, fps);
+  const total = totalFramesFor(shotList, fps);
+  const tf = transitionFrames(fps);
+
+  // How long the frame still belongs to the PREVIOUS beat, per scene.
+  const busy: number[] = [];
+  const pushRun = (run: Scene[], mode: 'canvas' | 'slides') => {
+    run.forEach((scene, i) => {
+      const frames = sceneFrames(scene, fps);
+      if (mode !== 'canvas') {
+        busy.push(hasIncomingTransition(run, i) ? tf : 0);
+        return;
+      }
+      // The camera's flight in. camera.ts picks the length from the scene's
+      // treatment, which is not in the shot list's timing view — so take the
+      // LONGEST flight it could have chosen (and its frames*0.45 ceiling),
+      // because landing late in a scene is harmless and landing early shows
+      // the wrong card.
+      busy.push(
+        i === 0
+          ? Math.min(Math.round(fps * 1.0), Math.round(frames * 0.4))
+          : Math.min(
+              Math.max(Math.round(fps * 0.8), Math.min(Math.round(frames * 0.34), Math.round(fps * 2.4))),
+              Math.round(frames * 0.45)
+            )
+      );
+    });
+  };
+
+  const mode = resolveCompositionMode(shotList);
+  if (mode === 'hybrid') {
+    for (const ch of normalizeChapters(shotList)) {
+      pushRun(ch.scenes, ch.chapter.mode === 'canvas' ? 'canvas' : 'slides');
+    }
+  } else {
+    pushRun(scenes, mode === 'slides' ? 'slides' : 'canvas');
+  }
+
+  return scenes.map((scene, i) => {
+    const start = starts[i] ?? 0;
+    const span = Math.max(1, (starts[i + 1] ?? total) - start);
+    // A beat and a half in was the old rule of thumb and it is still a good
+    // one — reveals have landed by then — so take whichever is later, the
+    // settled camera or that. Never past three quarters of the scene, which
+    // is where the NEXT transition starts eating the frame.
+    const want = Math.max(
+      (busy[i] ?? 0) + Math.round(fps * 0.35),
+      Math.min(Math.round(fps * 1.5), Math.floor(span / 2))
+    );
+    return Math.max(0, Math.min(total - 1, start + Math.min(want, Math.floor(span * 0.75))));
+  });
+};
