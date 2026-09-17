@@ -8,6 +8,7 @@ import { useScaleUnit } from '../responsive';
 import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /**
  * term_card — the beat where the script stops to define a word.
@@ -23,6 +24,7 @@ import { KineticText } from '../components/KineticText';
  * solid accent underline, no panel behind the text. Silent per §1.3.
  */
 export const TermCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_term'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -72,28 +74,28 @@ export const TermCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ marginBottom: 26 * u, opacity: headIn }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
                   textTransform: 'uppercase',
                   color: theme.accent,
                   marginBottom: heading ? 12 * u : 0,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <div
-                style={{
+                {...edit('heading', {
                   fontFamily: MONO_FONT,
                   fontSize: metaFs,
                   letterSpacing: 1.6 * u,
                   color: theme.muted,
-                }}
+                })}
               >
-                {heading}
+                {edit.text('heading', heading)}
               </div>
             ) : null}
           </div>
@@ -102,7 +104,7 @@ export const TermCard: React.FC<{ scene: Scene }> = ({ scene }) => {
         {/* The word itself, with an accent underline drawing beneath it. */}
         <div style={{ display: 'inline-block', position: 'relative' }}>
           <h1
-            style={{
+            {...edit('term', {
               margin: 0,
               fontFamily: displayFont,
               fontWeight: 900,
@@ -112,9 +114,9 @@ export const TermCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               opacity: termIn,
               transform: `translateY(${(1 - termIn) * 14 * u}px)`,
               wordBreak: 'break-word',
-            }}
+            })}
           >
-            <KineticText text={term} highlight={meta.style?.highlight} />
+            <KineticText text={edit.text('term', term)} highlight={meta.style?.highlight} />
           </h1>
           <div
             style={{
@@ -140,8 +142,8 @@ export const TermCard: React.FC<{ scene: Scene }> = ({ scene }) => {
             }}
           >
             {phonetic ? (
-              <span style={{ fontFamily: MONO_FONT, fontSize: metaFs, color: theme.muted, letterSpacing: 1.2 * u }}>
-                {phonetic}
+              <span {...edit('phonetic', { fontFamily: MONO_FONT, fontSize: metaFs, color: theme.muted, letterSpacing: 1.2 * u }, { inline: true })}>
+                {edit.text('phonetic', phonetic)}
               </span>
             ) : null}
             {pos ? (
@@ -186,16 +188,16 @@ export const TermCard: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {caption ? (
           <div
-            style={{
+            {...edit('caption', {
               marginTop: 24 * u,
               fontFamily: MONO_FONT,
               fontSize: metaFs * 0.92,
               letterSpacing: 1.2 * u,
               color: theme.muted,
               opacity: easeOutQuint(clamp01((frame - f30(fps, 50)) / f30(fps, 12))),
-            }}
+            })}
           >
-            {caption}
+            {edit.text('caption', caption)}
           </div>
         ) : null}
       </div>

@@ -10,6 +10,7 @@ import { f30 } from '../motion/choreo';
 import { useCardReveal } from '../motion/cardReveal';
 import { parseCountable, CountableToken } from '../motion/CountUp';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /** Odometer roll length (frames @30fps) — copilot.md §5.3. */
 const ROLL_F = 26;
@@ -53,6 +54,7 @@ const fmt = (v: number, t: CountableToken): string => {
  * SVG stroke; flat by construction.
  */
 export const BigCounter: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot =
     scene.slots['slot_counter'] ?? scene.slots['slot_chart'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
@@ -116,7 +118,7 @@ export const BigCounter: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ textAlign: 'center', maxWidth: 1500 * u }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 30 * u,
               letterSpacing: 5 * u,
@@ -125,9 +127,9 @@ export const BigCounter: React.FC<{ scene: Scene }> = ({ scene }) => {
               marginBottom: 34 * u,
               opacity: kickerIn,
               transform: `translateY(${(1 - kickerIn) * 14 * u}px)`,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
 
@@ -187,7 +189,7 @@ export const BigCounter: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {support ? (
           <div
-            style={{
+            {...edit('support', {
               marginTop: 36 * u,
               paddingTop: 30 * u,
               borderTop: `2px solid ${hairline(theme, 0.18)}`,
@@ -198,9 +200,9 @@ export const BigCounter: React.FC<{ scene: Scene }> = ({ scene }) => {
               transform: `translateY(${(1 - supportIn) * 14 * u}px)`,
               display: 'inline-block',
               maxWidth: 900 * u,
-            }}
+            })}
           >
-            {support}
+            {edit.text('support', support)}
           </div>
         ) : null}
       </div>

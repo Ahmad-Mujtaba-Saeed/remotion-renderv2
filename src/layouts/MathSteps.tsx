@@ -14,6 +14,7 @@ import { MathText, parseMath, mathToPlain, mathWidthUnits } from '../math/mathTe
 import { StepArrows } from '../math/StepArrows';
 import { KineticText } from '../components/KineticText';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /**
  * math_steps — a worked solution, line by line. Each step is one expression
@@ -27,6 +28,7 @@ import { SfxCue } from '../sfx';
  * Flat rules hold: solid surfaces, hairline fraction bars, no shadows.
  */
 export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_math'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -188,7 +190,7 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ width: '100%', maxWidth: (portrait ? 940 : 1420) * u }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 24 * u,
               letterSpacing: 4 * u,
@@ -197,14 +199,14 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
               marginBottom: 14 * u,
               opacity: headIn,
               transform: `translateY(${(1 - headIn) * 10 * u}px)`,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
         {heading ? (
           <h1
-            style={{
+            {...edit('heading', {
               margin: `0 0 ${44 * u}px 0`,
               fontFamily: displayFont,
               fontWeight: 900,
@@ -218,9 +220,9 @@ export const MathSteps: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
               lineHeight: 1.05,
               color: theme.text,
-            }}
+            })}
           >
-            <KineticText text={heading} highlight={meta.style?.highlight} />
+            <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
           </h1>
         ) : null}
 
@@ -282,6 +284,7 @@ const RulePanel: React.FC<{
    *  why the move is legal, then watches it happen (a teacher's order). */
   at: number;
 }> = ({ rule, frame, fps, portrait, u, at }) => {
+  const edit = useEdit();
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const inP = easeOutQuint(clamp01((frame - at) / f30(fps, 12)));
@@ -353,16 +356,16 @@ const RulePanel: React.FC<{
       ) : null}
       {why ? (
         <div
-          style={{
+          {...edit('why', {
             fontFamily: BODY_FONT,
             fontSize: 23 * u,
             lineHeight: 1.4,
             color: theme.muted,
             opacity: whyP,
             transform: `translateY(${(1 - whyP) * 8 * u}px)`,
-          }}
+          })}
         >
-          {why}
+          {edit.text('why', why)}
         </div>
       ) : null}
     </div>

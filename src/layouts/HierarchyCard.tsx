@@ -11,6 +11,7 @@ import { f30, idleScale } from '../motion/choreo';
 import { useCardReveal } from '../motion/cardReveal';
 import { edgePath, pointAlong } from '../motion/draw';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
+import { useEdit } from '../components/Editable';
 
 /**
  * hierarchy_card — "how is X structured", drawn as what it is: an org chart.
@@ -29,6 +30,7 @@ import { calloutRevealSchedule } from '../components/CalloutLayer';
  * Silent per §1.3.
  */
 export const HierarchyCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_hierarchy'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -197,30 +199,30 @@ export const HierarchyCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 22 * u, opacity: headIn }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 23 * u,
                   letterSpacing: 4 * u,
                   textTransform: 'uppercase',
                   color: theme.accent,
                   marginBottom: heading ? 10 * u : 0,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <h1
-                style={{
+                {...edit('heading', {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
                   fontSize: headFs,
                   lineHeight: 1.06,
                   color: theme.text,
-                }}
+                })}
               >
-                {heading}
+                {edit.text('heading', heading)}
               </h1>
             ) : null}
           </div>
@@ -393,7 +395,7 @@ export const HierarchyCard: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {caption ? (
           <div
-            style={{
+            {...edit('caption', {
               marginTop: 20 * u,
               fontFamily: MONO_FONT,
               fontSize: 22 * u,
@@ -401,9 +403,9 @@ export const HierarchyCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.muted,
               opacity: headIn,
               textAlign: 'center',
-            }}
+            })}
           >
-            {caption}
+            {edit.text('caption', caption)}
           </div>
         ) : null}
       </div>

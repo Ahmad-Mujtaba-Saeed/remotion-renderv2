@@ -12,6 +12,7 @@ import { f30 } from '../motion/choreo';
 import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
+import { useEdit } from '../components/Editable';
 
 /**
  * cycle_diagram — step_flow's circular sibling: 3-6 nodes on a ring, each an
@@ -23,6 +24,7 @@ import { calloutRevealSchedule } from '../components/CalloutLayer';
  * Silent per §1.3 — the drawing arcs carry the motion. Flat throughout.
  */
 export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_cycle'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -125,7 +127,7 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 30 * u }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
@@ -133,14 +135,14 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                   color: theme.accent,
                   marginBottom: 12 * u,
                   opacity: headIn,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <h1
-                style={{
+                {...edit('heading', {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
@@ -154,9 +156,9 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
                   lineHeight: 1.05,
                   color: theme.text,
-                }}
+                })}
               >
-                <KineticText text={heading} highlight={meta.style?.highlight} />
+                <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
               </h1>
             ) : null}
           </div>
@@ -282,7 +284,7 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
 
           {caption ? (
             <div
-              style={{
+              {...edit('caption', {
                 position: 'absolute',
                 left: cx - R * 0.62,
                 top: cy - R * 0.3,
@@ -298,9 +300,9 @@ export const CycleDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                 lineHeight: 1.4,
                 color: theme.muted,
                 opacity: headIn,
-              }}
+              })}
             >
-              {caption}
+              {edit.text('caption', caption)}
             </div>
           ) : null}
         </div>

@@ -11,6 +11,7 @@ import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
 import { KineticText } from '../components/KineticText';
 import { parseMath, mathToPlain } from '../math/mathText';
+import { useEdit } from '../components/Editable';
 
 /**
  * geometry_diagram — a native, fully dynamic geometry figure. The analyzer
@@ -176,6 +177,7 @@ const DEFAULT_POINTS: Record<string, GeoPoint[]> = {
 };
 
 export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_geometry'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -699,7 +701,7 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 26 * u, maxWidth: '100%' }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 26 * u,
               letterSpacing: 5 * u,
@@ -707,14 +709,14 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.accent,
               opacity: headIn,
               transform: `translateY(${(1 - headIn) * 12 * u}px)`,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
         {heading ? (
           <h1
-            style={{
+            {...edit('heading', {
               margin: 0,
               fontFamily: displayFont,
               fontWeight: 900,
@@ -729,9 +731,9 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
               lineHeight: 1.05,
               color: theme.text,
               textAlign: 'center',
-            }}
+            })}
           >
-            <KineticText text={heading} highlight={meta.style?.highlight} />
+            <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
           </h1>
         ) : null}
         <div style={{ transform: fit < 1 ? `scale(${fit})` : undefined, transformOrigin: 'center top' }}>
@@ -744,7 +746,7 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
 
       {caption ? (
         <div
-          style={{
+          {...edit('caption', {
             position: 'absolute',
             left: '6%',
             bottom: '5%',
@@ -752,9 +754,9 @@ export const GeometryDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
             fontSize: 22 * u,
             color: theme.muted,
             opacity: 0.85 * headIn,
-          }}
+          })}
         >
-          {caption}
+          {edit.text('caption', caption)}
         </div>
       ) : null}
     </AbsoluteFill>

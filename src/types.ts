@@ -755,7 +755,41 @@ export interface Scene {
   punchline?: Punchline | null;
   /** First media slot's saliency focus — the mask_wipe_circle reveal origin. */
   focus?: { fx?: number; fy?: number } | null;
+  /** Hand edits made on the preview stage, keyed by element id — see
+      components/Editable.tsx. Unknown ids are ignored. */
+  element_edits?: ElementEdits | null;
 }
+
+/**
+ * One element's hand edit (the storyboard's click-to-edit stage). Every field
+ * is optional and absent means "as the layout drew it". Offsets are FRACTIONS
+ * of the frame so an edit survives the aspect-variant renders and the canvas
+ * journey's design-resolution scaling alike.
+ */
+export interface ElementEdit {
+  /** Offset right, as a fraction of the frame width. */
+  x?: number;
+  /** Offset down, as a fraction of the frame height. */
+  y?: number;
+  /** Uniform size multiplier. */
+  scale?: number;
+  /** Degrees clockwise. */
+  rotate?: number;
+  opacity?: number;
+  color?: string;
+  weight?: number;
+  italic?: boolean;
+  underline?: boolean;
+  case?: 'upper' | 'lower' | 'title' | 'none';
+  align?: 'left' | 'center' | 'right';
+  /** Letter spacing in em. */
+  tracking?: number;
+  hidden?: boolean;
+  /** Replacement wording for the element (display only; narration unchanged). */
+  text?: string;
+}
+
+export type ElementEdits = Record<string, ElementEdit>;
 
 export interface Theme {
   name: string;

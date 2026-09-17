@@ -9,6 +9,7 @@ import { useTheme, useDisplayFont, hairline, MONO_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
+import { useEdit } from '../components/Editable';
 
 /**
  * quote_portrait (copilot.md §5.12): the quote_card upgrade — a round-masked
@@ -19,6 +20,7 @@ import { f30 } from '../motion/choreo';
  * because uploads happen after validation.
  */
 export const QuotePortrait: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const portrait = scene.slots['slot_portrait'];
   const quote = scene.slots['slot_quote'];
   const theme = useTheme();
@@ -113,7 +115,7 @@ export const QuotePortrait: React.FC<{ scene: Scene }> = ({ scene }) => {
           </div>
           {source ? (
             <div
-              style={{
+              {...edit('source', {
                 marginTop: 30 * u,
                 display: 'flex',
                 alignItems: 'center',
@@ -126,10 +128,10 @@ export const QuotePortrait: React.FC<{ scene: Scene }> = ({ scene }) => {
                 textTransform: 'uppercase',
                 color: theme.muted,
                 opacity: inP,
-              }}
+              })}
             >
               <span style={{ width: 34 * u, height: 3 * u, background: theme.accent, flexShrink: 0 }} />
-              {source}
+              {edit.text('source', source)}
             </div>
           ) : null}
         </div>

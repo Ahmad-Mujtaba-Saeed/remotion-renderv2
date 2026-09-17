@@ -10,6 +10,7 @@ import { clamp01 } from '../motion/easing';
 import { f30, idleScale } from '../motion/choreo';
 import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /**
  * evidence_card — the "according to..." beat, drawn as a citation the viewer
@@ -28,6 +29,7 @@ import { KineticText } from '../components/KineticText';
  * Flat law: solid fills, one hairline rule, no shadows. Silent per §1.3.
  */
 export const EvidenceCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_evidence'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -106,21 +108,21 @@ export const EvidenceCard: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ width: stageW, maxWidth: '100%', display: 'flex', flexDirection: 'column' }}>
         {heading ? (
           <div
-            style={{
+            {...edit('heading', {
               fontFamily: BODY_FONT,
               fontSize: 24 * u,
               fontWeight: 600,
               color: theme.muted,
               marginBottom: 10 * u,
               opacity: headIn,
-            }}
+            })}
           >
-            {heading}
+            {edit.text('heading', heading)}
           </div>
         ) : null}
 
         <div
-          style={{
+          {...edit('kicker', {
             fontFamily: MONO_FONT,
             fontSize: 24 * u,
             letterSpacing: 4 * u,
@@ -128,9 +130,9 @@ export const EvidenceCard: React.FC<{ scene: Scene }> = ({ scene }) => {
             color: theme.accent,
             marginBottom: 22 * u,
             opacity: headIn,
-          }}
+          })}
         >
-          {kicker}
+          {edit.text('kicker', kicker)}
         </div>
 
         {/* The finding, cited against an accent rule. KineticText animates the
@@ -147,7 +149,7 @@ export const EvidenceCard: React.FC<{ scene: Scene }> = ({ scene }) => {
             }}
           />
           <h1
-            style={{
+            {...edit('finding', {
               margin: 0,
               fontFamily: displayFont,
               fontWeight: 800,
@@ -155,9 +157,9 @@ export const EvidenceCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               lineHeight: 1.14,
               color: theme.text,
               maxWidth: findW,
-            }}
+            })}
           >
-            <KineticText text={finding} highlight={meta.style?.highlight} />
+            <KineticText text={edit.text('finding', finding)} highlight={meta.style?.highlight} />
           </h1>
         </div>
 
@@ -181,7 +183,7 @@ export const EvidenceCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 * u, flexWrap: 'wrap' }}>
             <span
-              style={{
+              {...edit('source', {
                 display: 'inline-block',
                 fontFamily: displayFont,
                 fontSize: 30 * u,
@@ -191,9 +193,9 @@ export const EvidenceCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                 // citation from ever being a fully frozen frame (Law 6).
                 transform: `scale(${idleScale(frame, fps)})`,
                 transformOrigin: 'left center',
-              }}
+              }, { inline: true })}
             >
-              {source}
+              {edit.text('source', source)}
             </span>
             {year ? chip(year, 'year') : null}
             {sample ? chip(sample, 'sample') : null}
@@ -202,7 +204,7 @@ export const EvidenceCard: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {caption ? (
           <div
-            style={{
+            {...edit('caption', {
               marginTop: 22 * u,
               marginLeft: railW + railPad,
               fontFamily: MONO_FONT,
@@ -210,9 +212,9 @@ export const EvidenceCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               letterSpacing: 1.2 * u,
               color: theme.muted,
               opacity: attrIn,
-            }}
+            })}
           >
-            {caption}
+            {edit.text('caption', caption)}
           </div>
         ) : null}
       </div>

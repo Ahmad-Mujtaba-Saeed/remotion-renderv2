@@ -57,6 +57,7 @@ import { clamp01, easeInOutSine, easeOutCubic, easeOutQuint } from '../motion/ea
 import { f30 } from '../motion/choreo';
 import { useMotionStyle } from '../motion/styles';
 import { useIsGhost } from '../motion/ghost';
+import { ElementEditsProvider, useEdit } from './Editable';
 
 /** A gentle scale+fade entrance so each scene's content settles in — paced
     by the motion style's base duration (§2.5), so a `classic` video breathes
@@ -102,9 +103,27 @@ const MidholdPush: React.FC<{ seconds: number; children: React.ReactNode }> = ({
   );
 };
 
-/** Routes a scene to its layout component. Exported for reuse by the canvas
- *  journey, which renders the same layouts miniaturised inside station cards. */
-export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
+/**
+ * Routes a scene to its layout component. Exported for reuse by the canvas
+ * journey and the math board, which render the same layouts inside their own
+ * frames — which is why the hand-edit context and the whole-card `card` edit
+ * live HERE: every host that draws a card draws it through this.
+ */
+export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => (
+  <ElementEditsProvider scene={scene}>
+    <EditableCard>
+      <LayoutSwitch scene={scene} />
+    </EditableCard>
+  </ElementEditsProvider>
+);
+
+/** The whole card as one grabbable element: move/scale/rotate/fade it all. */
+const EditableCard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const edit = useEdit();
+  return <AbsoluteFill {...edit('card', {}, { kind: 'card' })}>{children}</AbsoluteFill>;
+};
+
+const LayoutSwitch: React.FC<{ scene: Scene }> = ({ scene }) => {
   switch (scene.layout_template) {
     case 'split_side_by_side':
       return <SplitSideBySide scene={scene} />;

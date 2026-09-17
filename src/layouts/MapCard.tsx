@@ -12,6 +12,7 @@ import { SPRINGS } from '../motion/springs';
 import { SfxCue } from '../sfx';
 import { KineticText } from '../components/KineticText';
 import { MAP_REGIONS, WORLD_PATHS, projectLat, projectLon } from '../geo/world';
+import { useEdit } from '../components/Editable';
 
 /**
  * map_card (copilot.md §5.15): a flat vector world map — muted country
@@ -21,6 +22,7 @@ import { MAP_REGIONS, WORLD_PATHS, projectLat, projectLon } from '../geo/world';
  * arc's arrival. The whole map takes a slow push so the frame never freezes.
  */
 export const MapCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_map'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -150,7 +152,7 @@ export const MapCard: React.FC<{ scene: Scene }> = ({ scene }) => {
         <div style={{ position: 'absolute', top: '5%', left: 0, right: 0, textAlign: 'center', zIndex: 2 }}>
           {kicker ? (
             <div
-              style={{
+              {...edit('kicker', {
                 fontFamily: MONO_FONT,
                 fontSize: 24 * u,
                 letterSpacing: 4 * u,
@@ -158,14 +160,14 @@ export const MapCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                 color: theme.accent,
                 marginBottom: 12 * u,
                 opacity: headIn,
-              }}
+              })}
             >
-              {kicker}
+              {edit.text('kicker', kicker)}
             </div>
           ) : null}
           {heading ? (
             <h1
-              style={{
+              {...edit('heading', {
                 margin: 0,
                 fontFamily: displayFont,
                 fontWeight: 900,
@@ -179,9 +181,9 @@ export const MapCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
                 lineHeight: 1.05,
                 color: theme.text,
-              }}
+              })}
             >
-              <KineticText text={heading} highlight={meta.style?.highlight} />
+              <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
             </h1>
           ) : null}
         </div>

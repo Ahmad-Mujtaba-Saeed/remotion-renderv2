@@ -13,6 +13,7 @@ import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useRegionStyle } from '../canvas/RegionStyle';
 import { useSceneMeta } from './SceneMeta';
 import { fitText, fitGroup } from '../typography';
+import { editId, useEdit, useSlotKey } from './Editable';
 
 /** Deterministic per-scene variation seed (scene windows differ per scene). */
 const seeded = (n: number, salt: number): number => {
@@ -68,7 +69,15 @@ export const TextBlock: React.FC<{
   const region = useRegionStyle();
   const meta = useSceneMeta();
   const skin = useSkin();
-  const bullets = slot.bullets ?? [];
+  const edit = useEdit();
+  const slotKey = useSlotKey(slot);
+  const idOf = (field: string): string => editId(slotKey, field);
+  // Hand-edited wording (display only) replaces the card's own before any
+  // type is solved, so the fit is measured on what is actually drawn.
+  const headingText = edit.text(idOf('heading'), slot.heading ?? '');
+  const bullets = (slot.bullets ?? []).map((b, i) => edit.text(idOf(`bullets.${i}`), b));
+  /** A bullet recoloured by hand keeps that colour through the dimming. */
+  const recoloured = (i: number): boolean => Boolean(edit.get(idOf(`bullets.${i}`))?.color);
   const sequential = (slot.reveal ?? 'sequential') === 'sequential';
   /** Canvas regions and explicit overlays paint straight onto the field. */
   const bare = transparent || region.frameless;
@@ -99,7 +108,7 @@ export const TextBlock: React.FC<{
 
   // ---- Look -----------------------------------------------------------------
   const longest = bullets.reduce((m, b) => Math.max(m, b.length), 0);
-  const statementFits = !transparent && !!slot.heading && bullets.length <= 3 && longest <= 52;
+  const statementFits = !transparent && !!headingText && bullets.length <= 3 && longest <= 52;
   const asLook = (v?: TextStyleVariant): Look | undefined =>
     v === undefined ? undefined : v === 'statement' ? 'statement' : 'editorial';
 
@@ -110,14 +119,14 @@ export const TextBlock: React.FC<{
       : (requested ?? (statementFits && seeded(seed, 6) > 0.5 ? 'statement' : 'editorial'));
   const centered = look === 'statement';
 
-  const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
+  const kicker = edit.text(idOf('kicker'), (meta.style?.kicker ?? slot.label ?? '').trim());
   const index = String(meta.index + 1).padStart(2, '0');
   // Highlight: stylist's picks, or (when the stylist never ran) the longest
   // meaty word so headings still get a focal point. An explicit [] means none.
   const highlight =
     meta.style?.highlight ??
     (() => {
-      const words = (slot.heading ?? '').split(/\s+/).filter((w) => w.replace(/[^a-zA-Z0-9]/g, '').length >= 5);
+      const words = headingText.split(/\s+/).filter((w) => w.replace(/[^a-zA-Z0-9]/g, '').length >= 5);
       if (!words.length) return [];
       return [words.reduce((a, b) => (b.length > a.length ? b : a))];
     })();
@@ -129,7 +138,7 @@ export const TextBlock: React.FC<{
   /** Eyebrow: scene numeral, a short accent tick, then the label. */
   const kickerRow = (
     <div
-      style={{
+      {...edit(idOf('kicker'), {
         display: 'flex',
         alignItems: 'center',
         gap: 14 * u,
@@ -141,7 +150,7 @@ export const TextBlock: React.FC<{
         fontWeight: 600,
         letterSpacing: 4 * u,
         textTransform: 'uppercase',
-      }}
+      })}
     >
       <span style={{ color: theme.muted }}>{index}</span>
       <div style={{ width: 28 * u, height: 3 * u, background: theme.accent, flexShrink: 0 }} />
@@ -159,7 +168,7 @@ export const TextBlock: React.FC<{
    */
   const column = frameW * columnFrac;
   const headingSize =
-    fitText(slot.heading ?? '', {
+    fitText(headingText, {
       width: column,
       max: (centered ? 100 : 70) * u,
       min: (centered ? 46 : 38) * u,
@@ -192,7 +201,7 @@ export const TextBlock: React.FC<{
     font: BODY_FONT,
     weight: 600,
   });
-  const headingNode = slot.heading ? (
+  const headingNode = headingText ? (
     <div
       style={{
         opacity: headingIn,
@@ -202,7 +211,7 @@ export const TextBlock: React.FC<{
     >
       {kickerRow}
       <h1
-        style={{
+        {...edit(idOf('heading'), {
           fontSize: headingSize * u,
           margin: `0 0 ${(centered ? 44 : 40) * u}px 0`,
           fontWeight: 900,
@@ -210,9 +219,9 @@ export const TextBlock: React.FC<{
           letterSpacing: -1 * u,
           color: theme.text,
           fontFamily: displayFont,
-        }}
+        })}
       >
-        <KineticText text={slot.heading} delay={Math.round(fps * 0.15)} highlight={highlight} />
+        <KineticText text={headingText} delay={Math.round(fps * 0.15)} highlight={highlight} />
       </h1>
     </div>
   ) : null;
@@ -268,11 +277,11 @@ export const TextBlock: React.FC<{
           color: theme.text,
         }}
       >
-        {slot.heading ? (
+        {headingText ? (
           <div style={{ opacity: headingIn, display: 'flex', alignItems: 'center', gap: 20 * u }}>
             <div style={{ width: 6 * u, height: 44 * u, background: theme.accent, flexShrink: 0 }} />
-            <h1 style={{ fontSize: 52 * u, margin: 0, fontWeight: 800, lineHeight: 1.05, fontFamily: displayFont }}>
-              <KineticText text={slot.heading} delay={Math.round(fps * 0.15)} highlight={highlight} />
+            <h1 {...edit(idOf('heading'), { fontSize: 52 * u, margin: 0, fontWeight: 800, lineHeight: 1.05, fontFamily: displayFont })}>
+              <KineticText text={headingText} delay={Math.round(fps * 0.15)} highlight={highlight} />
             </h1>
           </div>
         ) : null}
@@ -283,7 +292,7 @@ export const TextBlock: React.FC<{
               return (
                 <div
                   key={i}
-                  style={{
+                  {...edit(idOf(`bullets.${i}`), {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 14 * u,
@@ -291,7 +300,7 @@ export const TextBlock: React.FC<{
                     fontWeight: 600,
                     opacity: enter,
                     transform: `translateY(${interpolate(enter, [0, 1], [14 * u, 0])}px)`,
-                  }}
+                  })}
                 >
                   <span style={{ width: 8 * u, height: 8 * u, background: theme.accent, flexShrink: 0 }} />
                   {bullet}
@@ -320,7 +329,7 @@ export const TextBlock: React.FC<{
         return (
           <li
             key={i}
-            style={{
+            {...edit(idOf(`bullets.${i}`), {
               position: 'relative',
               display: 'flex',
               alignItems: 'baseline',
@@ -330,7 +339,7 @@ export const TextBlock: React.FC<{
               padding: `${26 * u}px 0`,
               opacity: enter * (1 - 0.55 * dim),
               transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
-            }}
+            })}
           >
             <div
               style={{
@@ -380,7 +389,7 @@ export const TextBlock: React.FC<{
             >
               {String(i + 1).padStart(2, '0')}
             </span>
-            <span style={{ flex: 1, color: dim > 0.35 ? theme.muted : undefined }}>{bullet}</span>
+            <span style={{ flex: 1, color: dim > 0.35 && !recoloured(i) ? theme.muted : undefined }}>{bullet}</span>
           </li>
         );
       })}
@@ -397,7 +406,7 @@ export const TextBlock: React.FC<{
         return (
           <div
             key={i}
-            style={{
+            {...edit(idOf(`bullets.${i}`), {
               position: 'relative',
               padding: `${24 * u}px 0`,
               textAlign: 'center',
@@ -405,9 +414,9 @@ export const TextBlock: React.FC<{
               lineHeight: 1.3,
               fontWeight: 600,
               opacity: enter * (1 - 0.55 * dim),
-              color: dim > 0.35 ? theme.muted : undefined,
+              color: dim > 0.35 && !recoloured(i) ? theme.muted : undefined,
               transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
-            }}
+            })}
           >
             <div
               style={{
@@ -438,7 +447,7 @@ export const TextBlock: React.FC<{
 
   const content = (
     <div style={{ width: '100%' }}>
-      {!slot.heading ? kickerRow : null}
+      {!headingText ? kickerRow : null}
       {headingNode}
       {centered ? statementPoints : editorialPoints}
     </div>

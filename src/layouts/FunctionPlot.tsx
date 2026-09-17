@@ -13,6 +13,7 @@ import { compileExpression } from '../math/expr';
 import { MathText } from '../math/mathText';
 import { KineticText } from '../components/KineticText';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /**
  * function_plot — y = f(x), drawn live. The analyzer emits a calculator-style
@@ -32,6 +33,7 @@ const PAD_X = 90;
 const PAD_Y = 60;
 
 export const FunctionPlot: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_plot'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -84,8 +86,8 @@ export const FunctionPlot: React.FC<{ scene: Scene }> = ({ scene }) => {
       <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', padding: '8%', boxSizing: 'border-box' }}>
         <div style={{ textAlign: 'center' }}>
           {kicker ? (
-            <div style={{ fontFamily: MONO_FONT, fontSize: 26 * u, letterSpacing: 5 * u, textTransform: 'uppercase', color: theme.accent, marginBottom: 20 * u, opacity: headIn }}>
-              {kicker}
+            <div {...edit('kicker', { fontFamily: MONO_FONT, fontSize: 26 * u, letterSpacing: 5 * u, textTransform: 'uppercase', color: theme.accent, marginBottom: 20 * u, opacity: headIn })}>
+              {edit.text('kicker', kicker)}
             </div>
           ) : null}
           <MathText
@@ -94,8 +96,8 @@ export const FunctionPlot: React.FC<{ scene: Scene }> = ({ scene }) => {
             style={{ fontFamily: displayFont, fontWeight: 800, fontSize: 76 * u, opacity: headIn, justifyContent: 'center' }}
           />
           {caption ? (
-            <div style={{ marginTop: 24 * u, fontFamily: MONO_FONT, fontSize: 24 * u, color: theme.muted, opacity: headIn }}>
-              {caption}
+            <div {...edit('caption', { marginTop: 24 * u, fontFamily: MONO_FONT, fontSize: 24 * u, color: theme.muted, opacity: headIn })}>
+              {edit.text('caption', caption)}
             </div>
           ) : null}
         </div>
@@ -220,7 +222,7 @@ export const FunctionPlot: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 * u, maxWidth: '100%' }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 26 * u,
               letterSpacing: 5 * u,
@@ -228,14 +230,14 @@ export const FunctionPlot: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.accent,
               opacity: headIn,
               transform: `translateY(${(1 - headIn) * 12 * u}px)`,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
         {heading ? (
           <h1
-            style={{
+            {...edit('heading', {
               margin: 0,
               fontFamily: displayFont,
               fontWeight: 900,
@@ -250,9 +252,9 @@ export const FunctionPlot: React.FC<{ scene: Scene }> = ({ scene }) => {
               lineHeight: 1.05,
               color: theme.text,
               textAlign: 'center',
-            }}
+            })}
           >
-            <KineticText text={heading} highlight={meta.style?.highlight} />
+            <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
           </h1>
         ) : null}
 
@@ -389,7 +391,7 @@ export const FunctionPlot: React.FC<{ scene: Scene }> = ({ scene }) => {
 
       {caption ? (
         <div
-          style={{
+          {...edit('caption', {
             position: 'absolute',
             left: '6%',
             bottom: '5%',
@@ -397,9 +399,9 @@ export const FunctionPlot: React.FC<{ scene: Scene }> = ({ scene }) => {
             fontSize: 22 * u,
             color: theme.muted,
             opacity: 0.85 * headIn,
-          }}
+          })}
         >
-          {caption}
+          {edit.text('caption', caption)}
         </div>
       ) : null}
     </AbsoluteFill>

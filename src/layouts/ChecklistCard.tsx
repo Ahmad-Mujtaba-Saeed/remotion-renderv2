@@ -11,6 +11,7 @@ import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SfxCue } from '../sfx';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /**
  * checklist_card (copilot.md §5.4): pros vs cons in two columns split by a
@@ -20,6 +21,7 @@ import { KineticText } from '../components/KineticText';
  * stamp on the first row only — a landmark, not a per-row chirp (§1.3).
  */
 export const ChecklistCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_checklist'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -68,14 +70,14 @@ export const ChecklistCard: React.FC<{ scene: Scene }> = ({ scene }) => {
     return (
       <div
         key={`${col}-${i}`}
-        style={{
+        {...edit(`${col}s.${i}`, {
           display: 'flex',
           alignItems: 'center',
           gap: 22 * u,
           padding: `${18 * u}px 0`,
           opacity: p,
           transform: `translateX(${(1 - p) * 18 * (isPro ? -1 : 1) * u}px)`,
-        }}
+        }, { kind: 'group' })}
       >
         <div style={{ flexShrink: 0, width: 44 * u, height: 44 * u }}>
           <IconStroke
@@ -130,7 +132,7 @@ export const ChecklistCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 44 * u }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
@@ -138,14 +140,14 @@ export const ChecklistCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                   color: theme.accent,
                   marginBottom: 16 * u,
                   opacity: headIn,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <h1
-                style={{
+                {...edit('heading', {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
@@ -159,9 +161,9 @@ export const ChecklistCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
                   lineHeight: 1.05,
                   color: theme.text,
-                }}
+                })}
               >
-                <KineticText text={heading} highlight={meta.style?.highlight} />
+                <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
               </h1>
             ) : null}
           </div>

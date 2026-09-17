@@ -13,6 +13,7 @@ import { KineticText } from '../components/KineticText';
 import { InlineMathText } from '../math/mathText';
 import { IconStroke } from '../icons/IconStroke';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /**
  * scenario_diagram — the word-problem SETUP, drawn the way a teacher sketches
@@ -48,6 +49,7 @@ const CURVE_LAYOUTS: ScenarioLayout[] = ['arc', 'climb', 'fall'];
 const KNOWN_LAYOUTS: ScenarioLayout[] = ['arc', 'climb', 'fall', 'compare', 'split', 'cycle'];
 
 export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_scenario'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -960,7 +962,7 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 40 * u, maxWidth: '100%' }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 25 * u,
               letterSpacing: 4.5 * u,
@@ -968,14 +970,14 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.accent,
               opacity: headIn,
               transform: `translateY(${(1 - headIn) * 10 * u}px)`,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
         {heading ? (
           <h1
-            style={{
+            {...edit('heading', {
               margin: 0,
               fontFamily: displayFont,
               fontWeight: 900,
@@ -990,9 +992,9 @@ export const ScenarioDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
               lineHeight: 1.05,
               color: theme.text,
               textAlign: 'center',
-            }}
+            })}
           >
-            <KineticText text={heading} highlight={meta.style?.highlight} />
+            <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
           </h1>
         ) : null}
 

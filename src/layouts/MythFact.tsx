@@ -12,6 +12,7 @@ import { clamp01, easeOutCubic, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SfxCue } from '../sfx';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /**
  * myth_fact — the debunk beat. The belief is presented first, neutral, as
@@ -25,6 +26,7 @@ import { KineticText } from '../components/KineticText';
  * never red/green floods. ONE stamp SFX, on the fact landing (§1.3).
  */
 export const MythFact: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_myth_fact'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -97,7 +99,7 @@ export const MythFact: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 48 * u }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
@@ -105,14 +107,14 @@ export const MythFact: React.FC<{ scene: Scene }> = ({ scene }) => {
                   color: theme.accent,
                   marginBottom: 14 * u,
                   opacity: headIn,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <h1
-                style={{
+                {...edit('heading', {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
@@ -126,9 +128,9 @@ export const MythFact: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
                   lineHeight: 1.05,
                   color: theme.text,
-                }}
+                })}
               >
-                <KineticText text={heading} highlight={meta.style?.highlight} />
+                <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
               </h1>
             ) : null}
           </div>

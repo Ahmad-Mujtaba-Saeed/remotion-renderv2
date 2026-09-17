@@ -9,6 +9,7 @@ import { useScaleUnit } from '../responsive';
 import { clamp01, easeInCubic, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /** Seeded pseudo-random in [-1, 1] so every render lays the prints the same. */
 const seeded = (sceneId: string, i: number): number => {
@@ -29,6 +30,7 @@ const seeded = (sceneId: string, i: number): number => {
  * each flip per the §6.5 cue map.
  */
 export const PhotoStack: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const theme = useTheme();
   const u = useScaleUnit();
   const { fps, width, height } = useVideoConfig();
@@ -61,7 +63,7 @@ export const PhotoStack: React.FC<{ scene: Scene }> = ({ scene }) => {
     <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
       {kicker ? (
         <div
-          style={{
+          {...edit('kicker', {
             position: 'absolute',
             top: '6%',
             fontFamily: MONO_FONT,
@@ -70,9 +72,9 @@ export const PhotoStack: React.FC<{ scene: Scene }> = ({ scene }) => {
             textTransform: 'uppercase',
             color: theme.accent,
             opacity: easeOutQuint(clamp01(frame / f30(fps, 12))),
-          }}
+          })}
         >
-          {kicker}
+          {edit.text('kicker', kicker)}
         </div>
       ) : null}
 

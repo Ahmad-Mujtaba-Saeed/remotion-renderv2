@@ -13,6 +13,7 @@ import { MathText, InlineMathText, parseMath, mathWidthUnits } from '../math/mat
 import { looksLikeProse } from '../math/prose';
 import { KineticText } from '../components/KineticText';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /**
  * common_mistake — the trap beat.
@@ -31,6 +32,7 @@ import { SfxCue } from '../sfx';
  * stamp cue, on the correction (§1.3).
  */
 export const CommonMistake: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_mistake'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -129,7 +131,7 @@ export const CommonMistake: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ display: 'inline-block', maxWidth: (portrait ? 900 : 1300) * u }}>
         <div style={{ textAlign: 'center', marginBottom: 40 * u, opacity: headIn }}>
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 24 * u,
               fontWeight: 700,
@@ -137,13 +139,13 @@ export const CommonMistake: React.FC<{ scene: Scene }> = ({ scene }) => {
               textTransform: 'uppercase',
               color: theme.accent,
               marginBottom: heading ? 14 * u : 0,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
           {heading ? (
             <h1
-              style={{
+              {...edit('heading', {
                 margin: 0,
                 fontFamily: displayFont,
                 fontWeight: 900,
@@ -157,9 +159,9 @@ export const CommonMistake: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
                 lineHeight: 1.06,
                 color: theme.text,
-              }}
+              })}
             >
-              <KineticText text={heading} highlight={meta.style?.highlight} />
+              <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
             </h1>
           ) : null}
         </div>
@@ -238,7 +240,7 @@ export const CommonMistake: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {caption ? (
           <div
-            style={{
+            {...edit('caption', {
               marginTop: 22 * u,
               paddingLeft: 28 * u,
               fontFamily: MONO_FONT,
@@ -246,9 +248,9 @@ export const CommonMistake: React.FC<{ scene: Scene }> = ({ scene }) => {
               letterSpacing: 1.2 * u,
               color: theme.muted,
               opacity: easeOutQuint(clamp01((frame - rightAt - f30(fps, 22)) / f30(fps, 10))),
-            }}
+            })}
           >
-            {caption}
+            {edit.text('caption', caption)}
           </div>
         ) : null}
       </div>

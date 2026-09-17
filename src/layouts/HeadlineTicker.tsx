@@ -10,6 +10,7 @@ import { fitText } from '../typography';
 import { clamp01, easeOutCubic, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /**
  * headline_ticker (copilot.md §5.16): 2-3 press/reaction chips stack in with
@@ -18,6 +19,7 @@ import { KineticText } from '../components/KineticText';
  * typewriter clatter on every chip is exactly the per-item noise §1.3 bans.
  */
 export const HeadlineTicker: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_headlines'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -49,7 +51,7 @@ export const HeadlineTicker: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 48 * u }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
@@ -57,23 +59,23 @@ export const HeadlineTicker: React.FC<{ scene: Scene }> = ({ scene }) => {
                   color: theme.accent,
                   marginBottom: 14 * u,
                   opacity: headIn,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <h1
-                style={{
+                {...edit('heading', {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
                   fontSize: 60 * u,
                   lineHeight: 1.05,
                   color: theme.text,
-                }}
+                })}
               >
-                <KineticText text={heading} highlight={meta.style?.highlight} />
+                <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
               </h1>
             ) : null}
           </div>

@@ -6,6 +6,7 @@ import { useSceneClock } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, MONO_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { useEdit } from '../components/Editable';
 
 /**
  * quote_card: one slot (slot_quote, explanation_box or text_block) for a
@@ -23,12 +24,17 @@ export const QuoteCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { fps } = useVideoConfig();
   const { frame } = useSceneClock();
   const meta = useSceneMeta();
+  const edit = useEdit();
 
   if (!slot) return null;
 
   // explanation_box carries the quote in body; text_block in heading.
-  const quote = (slot.body || slot.heading || '').trim();
-  const attribution = (meta.style?.kicker || slot.heading === quote ? meta.style?.kicker : slot.heading) || '';
+  const sourceQuote = (slot.body || slot.heading || '').trim();
+  const quote = edit.text('quote', sourceQuote);
+  const attribution = edit.text(
+    'attribution',
+    (meta.style?.kicker || slot.heading === sourceQuote ? meta.style?.kicker : slot.heading) || ''
+  );
   const highlight = meta.style?.highlight ?? [];
 
   const chars = quote.length;
@@ -47,7 +53,7 @@ export const QuoteCard: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ position: 'relative', maxWidth: 1440 * u, margin: '0 auto', width: '100%' }}>
         {/* The mark: one huge flat glyph, cropped by the composition. */}
         <div
-          style={{
+          {...edit('mark', {
             position: 'absolute',
             top: -170 * u,
             left: -30 * u,
@@ -58,14 +64,14 @@ export const QuoteCard: React.FC<{ scene: Scene }> = ({ scene }) => {
             color: theme.accent,
             opacity: 0.9 * markIn,
             transform: `translateY(${(1 - markIn) * -24}px)`,
-            pointerEvents: 'none',
             userSelect: 'none',
-          }}
+          }, { kind: 'shape' })}
         >
           &ldquo;
         </div>
 
         <div style={{ paddingTop: 120 * u }}>
+          <div {...edit('quote', { color: theme.text })}>
           <KineticText
             text={quote}
             highlight={highlight}
@@ -75,19 +81,20 @@ export const QuoteCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               fontSize: quoteSize,
               lineHeight: 1.18,
               letterSpacing: -0.5 * u,
-              color: theme.text,
             }}
           />
+          </div>
 
           {attribution ? (
             <div
-              style={{
+              {...edit('attribution', {
                 marginTop: 44 * u,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 22 * u,
                 opacity: attrIn,
-              }}
+                color: theme.muted,
+              })}
             >
               <div style={{ width: 64 * u, height: 4 * u, background: theme.accent }} />
               <div
@@ -96,7 +103,6 @@ export const QuoteCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                   fontSize: 28 * u,
                   letterSpacing: 3 * u,
                   textTransform: 'uppercase',
-                  color: theme.muted,
                 }}
               >
                 {attribution}

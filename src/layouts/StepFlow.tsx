@@ -11,6 +11,7 @@ import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /**
  * step_flow (copilot.md §5.8): a process as 3-5 numbered nodes — solid
@@ -20,6 +21,7 @@ import { KineticText } from '../components/KineticText';
  * in 16:9, a vertical rail in 9:16. Silent per §1.3 — the motion carries it.
  */
 export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_steps'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -89,7 +91,7 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
           </div>
         ) : null}
         <div
-          style={{
+          {...edit(`steps.${i}`, {
             display: 'flex',
             flexDirection: portrait ? 'row' : 'column',
             alignItems: 'center',
@@ -98,7 +100,7 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
             transform: `scale(${Math.min(1.06, pop)})`,
             width: portrait ? undefined : 220 * u,
             flexShrink: 0,
-          }}
+          }, { kind: 'group' })}
         >
           <div
             style={{
@@ -162,7 +164,7 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ width: '100%', maxWidth: 1500 * u, textAlign: 'center' }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 24 * u,
               letterSpacing: 4 * u,
@@ -170,14 +172,14 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.accent,
               marginBottom: 14 * u,
               opacity: headIn,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
         {heading ? (
           <h1
-            style={{
+            {...edit('heading', {
               margin: `0 0 ${54 * u}px 0`,
               fontFamily: displayFont,
               fontWeight: 900,
@@ -191,9 +193,9 @@ export const StepFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
               lineHeight: 1.05,
               color: theme.text,
-            }}
+            })}
           >
-            <KineticText text={heading} highlight={meta.style?.highlight} />
+            <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
           </h1>
         ) : null}
 

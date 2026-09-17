@@ -10,6 +10,7 @@ import { fitText, fitGroup } from '../typography';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /**
  * icon_grid (copilot.md §5.6): a 2×2 to 3×3 grid of flat line icons that
@@ -19,6 +20,7 @@ import { KineticText } from '../components/KineticText';
  * SVG strokes, never raster images. No per-cell sounds (§1.3).
  */
 export const IconGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_icons'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -64,13 +66,13 @@ export const IconGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
     return (
       <div
         key={i}
-        style={{
+        {...edit(`items.${i}`, {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: 20 * u,
           padding: `${30 * u}px ${16 * u}px`,
-        }}
+        }, { kind: 'group' })}
       >
         <IconStroke
           name={item.icon}
@@ -107,7 +109,7 @@ export const IconGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ width: '100%', maxWidth: 1360 * u, textAlign: 'center' }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 24 * u,
               letterSpacing: 4 * u,
@@ -115,14 +117,14 @@ export const IconGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.accent,
               marginBottom: 14 * u,
               opacity: headIn,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
         {heading ? (
           <h1
-            style={{
+            {...edit('heading', {
               margin: `0 0 ${34 * u}px 0`,
               fontFamily: displayFont,
               fontWeight: 900,
@@ -136,9 +138,9 @@ export const IconGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
               lineHeight: 1.05,
               color: theme.text,
-            }}
+            })}
           >
-            <KineticText text={heading} highlight={meta.style?.highlight} />
+            <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
           </h1>
         ) : null}
 

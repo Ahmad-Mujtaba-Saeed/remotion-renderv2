@@ -9,6 +9,7 @@ import { fitText } from '../typography';
 import { clamp01 } from '../motion/easing';
 import { useCardReveal } from '../motion/cardReveal';
 import { spokenAt } from '../motion/narrationBeats';
+import { useEdit } from '../components/Editable';
 
 /**
  * custom_card — the escape hatch.
@@ -53,6 +54,7 @@ const cueValues = (html: string, attribute: string): string[] => {
 };
 
 export const CustomCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_custom'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -203,30 +205,30 @@ export const CustomCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 24 * u, opacity: headIn }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
                   textTransform: 'uppercase',
                   color: theme.accent,
                   marginBottom: heading ? 10 * u : 0,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <div
-                style={{
+                {...edit('heading', {
                   fontFamily: displayFont,
                   fontWeight: 900,
                   fontSize: headFs,
                   lineHeight: 1.1,
                   color: theme.text,
                   transform: `translateY(${(1 - headIn) * reveal.rise * u}px)`,
-                }}
+                })}
               >
-                {heading}
+                {edit.text('heading', heading)}
               </div>
             ) : null}
           </div>
@@ -270,7 +272,7 @@ export const CustomCard: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {caption ? (
           <div
-            style={{
+            {...edit('caption', {
               marginTop: 18 * u,
               fontFamily: MONO_FONT,
               fontSize: 22 * u,
@@ -278,9 +280,9 @@ export const CustomCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.muted,
               textAlign: 'center',
               opacity: headIn,
-            }}
+            })}
           >
-            {caption}
+            {edit.text('caption', caption)}
           </div>
         ) : null}
       </div>

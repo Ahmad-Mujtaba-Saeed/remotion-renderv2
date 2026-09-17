@@ -10,6 +10,7 @@ import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SfxCue } from '../sfx';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /**
  * pictogram_percent — the people-stat as people: "7 in 10" rendered as a row
@@ -61,6 +62,7 @@ const Person: React.FC<{
 };
 
 export const PictogramPercent: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_pictogram'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -109,7 +111,7 @@ export const PictogramPercent: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ width: '100%', maxWidth: contentW, textAlign: 'center' }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 24 * u,
               letterSpacing: 4 * u,
@@ -117,9 +119,9 @@ export const PictogramPercent: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.accent,
               marginBottom: 16 * u,
               opacity: headIn,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
 
@@ -139,7 +141,7 @@ export const PictogramPercent: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {heading ? (
           <h1
-            style={{
+            {...edit('heading', {
               margin: `${22 * u}px 0 0`,
               fontFamily: displayFont,
               fontWeight: 800,
@@ -153,9 +155,9 @@ export const PictogramPercent: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
               lineHeight: 1.1,
               color: theme.text,
-            }}
+            })}
           >
-            <KineticText text={heading} highlight={meta.style?.highlight} />
+            <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
           </h1>
         ) : null}
 

@@ -11,6 +11,7 @@ import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
 import { KineticText } from '../components/KineticText';
 import { CalloutLayer, calloutRevealSchedule } from '../components/CalloutLayer';
+import { useEdit } from '../components/Editable';
 
 /**
  * labeled_diagram — the canonical "how X works" visual: one contained hero
@@ -24,6 +25,7 @@ import { CalloutLayer, calloutRevealSchedule } from '../components/CalloutLayer'
  * into "image + neat key" instead of guessing where parts are.
  */
 export const LabeledDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot: Slot | undefined =
     scene.slots['slot_diagram'] ??
     Object.values(scene.slots).find((s) => s.content_type === 'image');
@@ -75,7 +77,7 @@ export const LabeledDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
         <div style={{ textAlign: 'center', flexShrink: 0 }}>
           {kicker ? (
             <div
-              style={{
+              {...edit('kicker', {
                 fontFamily: MONO_FONT,
                 fontSize: 24 * u,
                 letterSpacing: 4 * u,
@@ -83,14 +85,14 @@ export const LabeledDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                 color: theme.accent,
                 marginBottom: 12 * u,
                 opacity: headIn,
-              }}
+              })}
             >
-              {kicker}
+              {edit.text('kicker', kicker)}
             </div>
           ) : null}
           {heading ? (
             <h1
-              style={{
+              {...edit('heading', {
                 margin: 0,
                 fontFamily: displayFont,
                 fontWeight: 900,
@@ -104,9 +106,9 @@ export const LabeledDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
                 lineHeight: 1.05,
                 color: theme.text,
-              }}
+              })}
             >
-              <KineticText text={heading} highlight={meta.style?.highlight} />
+              <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
             </h1>
           ) : null}
         </div>

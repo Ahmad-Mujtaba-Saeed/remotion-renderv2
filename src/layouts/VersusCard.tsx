@@ -11,6 +11,7 @@ import { f30 } from '../motion/choreo';
 import { useCardReveal } from '../motion/cardReveal';
 import { parseCountable, rollText } from '../motion/CountUp';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /**
  * versus_card (copilot.md §5.1) — the head-to-head showdown:
@@ -26,6 +27,7 @@ import { SfxCue } from '../sfx';
  * solid colour wipe. Transform/clip/colour only.
  */
 export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const left = scene.slots['slot_left'];
   const right = scene.slots['slot_right'];
   const versus: Slot | undefined = scene.slots['slot_versus'];
@@ -219,7 +221,7 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
       {/* Verdict: a solid accent flood wipes up from the bottom edge. */}
       {verdict ? (
         <div
-          style={{
+          {...edit('verdict', {
             position: 'absolute',
             left: 0,
             right: 0,
@@ -244,9 +246,9 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
             textAlign: 'center',
             padding: '0 6%',
             boxSizing: 'border-box',
-          }}
+          })}
         >
-          {verdict}
+          {edit.text('verdict', verdict)}
         </div>
       ) : null}
     </AbsoluteFill>

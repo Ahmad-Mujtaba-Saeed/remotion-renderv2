@@ -6,6 +6,7 @@ import { useSceneClock } from '../canvas/SceneClock';
 import { useSceneMeta } from '../components/SceneMeta';
 import { useTheme, useDisplayFont, hairline, MONO_FONT, BODY_FONT } from '../theme';
 import { useScaleUnit } from '../responsive';
+import { editId, useEdit, useSlotKey } from '../components/Editable';
 
 /**
  * stat_spotlight: one slot (slot_stat, text_block) for the scene whose whole
@@ -23,12 +24,15 @@ export const StatSpotlight: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { fps } = useVideoConfig();
   const { frame } = useSceneClock();
   const meta = useSceneMeta();
+  const edit = useEdit();
+  const slotKey = useSlotKey(slot);
+  const idOf = (field: string): string => editId(slotKey, field);
 
   if (!slot) return null;
 
-  const heading = slot.heading ?? '';
-  const support = (slot.bullets ?? []).slice(0, 2);
-  const kicker = meta.style?.kicker ?? '';
+  const heading = edit.text(idOf('heading'), slot.heading ?? '');
+  const support = (slot.bullets ?? []).slice(0, 2).map((b, i) => edit.text(idOf(`bullets.${i}`), b));
+  const kicker = edit.text(idOf('kicker'), meta.style?.kicker ?? '');
   const highlight = meta.style?.highlight ?? [];
 
   // Big-number sizing: short stats ("$4.2B") earn a poster-size setting;
@@ -49,19 +53,20 @@ export const StatSpotlight: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ width: '100%', maxWidth: 1500 * u, textAlign: 'center' }}>
         {kicker ? (
           <div
-            style={{
+            {...edit(idOf('kicker'), {
               fontFamily: MONO_FONT,
               fontSize: 30 * u,
               letterSpacing: 5 * u,
               textTransform: 'uppercase',
               color: theme.accent,
               marginBottom: 30 * u,
-            }}
+            })}
           >
             {kicker}
           </div>
         ) : null}
 
+        <div {...edit(idOf('heading'), { color: theme.text })}>
         <KineticText
           text={heading}
           highlight={highlight}
@@ -74,9 +79,9 @@ export const StatSpotlight: React.FC<{ scene: Scene }> = ({ scene }) => {
             fontSize: headingSize,
             lineHeight: 1.02,
             letterSpacing: -2 * u,
-            color: theme.text,
           }}
         />
+        </div>
 
         {support.length > 0 ? (
           <div
@@ -95,13 +100,13 @@ export const StatSpotlight: React.FC<{ scene: Scene }> = ({ scene }) => {
             {support.map((line, i) => (
               <div
                 key={i}
-                style={{
+                {...edit(idOf(`bullets.${i}`), {
                   fontFamily: BODY_FONT,
                   fontSize: 34 * u,
                   lineHeight: 1.35,
                   color: theme.muted,
                   maxWidth: 620 * u,
-                }}
+                })}
               >
                 {line}
               </div>

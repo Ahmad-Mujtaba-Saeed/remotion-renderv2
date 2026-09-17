@@ -11,6 +11,7 @@ import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
 import { parseCountable, rollText } from '../motion/CountUp';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /** A value label that counts up as its mark lands (tabular — never shifts). */
 const RollingValue: React.FC<{
@@ -54,6 +55,7 @@ const RollingValue: React.FC<{
  * completes (§6.5) — never per-bar sounds.
  */
 export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_chart'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -620,7 +622,7 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 30 * u, maxWidth: '100%' }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 28 * u,
               letterSpacing: 5 * u,
@@ -628,23 +630,23 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.accent,
               opacity: kickerIn,
               transform: `translateY(${(1 - kickerIn) * 14 * u}px)`,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
         {caption ? (
           <div
-            style={{
+            {...edit('caption', {
               fontFamily: displayFont,
               fontWeight: 800,
               fontSize: 54 * u,
               color: theme.text,
               textAlign: 'center',
               opacity: kickerIn,
-            }}
+            })}
           >
-            {caption}
+            {edit.text('caption', caption)}
           </div>
         ) : null}
         <div style={{ transform: fit < 1 ? `scale(${fit})` : undefined, transformOrigin: 'center top' }}>
@@ -654,7 +656,7 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
 
       {source ? (
         <div
-          style={{
+          {...edit('source', {
             position: 'absolute',
             left: '6%',
             bottom: '5%',
@@ -662,9 +664,9 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
             fontSize: 22 * u,
             color: theme.muted,
             opacity: 0.8,
-          }}
+          })}
         >
-          {source}
+          {edit.text('source', source)}
         </div>
       ) : null}
     </AbsoluteFill>

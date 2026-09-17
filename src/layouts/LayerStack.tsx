@@ -11,6 +11,7 @@ import { f30, idleScale } from '../motion/choreo';
 import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
+import { useEdit } from '../components/Editable';
 
 /**
  * layer_stack — the "what's inside X" beat drawn as what it is: 3-6 flat
@@ -24,6 +25,7 @@ import { calloutRevealSchedule } from '../components/CalloutLayer';
  * texture. Silent per §1.3.
  */
 export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_layers'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -112,7 +114,7 @@ export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 26 * u }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
@@ -120,23 +122,23 @@ export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
                   color: theme.accent,
                   marginBottom: 12 * u,
                   opacity: headIn,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <h1
-                style={{
+                {...edit('heading', {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
                   fontSize: headFs,
                   lineHeight: 1.05,
                   color: theme.text,
-                }}
+                })}
               >
-                <KineticText text={heading} highlight={meta.style?.highlight} />
+                <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
               </h1>
             ) : null}
           </div>
@@ -223,7 +225,7 @@ export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {caption ? (
           <div
-            style={{
+            {...edit('caption', {
               marginTop: 22 * u,
               fontFamily: MONO_FONT,
               fontSize: 23 * u,
@@ -231,9 +233,9 @@ export const LayerStack: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.muted,
               opacity: headIn,
               textAlign: 'center',
-            }}
+            })}
           >
-            {caption}
+            {edit.text('caption', caption)}
           </div>
         ) : null}
       </div>

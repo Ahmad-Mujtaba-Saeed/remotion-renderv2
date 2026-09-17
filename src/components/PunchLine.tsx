@@ -1,3 +1,4 @@
+import { ElementEditsProvider, useEdit } from './Editable';
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { Scene, PunchlineStyle } from '../types';
@@ -24,7 +25,16 @@ import { SfxCue } from '../sfx';
  *  - "stamp": full-width uppercase SLAM on a solid field, with an impact ring.
  *  - "quote": a serif pull-quote on a panel block behind an accent rule.
  */
-export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
+/** Punchlines draw outside the card (screen space in the canvas journey), so
+    they carry their own hand-edit context. */
+export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => (
+  <ElementEditsProvider scene={scene}>
+    <PunchLineInner scene={scene} />
+  </ElementEditsProvider>
+);
+
+const PunchLineInner: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const p = scene.punchline;
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -275,7 +285,10 @@ export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => {
       }}
     >
       {sound}
-      <div style={{ maxWidth: wrapMaxWidth, width: style === 'stamp' ? '84%' : undefined }}>{inner}</div>
+      {/* pointer-events back on so the editing stage can pick it; inert in a render. */}
+      <div {...edit('punchline', { maxWidth: wrapMaxWidth, width: style === 'stamp' ? '84%' : undefined, pointerEvents: 'auto' })}>
+        {inner}
+      </div>
     </div>
   );
 };

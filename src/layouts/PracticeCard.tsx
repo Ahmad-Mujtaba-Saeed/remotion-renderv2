@@ -13,6 +13,7 @@ import { MathText, InlineMathText, parseMath, mathWidthUnits } from '../math/mat
 import { looksLikeProse } from '../math/prose';
 import { KineticText } from '../components/KineticText';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /**
  * practice_card — the "now you try one" beat.
@@ -34,6 +35,7 @@ import { SfxCue } from '../sfx';
  * the problem. ONE stamp cue on the reveal (§1.3).
  */
 export const PracticeCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_practice'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -123,7 +125,7 @@ export const PracticeCard: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ width: portrait ? '96%' : '82%', textAlign: 'center' }}>
         <div style={{ marginBottom: 22 * u, opacity: headIn }}>
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 24 * u,
               fontWeight: 700,
@@ -131,13 +133,13 @@ export const PracticeCard: React.FC<{ scene: Scene }> = ({ scene }) => {
               textTransform: 'uppercase',
               color: theme.accent,
               marginBottom: heading ? 12 * u : 0,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
           {heading ? (
             <h1
-              style={{
+              {...edit('heading', {
                 margin: 0,
                 fontFamily: displayFont,
                 fontWeight: 900,
@@ -151,9 +153,9 @@ export const PracticeCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
                 lineHeight: 1.06,
                 color: theme.text,
-              }}
+              })}
             >
-              <KineticText text={heading} highlight={meta.style?.highlight} />
+              <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
             </h1>
           ) : null}
         </div>
@@ -280,16 +282,16 @@ export const PracticeCard: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {caption ? (
           <div
-            style={{
+            {...edit('caption', {
               marginTop: 26 * u,
               fontFamily: MONO_FONT,
               fontSize: metaFs * 0.9,
               letterSpacing: 1.2 * u,
               color: theme.muted,
               opacity: captionIn,
-            }}
+            })}
           >
-            {caption}
+            {edit.text('caption', caption)}
           </div>
         ) : null}
       </div>

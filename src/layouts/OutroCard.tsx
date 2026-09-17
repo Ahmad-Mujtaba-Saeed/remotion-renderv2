@@ -9,6 +9,7 @@ import { SPRINGS } from '../motion/springs';
 import { enter, f30 } from '../motion/choreo';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /**
  * outro_card — the auto-appended closing end card (copilot.md §10.2). Flat by
@@ -18,6 +19,7 @@ import { SfxCue } from '../sfx';
  * bullets = [cta, handle?]) so every storage/UI path treats it as text.
  */
 export const OutroCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_outro'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const u = useScaleUnit();
@@ -68,16 +70,16 @@ export const OutroCard: React.FC<{ scene: Scene }> = ({ scene }) => {
       </div>
 
       <div
-        style={{
+        {...edit('title', {
           fontFamily: DISPLAY_FONT,
           fontWeight: 800,
           fontSize: (title.length > 32 ? 72 : 96) * u,
           lineHeight: 1.04,
           letterSpacing: -1.5 * u,
           maxWidth: '86%',
-        }}
+        })}
       >
-        <KineticText text={title} delay={f30(fps, 6)} />
+        <KineticText text={edit.text('title', title)} delay={f30(fps, 6)} />
       </div>
 
       <div

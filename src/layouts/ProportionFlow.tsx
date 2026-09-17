@@ -10,6 +10,7 @@ import { clamp01, easeInOutSine, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { KineticText } from '../components/KineticText';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
+import { useEdit } from '../components/Editable';
 
 /**
  * Group thousands of a magnitude (receipt's rule), but WITHOUT padding the
@@ -68,6 +69,7 @@ const wholePercents = (shares: number[]): number[] => {
  * render. Flat law: solid fields, hairline fork, no gradients. Silent per §1.3.
  */
 export const ProportionFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_proportion'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -198,7 +200,7 @@ export const ProportionFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 22 * u }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
@@ -206,14 +208,14 @@ export const ProportionFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
                   color: theme.accent,
                   marginBottom: 12 * u,
                   opacity: headIn,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <h1
-                style={{
+                {...edit('heading', {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
@@ -221,9 +223,9 @@ export const ProportionFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
                   lineHeight: 1.05,
                   color: theme.text,
                   maxWidth: headW,
-                }}
+                })}
               >
-                <KineticText text={heading} highlight={meta.style?.highlight} />
+                <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
               </h1>
             ) : null}
           </div>
@@ -457,7 +459,7 @@ export const ProportionFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
 
         {caption ? (
           <div
-            style={{
+            {...edit('caption', {
               marginTop: 20 * u,
               fontFamily: MONO_FONT,
               fontSize: 22 * u,
@@ -465,9 +467,9 @@ export const ProportionFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.muted,
               opacity: headIn,
               textAlign: 'center',
-            }}
+            })}
           >
-            {caption}
+            {edit.text('caption', caption)}
           </div>
         ) : null}
       </div>

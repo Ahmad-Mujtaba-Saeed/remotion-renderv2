@@ -10,6 +10,7 @@ import { clamp01, easeOutCubic, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
 import { MathText, parseMath, collectAtoms, mathWidthUnits } from '../math/mathText';
+import { useEdit } from '../components/Editable';
 
 /**
  * formula_anatomy — one equation, anatomized. The formula typesets large and
@@ -71,6 +72,7 @@ interface PlacedPart {
 }
 
 export const FormulaAnatomy: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_formula'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -223,7 +225,7 @@ export const FormulaAnatomy: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 26 * u }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
@@ -231,14 +233,14 @@ export const FormulaAnatomy: React.FC<{ scene: Scene }> = ({ scene }) => {
                   color: theme.accent,
                   marginBottom: 12 * u,
                   opacity: headIn,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <h1
-                style={{
+                {...edit('heading', {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
@@ -253,9 +255,9 @@ export const FormulaAnatomy: React.FC<{ scene: Scene }> = ({ scene }) => {
                   lineHeight: 1.05,
                   color: theme.text,
                   opacity: headIn,
-                }}
+                })}
               >
-                {heading}
+                {edit.text('heading', heading)}
               </h1>
             ) : null}
           </div>

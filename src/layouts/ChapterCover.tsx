@@ -7,6 +7,7 @@ import { useScaleUnit } from '../responsive';
 import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /** The cover's chapter ordinal, from its id ("scene_cover_3") or label. */
 const chapterNumber = (scene: Scene): number => {
@@ -26,6 +27,7 @@ const chapterNumber = (scene: Scene): number => {
  * while the riser→sub_boom act-break cue (chapter boundary, M2) lands.
  */
 export const ChapterCover: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_cover'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -68,7 +70,7 @@ export const ChapterCover: React.FC<{ scene: Scene }> = ({ scene }) => {
 
       <div style={{ position: 'relative', textAlign: 'center', maxWidth: '80%' }}>
         <div
-          style={{
+          {...edit('kicker', {
             fontFamily: MONO_FONT,
             fontSize: 28 * u,
             fontWeight: 700,
@@ -78,13 +80,13 @@ export const ChapterCover: React.FC<{ scene: Scene }> = ({ scene }) => {
             marginBottom: 30 * u,
             opacity: kickerIn,
             transform: `translateY(${(1 - kickerIn) * 14 * u}px)`,
-          }}
+          })}
         >
-          {kicker}
+          {edit.text('kicker', kicker)}
         </div>
 
         <h1
-          style={{
+          {...edit('title', {
             margin: 0,
             fontFamily: displayFont,
             fontWeight: 900,
@@ -92,9 +94,9 @@ export const ChapterCover: React.FC<{ scene: Scene }> = ({ scene }) => {
             lineHeight: 1.02,
             letterSpacing: -1.5 * u,
             color: ink,
-          }}
+          })}
         >
-          <KineticText text={title} delay={f30(fps, 6)} exit={false} />
+          <KineticText text={edit.text('title', title)} delay={f30(fps, 6)} exit={false} />
         </h1>
 
         {/* The 3u accent rule draws under the title. */}

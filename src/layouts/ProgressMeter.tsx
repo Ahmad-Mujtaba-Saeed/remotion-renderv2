@@ -8,6 +8,7 @@ import { useScaleUnit } from '../responsive';
 import { clamp01, easeOutExpo, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SfxCue } from '../sfx';
+import { useEdit } from '../components/Editable';
 
 /**
  * progress_meter (copilot.md §5.11): one horizontal track — a hairline
@@ -16,6 +17,7 @@ import { SfxCue } from '../sfx';
  * single chime lands when the meter completes (§6.5).
  */
 export const ProgressMeter: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_meter'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -48,7 +50,7 @@ export const ProgressMeter: React.FC<{ scene: Scene }> = ({ scene }) => {
       <div style={{ width: '100%', maxWidth: 1240 * u, textAlign: 'center' }}>
         {kicker ? (
           <div
-            style={{
+            {...edit('kicker', {
               fontFamily: MONO_FONT,
               fontSize: 26 * u,
               letterSpacing: 4 * u,
@@ -56,9 +58,9 @@ export const ProgressMeter: React.FC<{ scene: Scene }> = ({ scene }) => {
               color: theme.accent,
               marginBottom: 26 * u,
               opacity: headIn,
-            }}
+            })}
           >
-            {kicker}
+            {edit.text('kicker', kicker)}
           </div>
         ) : null}
 

@@ -1,3 +1,4 @@
+import { editId, useEdit, useSlotKey } from './Editable';
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Img, Loop, Sequence, Video, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { FrameSequence, Slot } from '../types';
@@ -73,6 +74,11 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   const sceneWindow = useSceneWindow();
   const [boxRef, boxAspect] = useBoxAspect();
   const url = slot.asset_ref?.url;
+  const edit = useEdit();
+  const slotKey = useSlotKey(slot);
+  const mediaId = editId(slotKey, 'media');
+  const labelId = editId(slotKey, 'label');
+  const label = edit.text(labelId, slot.label ?? '');
 
   // Media settle (Law 2: decisive arrivals): every asset LANDS with a small
   // scale exhale over a fast fade instead of being baked into the frame —
@@ -106,7 +112,7 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   if (!url) {
     return (
       <div
-        style={{
+        {...edit(mediaId, {
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -126,7 +132,7 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
           padding: 48 * u,
           boxSizing: 'border-box',
           ...framelessWrap,
-        }}
+        }, { kind: 'media' })}
       >
         {slot.asset_request?.description || 'Image'}
       </div>
@@ -233,14 +239,17 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   );
 
   return (
-    <div ref={boxRef} style={{ width: '100%', height: '100%', position: 'relative', ...framelessWrap, ...entrance }}>
+    <div
+      ref={boxRef}
+      {...edit(mediaId, { width: '100%', height: '100%', position: 'relative', ...framelessWrap, ...entrance }, { kind: 'media' })}
+    >
       {containBackdrop}
       {/* Panning letterboxed media around looks broken — contained assets get
           a gentle push-in instead of their assigned pan. */}
       <CameraMove move={contained ? 'slow_zoom_in' : slot.camera_move}>{withCallouts}</CameraMove>
-      {slot.label ? (
+      {label ? (
         <div
-          style={{
+          {...edit(labelId, {
             position: 'absolute',
             left: 0,
             bottom: 40 * u,
@@ -252,9 +261,9 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
             fontFamily: MONO_FONT,
             textTransform: 'uppercase',
             letterSpacing: 2 * u,
-          }}
+          })}
         >
-          {slot.label}
+          {label}
         </div>
       ) : null}
     </div>

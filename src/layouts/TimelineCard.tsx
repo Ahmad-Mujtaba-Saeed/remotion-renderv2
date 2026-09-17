@@ -10,6 +10,7 @@ import { clamp01, easeInOutSine } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { useCardReveal } from '../motion/cardReveal';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /** Golden-section anchor for the active node (fraction of the frame axis). */
 const GOLDEN = 0.382;
@@ -22,6 +23,7 @@ const GOLDEN = 0.382;
  * kickers, labels underneath; the newest node takes the accent.
  */
 export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_timeline'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -132,7 +134,7 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
     return (
       <div
         key={i}
-        style={{
+        {...edit(`nodes.${i}`, {
           position: 'absolute',
           ...(portrait
             ? { top: i * seg, left: 0, flexDirection: 'row' as const }
@@ -145,7 +147,7 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           width: portrait ? labelW + 64 * u : seg,
           marginLeft: portrait ? 0 : -seg / 2,
           textAlign: portrait ? 'left' : 'center',
-        }}
+        }, { kind: 'group' })}
       >
         <div
           style={{
@@ -195,7 +197,7 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
         <div style={{ textAlign: 'center', marginTop: portrait ? '4%' : '2%' }}>
           {kicker ? (
             <div
-              style={{
+              {...edit('kicker', {
                 fontFamily: MONO_FONT,
                 fontSize: 24 * u,
                 letterSpacing: 4 * u,
@@ -203,23 +205,23 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
                 color: theme.accent,
                 marginBottom: 14 * u,
                 opacity: headIn,
-              }}
+              })}
             >
-              {kicker}
+              {edit.text('kicker', kicker)}
             </div>
           ) : null}
           {heading ? (
             <h1
-              style={{
+              {...edit('heading', {
                 margin: 0,
                 fontFamily: displayFont,
                 fontWeight: 900,
                 fontSize: headFs,
                 lineHeight: 1.05,
                 color: theme.text,
-              }}
+              })}
             >
-              <KineticText text={heading} highlight={meta.style?.highlight} />
+              <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
             </h1>
           ) : null}
         </div>

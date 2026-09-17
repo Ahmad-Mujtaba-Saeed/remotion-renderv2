@@ -9,6 +9,7 @@ import { useScaleUnit } from '../responsive';
 import { clamp01, easeOutCubic } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SPRINGS } from '../motion/springs';
+import { useEdit } from '../components/Editable';
 
 /**
  * phone_mockup (copilot.md §5.13): screen content presented inside a pure-CSS
@@ -18,6 +19,7 @@ import { SPRINGS } from '../motion/springs';
  * block behind the device (§1.1 Flat Design Law).
  */
 export const PhoneMockup: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_screen'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const u = useScaleUnit();
@@ -55,7 +57,7 @@ export const PhoneMockup: React.FC<{ scene: Scene }> = ({ scene }) => {
     <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
       {kicker ? (
         <div
-          style={{
+          {...edit('kicker', {
             position: 'absolute',
             top: '6%',
             fontFamily: MONO_FONT,
@@ -64,9 +66,9 @@ export const PhoneMockup: React.FC<{ scene: Scene }> = ({ scene }) => {
             textTransform: 'uppercase',
             color: theme.accent,
             opacity: easeOutCubic(clamp01(frame / f30(fps, 12))),
-          }}
+          })}
         >
-          {kicker}
+          {edit.text('kicker', kicker)}
         </div>
       ) : null}
 

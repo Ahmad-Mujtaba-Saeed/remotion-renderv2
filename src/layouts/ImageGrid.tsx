@@ -10,6 +10,7 @@ import { fitText, fitGroup } from '../typography';
 import { clamp01 } from '../motion/easing';
 import { useCardReveal } from '../motion/cardReveal';
 import { calloutRevealSchedule } from '../components/CalloutLayer';
+import { useEdit } from '../components/Editable';
 
 /**
  * image_grid — several pictures on screen AT ONCE.
@@ -39,6 +40,7 @@ import { calloutRevealSchedule } from '../components/CalloutLayer';
  * captions, no shadows. Silent per §1.3.
  */
 export const ImageGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const u = useScaleUnit();
@@ -134,30 +136,30 @@ export const ImageGrid: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 26 * u, opacity: headIn }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
                   textTransform: 'uppercase',
                   color: theme.accent,
                   marginBottom: heading ? 10 * u : 0,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <div
-                style={{
+                {...edit('heading', {
                   fontFamily: displayFont,
                   fontWeight: 900,
                   fontSize: headFs,
                   lineHeight: 1.1,
                   color: theme.text,
                   transform: `translateY(${(1 - headIn) * reveal.rise * u}px)`,
-                }}
+                })}
               >
-                {heading}
+                {edit.text('heading', heading)}
               </div>
             ) : null}
           </div>

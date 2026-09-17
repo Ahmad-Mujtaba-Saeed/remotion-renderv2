@@ -10,6 +10,7 @@ import { clamp01, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { SfxCue } from '../sfx';
 import { KineticText } from '../components/KineticText';
+import { useEdit } from '../components/Editable';
 
 /**
  * list_ranking (copilot.md §5.10): the countdown. Rows slide in from N down
@@ -19,6 +20,7 @@ import { KineticText } from '../components/KineticText';
  * ink. Restyled flat from the ranking_moments_short timing ideas.
  */
 export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const edit = useEdit();
   const slot = scene.slots['slot_ranking'] ?? Object.values(scene.slots)[0];
   const theme = useTheme();
   const displayFont = useDisplayFont();
@@ -63,7 +65,7 @@ export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div style={{ textAlign: 'center', marginBottom: 40 * u }}>
             {kicker ? (
               <div
-                style={{
+                {...edit('kicker', {
                   fontFamily: MONO_FONT,
                   fontSize: 24 * u,
                   letterSpacing: 4 * u,
@@ -71,14 +73,14 @@ export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
                   color: theme.accent,
                   marginBottom: 14 * u,
                   opacity: headIn,
-                }}
+                })}
               >
-                {kicker}
+                {edit.text('kicker', kicker)}
               </div>
             ) : null}
             {heading ? (
               <h1
-                style={{
+                {...edit('heading', {
                   margin: 0,
                   fontFamily: displayFont,
                   fontWeight: 900,
@@ -92,9 +94,9 @@ export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
                 }),
                   lineHeight: 1.05,
                   color: theme.text,
-                }}
+                })}
               >
-                <KineticText text={heading} highlight={meta.style?.highlight} />
+                <KineticText text={edit.text('heading', heading)} highlight={meta.style?.highlight} />
               </h1>
             ) : null}
           </div>
@@ -110,7 +112,7 @@ export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
           return (
             <div
               key={d}
-              style={{
+              {...edit(`items.${d}`, {
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
@@ -120,7 +122,7 @@ export const ListRanking: React.FC<{ scene: Scene }> = ({ scene }) => {
                 opacity: p,
                 transform: `translateX(${(1 - p) * 40 * u}px)`,
                 overflow: 'hidden',
-              }}
+              }, { kind: 'group' })}
             >
               {/* Accent flood under the champion row. */}
               {isOne ? (
