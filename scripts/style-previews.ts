@@ -29,7 +29,7 @@ import { selectComposition, renderMedia, renderStill } from '@remotion/renderer'
  *   <outDir>/manifest.json       what exists, for the UI to trust
  */
 
-type Group = 'motion' | 'skin' | 'composition' | 'board' | 'font' | 'transition' | 'scheme';
+type Group = 'motion' | 'skin' | 'composition' | 'board' | 'font' | 'transition' | 'scheme' | 'fps';
 
 /** 480x270 at 15fps for ~2.6s: readable at hover size, ~200-500KB a clip. */
 const WIDTH = 480;
@@ -216,6 +216,44 @@ const transitionScenes = (key: string): unknown[] => [
   },
 ];
 
+/** Two quick beats: the flight between them is the whole point. */
+const fpsScenes = (key: string): unknown[] => [
+  {
+    scene_id: 'scene_1',
+    order: 1,
+    duration_seconds: 1.6,
+    narration: { text: 'Watch the camera travel.' },
+    layout_template: 'single_focus',
+    transition: 'fade',
+    mood: 'neutral',
+    slots: {
+      slot_main: {
+        content_type: 'text_block',
+        heading: 'Here',
+        bullets: ['Watch the edges'],
+        reveal: 'all_at_once',
+      },
+    },
+  },
+  {
+    scene_id: 'scene_2',
+    order: 2,
+    duration_seconds: 1.6,
+    narration: { text: 'And land somewhere new.' },
+    layout_template: 'stat_spotlight',
+    transition: 'whip_pan',
+    mood: 'confident',
+    slots: {
+      slot_stat: {
+        content_type: 'text_block',
+        heading: key,
+        bullets: ['frames a second'],
+        reveal: 'all_at_once',
+      },
+    },
+  },
+];
+
 const OPTIONS: Record<
   Group,
   {
@@ -223,6 +261,8 @@ const OPTIONS: Record<
     apply: (key: string) => Record<string, unknown>;
     /** Where in the clip to freeze the poster (default a quarter in). */
     posterFrac?: number;
+    /** Clip frame rate when the option IS a frame rate (default FPS). */
+    fps?: (key: string) => number;
   }
 > = {
   // §2.5 — the five motion presets. This is the group the whole feature is for.
@@ -291,6 +331,23 @@ const OPTIONS: Record<
     // the poster looks like an ordinary scene.
     posterFrac: 0.44,
   },
+  // Frame rate. The difference only shows on movement, so this is the
+  // canvas_journey camera flying between two short beats with motion blur OFF
+  // — blur is exactly what hides a low frame rate. GIF frame delays are whole
+  // hundredths of a second and browsers slow anything under 2cs to 10cs, so
+  // a true 60fps GIF stutters; the `60` clip is recorded at 50fps, the fastest
+  // rate a GIF plays at real speed. The file keys stay the registry values.
+  fps: {
+    keys: ['30', '60'],
+    apply: (key) => ({
+      composition_mode: 'canvas_journey',
+      motion_blur: { enabled: false },
+      scenes: fpsScenes(key),
+    }),
+    fps: (key) => (Number(key) >= 60 ? 50 : 30),
+    // Late, on the landed number, so the still says which rate it is.
+    posterFrac: 0.85,
+  },
 };
 
 (async () => {
@@ -326,7 +383,7 @@ const OPTIONS: Record<
     : {};
 
   for (const group of groups) {
-    const { keys, apply, posterFrac = 0.25 } = OPTIONS[group];
+    const { keys, apply, posterFrac = 0.25, fps } = OPTIONS[group];
     const groupDir = path.join(outDir, group);
     fs.mkdirSync(groupDir, { recursive: true });
     manifest[group] = [];
@@ -349,7 +406,7 @@ const OPTIONS: Record<
         ...overrides,
       };
 
-      const inputProps = { shotList, fps: FPS, width: WIDTH, height: HEIGHT };
+      const inputProps = { shotList, fps: fps ? fps(key) : FPS, width: WIDTH, height: HEIGHT };
       const composition = await selectComposition({ serveUrl, id: 'Explainer', inputProps });
 
       // The poster is the frame the hover card shows the instant it opens,
@@ -379,7 +436,7 @@ const OPTIONS: Record<
         inputProps,
         codec: 'gif',
         // Remotion renders every frame and drops the rest; the composition is
-        // already at 15fps, so this is 1:1 and the loop plays at real speed.
+        // already at the clip's own rate, so this is 1:1 at real speed.
         everyNthFrame: 1,
         numberOfGifLoops: null, // loop forever — it is a hover preview
         imageFormat: 'png',
