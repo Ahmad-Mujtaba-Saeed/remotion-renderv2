@@ -4,6 +4,8 @@ import { ExplainerVideo } from '../ExplainerVideo';
 import { ThumbnailComp, ThumbnailProps } from '../ThumbnailComp';
 import { ExplainerProps, ShotList } from '../types';
 import { totalFramesFor } from '../timing';
+import { ViralShort, shortDurationFrames } from '../shorts/ViralShort';
+import type { ShortProps } from '../shorts/types';
 
 const EMPTY_SHOT_LIST: ShotList = { project_id: 'preview', scenes: [] };
 
@@ -57,6 +59,25 @@ export const RemotionRoot: React.FC = () => {
           fps: 30,
           width: p.width || 1280,
           height: p.height || 720,
+        };
+      }}
+    />
+    {/* Long Video to Shorts: one fully edited vertical short (src/shorts). */}
+    <Composition
+      id="ViralShort"
+      component={ViralShort as unknown as React.FC<Record<string, unknown>>}
+      durationInFrames={300}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{} as Record<string, unknown>}
+      calculateMetadata={({ props }) => {
+        const p = props as unknown as ShortProps;
+        return {
+          durationInFrames: shortDurationFrames(p),
+          fps: p.fps || 30,
+          width: p.width || 1080,
+          height: p.height || 1920,
         };
       }}
     />

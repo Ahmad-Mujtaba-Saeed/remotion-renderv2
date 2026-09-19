@@ -184,6 +184,45 @@ export const renderExplainer = async (req: RenderRequest): Promise<string> => {
   return req.outputPath;
 };
 
+/**
+ * Render one Long Video to Shorts clip through the `ViralShort` composition.
+ * Tuned for throughput rather than the explainer's near-lossless master: a
+ * batch can be a dozen 30-60s 1080x1920 shorts, and the source footage is
+ * already a lossy YouTube encode, so JPEG frame capture at q92 and x264 crf 19
+ * are visually transparent at a fraction of the time.
+ */
+export const renderViralShort = async (req: {
+  props: Record<string, unknown>;
+  outputPath: string;
+  onProgress?: (p: number) => void;
+}): Promise<string> => {
+  const serveUrl = await getServeUrl();
+  const composition = await selectComposition({ serveUrl, id: 'ViralShort', inputProps: req.props });
+  await renderMedia({
+    serveUrl,
+    composition,
+    codec: 'h264',
+    outputLocation: req.outputPath,
+    inputProps: req.props,
+    onProgress: ({ progress }) => req.onProgress?.(progress),
+    onBrowserLog: browserLogger('short'),
+    chromiumOptions: { gl: 'angle' },
+    concurrency: process.env.SHORT_RENDER_CONCURRENCY
+      ? parseInt(process.env.SHORT_RENDER_CONCURRENCY, 10)
+      : process.env.RENDER_CONCURRENCY
+        ? parseInt(process.env.RENDER_CONCURRENCY, 10)
+        : null,
+    timeoutInMilliseconds: 120000,
+    imageFormat: 'jpeg',
+    jpegQuality: 92,
+    crf: 19,
+    x264Preset: 'fast',
+    colorSpace: 'bt709',
+    audioBitrate: '192k',
+  });
+  return req.outputPath;
+};
+
 export interface PreviewRequest {
   shotList: ShotList;
   outputPath: string;

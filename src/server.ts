@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
-import { renderExplainer, renderThumbnail, renderPreviewStill } from './render';
+import { renderExplainer, renderThumbnail, renderPreviewStill, renderViralShort } from './render';
 import type { ShotList } from './types';
 import type { ThumbnailProps } from './ThumbnailComp';
 
@@ -105,6 +105,42 @@ app.post('/render', async (req, res) => {
   } catch (err: any) {
     console.error('[render] failed:', err);
     return res.status(500).json({ success: false, error: err?.message || 'Render failed' });
+  }
+});
+
+/**
+ * POST /render-short
+ * Body: { project_id, output_path, props }  — `props` is the ViralShort
+ * contract (src/shorts/types.ts). Blocks until the MP4 is written.
+ */
+app.post('/render-short', async (req, res) => {
+  const { output_path, props, project_id, clip } = req.body || {};
+  if (!output_path || !props || !Array.isArray(props.segments) || props.segments.length === 0) {
+    return res.status(400).json({ success: false, error: 'output_path and props.segments are required' });
+  }
+  const hostOutputPath = toHostPath(output_path);
+  try {
+    fs.mkdirSync(path.dirname(hostOutputPath), { recursive: true });
+    console.log(`[short] project=${project_id} clip=${clip ?? '?'} -> ${hostOutputPath}`);
+    const start = Date.now();
+    let lastLogged = -1;
+    await renderViralShort({
+      props,
+      outputPath: hostOutputPath,
+      onProgress: (p) => {
+        const pct = Math.floor(p * 100);
+        if (pct % 25 === 0 && pct !== lastLogged) {
+          lastLogged = pct;
+          console.log(`[short] project=${project_id} clip=${clip ?? '?'} ${pct}%`);
+        }
+      },
+    });
+    const seconds = Number(((Date.now() - start) / 1000).toFixed(1));
+    console.log(`[short] project=${project_id} clip=${clip ?? '?'} done in ${seconds}s`);
+    return res.json({ success: true, output_path, render_seconds: seconds });
+  } catch (err: any) {
+    console.error('[short] failed:', err);
+    return res.status(500).json({ success: false, error: err?.message || 'Short render failed' });
   }
 });
 
