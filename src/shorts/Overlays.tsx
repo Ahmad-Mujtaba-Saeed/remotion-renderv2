@@ -43,18 +43,20 @@ export const Hook: React.FC<{ hook: NonNullable<ShortProps['hook']>; style: Shor
   const exit = Math.max(0, Math.min(1, (hook.until + 0.3 - t) / 0.3));
   const h = style.hook;
   const text = hook.text;
-  const size = text.length > 38 ? 62 : text.length > 24 ? 72 : 84;
+  const size = (text.length > 38 ? 62 : text.length > 24 ? 72 : 84) * (h.scale ?? 1);
+  const left = h.align === 'left';
 
   const base: React.CSSProperties = {
     position: 'absolute',
-    left: width * 0.06,
+    left: width * (left ? 0.07 : 0.06),
     width: width * 0.88,
     top: height * h.y,
-    transform: `translateY(-50%) scale(${0.7 + 0.3 * enter})`,
+    transform: `translateY(-50%) scale(${0.7 + 0.3 * enter}) rotate(${h.rotate ?? 0}deg)`,
+    transformOrigin: left ? '0% 50%' : '50% 50%',
     opacity: exit * Math.min(1, frame / 3),
     display: 'flex',
-    justifyContent: 'center',
-    textAlign: 'center',
+    justifyContent: left ? 'flex-start' : 'center',
+    textAlign: left ? 'left' : 'center',
     fontFamily: fontStack(h.font),
   };
 
@@ -65,6 +67,45 @@ export const Hook: React.FC<{ hook: NonNullable<ShortProps['hook']>; style: Shor
     </>
   );
 
+  if (h.style === 'native') {
+    // TikTok's in-app text: each line in its own rounded box, hugging the text.
+    return (
+      <div style={base}>
+        <div style={{ fontSize: size * 0.78, fontWeight: 700, lineHeight: 1.42, maxWidth: width * 0.84 }}>
+          <span
+            style={{
+              background: h.bg,
+              color: h.color,
+              padding: `${size * 0.08}px ${size * 0.22}px`,
+              borderRadius: size * 0.16,
+              boxDecorationBreak: 'clone',
+              WebkitBoxDecorationBreak: 'clone',
+            }}
+          >
+            {label}
+          </span>
+        </div>
+      </div>
+    );
+  }
+  if (h.style === 'plain') {
+    return (
+      <div style={base}>
+        <div
+          style={{
+            color: '#ffffff',
+            fontSize: size * 0.8,
+            fontWeight: 700,
+            lineHeight: 1.15,
+            textShadow: '0 2px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.9)',
+            maxWidth: width * 0.84,
+          }}
+        >
+          {label}
+        </div>
+      </div>
+    );
+  }
   if (h.style === 'banner') {
     return (
       <div style={base}>

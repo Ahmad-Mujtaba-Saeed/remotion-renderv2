@@ -94,11 +94,20 @@ export interface CaptionStyle {
 }
 
 export interface HookStyle {
-  style: 'banner' | 'bubble' | 'bold' | 'tape' | 'none';
+  /**
+   * banner/bubble/bold/tape are designed title cards; `native` imitates the
+   * in-app TikTok text box and `plain` is white text with a soft shadow — the
+   * two looks a person editing on their phone actually produces.
+   */
+  style: 'banner' | 'bubble' | 'bold' | 'tape' | 'native' | 'plain' | 'none';
   bg: string;
   color: string;
   font: CaptionStyle['font'];
   y: number;
+  /** Per-short hand-placed feel: size multiplier, tilt (deg), alignment. */
+  scale?: number;
+  rotate?: number;
+  align?: 'left' | 'center';
 }
 
 export interface ShortStyle {
@@ -142,6 +151,8 @@ export type ShortEvent =
   | { type: 'takeover'; start: number; end: number; dest?: Box }
   | { type: 'bw'; start: number; end: number }
   | { type: 'sfx'; start: number; name: string; volume?: number }
+  /** A narrator line (TTS). The clip's own audio ducks under it. */
+  | { type: 'voice'; start: number; end: number; url: string; volume?: number; duck?: number }
   | { type: 'broll'; start: number; end: number; url: string; kind: 'image' | 'video'; mode: 'full' | 'pip' };
 
 export interface ShortProps {
