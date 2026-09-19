@@ -13,6 +13,9 @@ import { Connector } from './Connector';
 import { SceneRegion } from './SceneRegion';
 import { PropSprite } from './PropSprite';
 import { SceneClockProvider } from './SceneClock';
+import { RegionStyleProvider } from './RegionStyle';
+import { SceneMetaProvider } from '../components/SceneMeta';
+import { SceneLayout } from '../components/SceneRouter';
 import { SfxCue, SfxName, sfxDuration } from '../sfx';
 
 /** The mood most scenes of this journey carry (ties → first seen). */
@@ -267,10 +270,27 @@ export const CanvasJourney: React.FC<{
     return Math.max(0, Math.min(1, (frac - 0.03) / 0.05));
   };
 
+  // ---- Takeovers (cinematic_card) -------------------------------------------
+  // A cinematic card blurs its out-of-focus parts with CSS filters, and a
+  // filter inside the camera-scaled world is the one thing this renderer must
+  // never do (Chromium reuses mid-flight rasters; text lands soft). So those
+  // scenes never render in the world. Their region stays empty, and the card
+  // plays full-frame in SCREEN space instead: it fades in over its own
+  // arrival while the world fades out, and hands back over the next arrival.
+  const takeovers = scenes.map((scene, i) => {
+    if (scene.layout_template !== 'cinematic_card') return 0;
+    const w = camera.windows[i];
+    const next = camera.windows[i + 1];
+    const fadeIn = i === 0 ? 1 : smooth((frame - w.start) / Math.max(8, w.travel));
+    const fadeOut = next ? 1 - smooth((frame - next.start) / Math.max(8, Math.round(next.travel * 0.6))) : 1;
+    return Math.max(0, Math.min(fadeIn, fadeOut));
+  });
+  const worldAlpha = 1 - Math.max(0, ...takeovers);
+
   // Parents render beneath their nested children.
   const renderOrder = scenes
     .map((scene, i) => ({ scene, i, item: itemByScene.get(scene.scene_id) }))
-    .filter((e) => e.item)
+    .filter((e) => e.item && e.scene.layout_template !== 'cinematic_card')
     .sort((a, b) => (a.item!.depth ?? 0) - (b.item!.depth ?? 0) || a.i - b.i);
 
   // Everything that lives INSIDE the camera transform, built once as an element
@@ -415,11 +435,11 @@ export const CanvasJourney: React.FC<{
           shutter sample so a fast flight smears instead of strobing (§2.10).
           Below the velocity threshold this is a single sharp copy and the
           frame is byte-identical to the pre-blur renderer. */}
-      {worldSamples.map((s) => (
+      {worldAlpha > 0.001 && worldSamples.map((s) => (
         <AbsoluteFill
           key={`world-${s.step}`}
           style={{
-            opacity: s.opacity < 1 ? s.opacity : undefined,
+            opacity: s.opacity * worldAlpha < 1 ? s.opacity * worldAlpha : undefined,
             transform: s.cam.rot !== 0 ? `rotate(${s.cam.rot}deg)` : undefined,
           }}
         >
@@ -438,6 +458,24 @@ export const CanvasJourney: React.FC<{
           </div>
         </AbsoluteFill>
       ))}
+
+      {/* TAKEOVERS: cinematic cards, full-frame in screen space (see above). */}
+      {scenes.map((scene, i) => {
+        const opacity = takeovers[i];
+        if (opacity <= 0.001) return null;
+        const w = camera.windows[i];
+        return (
+          <AbsoluteFill key={`takeover-${scene.scene_id}`} style={{ opacity: opacity < 1 ? opacity : undefined }}>
+            <RegionStyleProvider value={{ frameless: true, mediaRadius: 6, aspect: vw / Math.max(1, vh) }}>
+              <SceneMetaProvider value={{ index: i, count: scenes.length, style: scene.style, words: scene.narration_words }}>
+                <SceneClockProvider window={{ start: w.start, end: w.start + w.frames, narrationStart: w.start }}>
+                  <SceneLayout scene={scene} />
+                </SceneClockProvider>
+              </SceneMetaProvider>
+            </RegionStyleProvider>
+          </AbsoluteFill>
+        );
+      })}
 
       {/* SOUND DESIGN: every flight whooshes past, flavoured by its story
           relation (dives rumble, consequences land with a thump, reveals

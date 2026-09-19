@@ -25,6 +25,7 @@ import { PhoneMockup } from '../layouts/PhoneMockup';
 import { PhotoStack } from '../layouts/PhotoStack';
 import { ImageGrid } from '../layouts/ImageGrid';
 import { CustomCard } from '../layouts/CustomCard';
+import { CinematicCard } from '../layouts/CinematicCard';
 import { MapCard } from '../layouts/MapCard';
 import { HeadlineTicker } from '../layouts/HeadlineTicker';
 import { LabeledDiagram } from '../layouts/LabeledDiagram';
@@ -171,6 +172,8 @@ const LayoutSwitch: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <ImageGrid scene={scene} />;
     case 'custom_card':
       return <CustomCard scene={scene} />;
+    case 'cinematic_card':
+      return <CinematicCard scene={scene} />;
     case 'map_card':
       return <MapCard scene={scene} />;
     case 'headline_ticker':

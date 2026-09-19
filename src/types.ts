@@ -93,6 +93,9 @@ export type ContentType =
   // A drawing of the beat's subject, authored by a focused pass and repaired
   // by Support\VectorMotif (iter 62).
   | 'vector_motif'
+  // cinematic_card: the explanation staged in depth (Flute), designed per
+  // script by CinematicSceneService and clamped by Support\CinematicScene.
+  | 'cinematic'
   // Structured Tier A card contents (copilot.md §5, M4):
   | 'versus'
   | 'chart'
@@ -439,6 +442,38 @@ export interface VennSet {
   caption?: string;
 }
 
+/**
+ * One part of a cinematic_card. It lives on its own 3D layer: it arrives out
+ * of depth and out of focus on its cue, and the camera treats it as `camera`
+ * says. `place` is a cell on a 3x3 grid (row + column); the renderer shares
+ * each row's width between the parts in it, so parts can never overlap.
+ */
+export interface CinematicElement {
+  id: string;
+  kind: 'text' | 'stat' | 'formula' | 'icon' | 'html';
+  /** text: the words; stat: the figure ("72%"); icon: its label. */
+  text?: string;
+  /** A muted second line under text/stat/formula/icon. */
+  sub?: string;
+  /** formula: linear notation, typeset like math_steps. */
+  formula?: string;
+  /** icon: a lucide name. */
+  icon?: string;
+  /** html: a sanitised, scoped fragment (Support\CustomHtml). */
+  html?: string;
+  place:
+    | 'top_left' | 'top' | 'top_right'
+    | 'left' | 'center' | 'right'
+    | 'bottom_left' | 'bottom' | 'bottom_right';
+  depth: 'near' | 'mid' | 'far';
+  /** Land when the narrator says this word (preferred). */
+  word?: string;
+  /** Else land at this 0..1 point of the scene. */
+  at?: number;
+  /** push: fly in close; angle: close and oblique; rack: stay, shift focus. */
+  camera: 'push' | 'angle' | 'rack';
+}
+
 export interface Slot {
   content_type: ContentType;
   label?: string;
@@ -465,6 +500,12 @@ export interface Slot {
   // bounding box to the stage and never re-validates.
   subject?: string;
   shapes?: MotifShape[];
+  // cinematic (cinematic_card): `brief` is what the composer asked to be
+  // explained; `elements` are the parts the design pass staged, every enum
+  // defaulted and every string capped by Support\CinematicScene. The shared
+  // `css` above styles any `html` element (already scoped server-side).
+  brief?: string;
+  elements?: CinematicElement[];
   // versus (versus_card slot_versus)
   left?: VersusSide;
   right?: VersusSide;

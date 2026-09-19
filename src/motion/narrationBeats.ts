@@ -89,12 +89,30 @@ export const beatFrames = (
 const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9-]/g, '');
 
 /**
+ * A light plural stem, so "antibody" matches a spoken "antibodies" and
+ * "glass" a spoken "glasses". Mirrored exactly by the PHP side
+ * (Support\CinematicScene::stem) so the server's cue check and the renderer's
+ * timing agree on what counts as said.
+ */
+const stem = (w: string): string => {
+  if (w.length > 4 && w.endsWith('ies')) return w.slice(0, -3) + 'y';
+  if (w.length > 4 && w.endsWith('es')) return w.slice(0, -2);
+  if (w.length > 3 && w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1);
+  return w;
+};
+
+/**
  * The frame the narrator first says `phrase`, or null if they never do.
  *
  * Matching is prefix-based on the phrase's FIRST word, which is how a spoken
  * "gates" matches the cue "gate" and "recycling," matches "recycling". A
  * multi-word phrase only has to hit its opening word — a narrator rarely says a
  * card's label back verbatim, and waiting for an exact run means never firing.
+ *
+ * The reverse direction (a spoken word SHORTER than the cue: "gate" said for
+ * the cue "gates") only counts when the two differ by an inflection — at most
+ * two letters. Without that bound every cue fired on the first stub word that
+ * prefixed it: "antibodies" landed on the spoken "a", "island" on "is".
  */
 export const spokenAt = (
   words: NarrationWord[] | undefined,
@@ -103,9 +121,14 @@ export const spokenAt = (
 ): number | null => {
   const cue = norm((phrase || '').split(/\s+/)[0] ?? '');
   if (!cue || cue.length < 3) return null;
+  const cueStem = stem(cue);
   const hit = (words ?? []).find((w) => {
     const n = norm(w.word);
-    return n.startsWith(cue) || cue.startsWith(n);
+    return (
+      n.startsWith(cue) ||
+      (n.length >= 3 && n.length >= cue.length - 2 && cue.startsWith(n)) ||
+      (cueStem.length >= 3 && stem(n).startsWith(cueStem))
+    );
   });
   return hit ? Math.round(hit.start * fps) : null;
 };

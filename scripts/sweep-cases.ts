@@ -446,6 +446,28 @@ export const CASES: SweepCase[] = [
   // sentence in a cell, and cues on half the elements. The card is measured
   // and scaled to fit, so what is under test is whether that scaling holds.
   {
+    // Worst case: the six-part cap, the longest texts the sanitiser allows,
+    // two parts sharing one grid place, an html part and a stacked formula —
+    // grabbed at the very end, when the finale shows everything, sharp.
+    template: 'cinematic_card',
+    at: 0.98,
+    slots: {
+      slot_cinematic: {
+        content_type: 'cinematic',
+        heading: long(58),
+        css: '.cc-scope .bars{display:flex;align-items:flex-end;gap:10px;height:200px;border-bottom:2px solid var(--line)} .cc-scope .bars i{flex:1;background:var(--accent)}',
+        elements: [
+          { id: 'a', kind: 'text', text: long(88), sub: long(68), place: 'top_left', depth: 'far', camera: 'push' },
+          { id: 'b', kind: 'stat', text: '$1,284,000', sub: long(60), place: 'top', depth: 'near', camera: 'angle' },
+          { id: 'c', kind: 'formula', formula: 'frac{-b pm sqrt{b^2 - 4*a*c}}{2*a}', sub: long(50), place: 'top_right', depth: 'mid', camera: 'rack' },
+          { id: 'd', kind: 'icon', icon: 'shield', text: long(28), sub: long(60), place: 'center', depth: 'near', camera: 'push' },
+          { id: 'e', kind: 'text', text: long(40), place: 'center', depth: 'mid', camera: 'rack' },
+          { id: 'f', kind: 'html', html: '<div class="bars"><i style="height:20%"></i><i style="height:45%"></i><i style="height:70%"></i><i style="height:100%"></i></div>', place: 'bottom', depth: 'far', camera: 'push' },
+        ],
+      },
+    },
+  },
+  {
     template: 'custom_card',
     at: 0.95,
     slots: {
