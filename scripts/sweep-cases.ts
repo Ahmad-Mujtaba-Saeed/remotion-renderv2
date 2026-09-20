@@ -446,23 +446,44 @@ export const CASES: SweepCase[] = [
   // sentence in a cell, and cues on half the elements. The card is measured
   // and scaled to fit, so what is under test is whether that scaling holds.
   {
-    // Worst case: the six-part cap, the longest texts the sanitiser allows,
-    // two parts sharing one grid place, an html part and a stacked formula —
-    // grabbed at the very end, when the finale shows everything, sharp.
+    // Worst case: the six-part cap, every drawn kind at the longest texts the
+    // sanitiser allows, a stacked formula and links crossing rows — grabbed at
+    // the very end, when the finale shows everything, sharp.
     template: 'cinematic_card',
     at: 0.98,
     slots: {
       slot_cinematic: {
         content_type: 'cinematic',
         heading: long(58),
-        css: '.cc-scope .bars{display:flex;align-items:flex-end;gap:10px;height:200px;border-bottom:2px solid var(--line)} .cc-scope .bars i{flex:1;background:var(--accent)}',
         elements: [
-          { id: 'a', kind: 'text', text: long(88), sub: long(68), place: 'top_left', depth: 'far', camera: 'push' },
-          { id: 'b', kind: 'stat', text: '$1,284,000', sub: long(60), place: 'top', depth: 'near', camera: 'angle' },
-          { id: 'c', kind: 'formula', formula: 'frac{-b pm sqrt{b^2 - 4*a*c}}{2*a}', sub: long(50), place: 'top_right', depth: 'mid', camera: 'rack' },
-          { id: 'd', kind: 'icon', icon: 'shield', text: long(28), sub: long(60), place: 'center', depth: 'near', camera: 'push' },
-          { id: 'e', kind: 'text', text: long(40), place: 'center', depth: 'mid', camera: 'rack' },
-          { id: 'f', kind: 'html', html: '<div class="bars"><i style="height:20%"></i><i style="height:45%"></i><i style="height:70%"></i><i style="height:100%"></i></div>', place: 'bottom', depth: 'far', camera: 'push' },
+          // Six DRAWN parts at the widest the sanitiser allows: every one
+          // carries a picture, a label, a state and a note, and two of them
+          // swap state at the same moment.
+          {
+            id: 'a', kind: 'visual', place: 'left', depth: 'far', camera: 'push',
+            prompt: long(60), image_url: 'flow/sweep.png', title: long(20), status: long(12), note: long(40),
+          },
+          {
+            id: 'b', kind: 'visual', place: 'center', depth: 'near', camera: 'angle',
+            prompt: long(60), image_url: 'flow/sweep.png', title: long(20), status: long(12), note: long(40), tone: 'bad',
+            then: [{ word: 'zzz', status: long(12), tone: 'accent', note: long(40) }],
+          },
+          {
+            id: 'c', kind: 'visual', place: 'right', depth: 'mid', camera: 'rack',
+            prompt: long(60), image_url: 'flow/sweep.png', title: long(20), status: '240 MS', note: long(40), tone: 'muted',
+            then: [{ word: 'zzz', status: long(12), tone: 'accent' }],
+          },
+          // A part whose drawing was refused: words only, no picture box.
+          { id: 'd', kind: 'visual', place: 'bottom_left', depth: 'mid', camera: 'push', prompt: long(60), title: long(20), note: long(40) },
+          { id: 'e', kind: 'stat', text: long(12), sub: long(40), place: 'bottom', depth: 'far', camera: 'rack' },
+          { id: 'f', kind: 'formula', formula: 'frac{-b pm sqrt{b^2 - 4*a*c}}{2*a}', sub: long(50), place: 'bottom_right', depth: 'mid', camera: 'push' },
+        ],
+        links: [
+          { from: 'a', to: 'b', label: long(20), flow: true },
+          { from: 'b', to: 'c', label: long(20), flow: true },
+          { from: 'b', to: 'd', tone: 'muted' },
+          { from: 'b', to: 'e', flow: true },
+          { from: 'c', to: 'f', label: long(20), tone: 'bad' },
         ],
       },
     },

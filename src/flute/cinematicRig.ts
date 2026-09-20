@@ -92,19 +92,30 @@ export const layoutCells = (
   // A lone part does not need the whole width: an html fragment scaled up to
   // 1700px reads as a poster, and a sentence that wide is one very long line.
   const loneW = Math.min(stage.width, frame.width * (portrait ? 0.9 : 0.64));
+  const colW = (stage.width - gap * 2) / 3;
+  const colOf = (idx: number) => indexed[idx].col;
   rows.forEach((row, r) => {
     const n = row.length;
+    const top = stage.top + r * (rowH + gap);
+    const cy = top + rowH / 2 - frame.height / 2;
+    // A DIAGRAM keeps its columns: the balancer in the middle, the servers
+    // stacked down the right. In landscape, when every part of the row sits in
+    // its own column, each goes to that column — a lone centre part still gets
+    // the wide lone width. Portrait (and a row with two parts in one column)
+    // shares the row's width instead.
+    const distinct = new Set(row.map(colOf)).size === n;
+    if (!portrait && distinct && !(n === 1 && colOf(row[0]) === 1)) {
+      row.forEach((idx) => {
+        const left = stage.left + colOf(idx) * (colW + gap);
+        cells[idx] = { cx: left + colW / 2 - frame.width / 2, cy, w: colW, h: rowH };
+      });
+      return;
+    }
     const w = n === 1 ? loneW : (stage.width - gap * (n - 1)) / n;
     const rowW = w * n + gap * (n - 1);
-    const top = stage.top + r * (rowH + gap);
     row.forEach((idx, k) => {
       const left = stage.left + (stage.width - rowW) / 2 + k * (w + gap);
-      cells[idx] = {
-        cx: left + w / 2 - frame.width / 2,
-        cy: top + rowH / 2 - frame.height / 2,
-        w,
-        h: rowH,
-      };
+      cells[idx] = { cx: left + w / 2 - frame.width / 2, cy, w, h: rowH };
     });
   });
   return cells;
@@ -126,6 +137,77 @@ const rotate = (p: { x: number; y: number; z: number }, rx: number, ry: number) 
   const y2 = p.y * Math.cos(b) - z1 * Math.sin(b);
   const z2 = p.y * Math.sin(b) + z1 * Math.cos(b);
   return { x: x1, y: y2, z: z2 };
+};
+
+/**
+ * Where a world point lands on screen under a pose — the same maths Flute's
+ * CSS performs (rotate, translate by the camera, perspective about the frame
+ * centre). The link layer draws with it, so a line stays glued to its parts
+ * through every push and angle.
+ */
+export const project = (
+  cam: CamState,
+  p: { x: number; y: number; z: number },
+  P: number,
+  frame: { width: number; height: number }
+): { x: number; y: number; k: number } => {
+  const q = rotate(p, cam.rx, cam.ry);
+  const zz = q.z - cam.z;
+  const k = P / Math.max(1, P - zz);
+  return { x: frame.width / 2 + (q.x - cam.x) * k, y: frame.height / 2 + (q.y - cam.y) * k, k };
+};
+
+/**
+ * The blur Flute gives a part at a pose, as a share of the cap (0 sharp .. 1
+ * fully soft) — Flute's own thin-lens formula at the part's centre.
+ */
+export const blurShare = (
+  cam: CamState,
+  cell: Cell,
+  z: number,
+  P: number,
+  focus: { fStop: number; focalLength: number }
+): number => {
+  if (cam.blur <= 0) return 0;
+  const depth = depthUnder(cam, cell, z, P);
+  const D = cam.focus;
+  if (D <= focus.focalLength) return 1;
+  const coc = (focus.focalLength / (4 * focus.fStop * (D - focus.focalLength))) * Math.abs(depth - D);
+  return Math.min(cam.blur, coc / (9 * (P / BASE_PERSPECTIVE)));
+};
+
+/**
+ * The ESTABLISHING pose: the whole diagram framed, not the whole grid.
+ *
+ * A diagram is usually a wide, short strip — three panels and their links —
+ * and the grid it was laid out on is the full stage, so at the plain wide
+ * shot it sat in a thin band with 12px labels while most of the frame was
+ * empty. This frames the union of the parts' real boxes into the region under
+ * the heading (up to 1.8x), so the opening and the finale show the diagram at
+ * a readable size. Level, focused on the mid plane.
+ */
+export const restPose = (
+  boxes: { cx: number; cy: number; w: number; h: number }[],
+  region: { top: number; bottom: number; width: number },
+  P: number,
+  frame: { width: number; height: number }
+): CamState => {
+  if (!boxes.length) return wide(P);
+  const x0 = Math.min(...boxes.map((b) => b.cx - b.w / 2));
+  const x1 = Math.max(...boxes.map((b) => b.cx + b.w / 2));
+  const y0 = Math.min(...boxes.map((b) => b.cy - b.h / 2));
+  const y1 = Math.max(...boxes.map((b) => b.cy + b.h / 2));
+  const bw = Math.max(1, x1 - x0);
+  const bh = Math.max(1, y1 - y0);
+  const regionH = Math.max(1, region.bottom - region.top);
+  const s = Math.max(1, Math.min(1.8, region.width / bw, regionH / bh));
+  // A z = 0 point lands at (p - cam) * P / (P + camZ); pick camZ for the
+  // zoom and the camera centre so the box centre lands on the region centre.
+  const z = P / s - P;
+  const regionCy = (region.top + region.bottom) / 2 - frame.height / 2;
+  const bx = (x0 + x1) / 2;
+  const by = (y0 + y1) / 2;
+  return { x: bx, y: by - regionCy / s, z, rx: 0, ry: 0, focus: P + z, blur: 1 };
 };
 
 /** The rest pose: level, centred, focused on the mid plane, blur fully on. */
@@ -225,9 +307,18 @@ export const cameraPath = (
   elements: CinematicElement[],
   cells: Cell[],
   landAt: number[],
-  opts: { P: number; u: number; fps: number; sceneFrames: number; frame: { width: number; height: number } }
+  opts: {
+    P: number;
+    u: number;
+    fps: number;
+    sceneFrames: number;
+    frame: { width: number; height: number };
+    /** The establishing/finale pose (restPose); the plain wide shot when absent. */
+    rest?: CamState;
+  }
 ): ((f: number) => CamState) => {
   const { P, u, fps, sceneFrames, frame } = opts;
+  const rest = opts.rest ?? wide(P);
   const lead = Math.round(fps * 0.35);
   const move = Math.round(fps * 1.05);
   const segments: Segment[] = [];
@@ -250,7 +341,7 @@ export const cameraPath = (
       if (f >= s.start) seg = s;
       else break;
     }
-    if (!seg) return creep(wide(P), f);
+    if (!seg) return creep(rest, f);
     if (f >= seg.end) return creep(seg.to, f - seg.end);
     const t = seg.end <= seg.start ? 1 : (f - seg.start) / (seg.end - seg.start);
     return lerpCam(seg.from, seg.to, cinematicProgress(t));
@@ -286,7 +377,7 @@ export const cameraPath = (
     Math.max(lastLand + Math.round(fps * 1.1), sceneFrames - hold),
     sceneFrames - finaleLen
   );
-  push(finaleStart, finaleStart + finaleLen, () => ({ ...wide(P), blur: 0 }));
+  push(finaleStart, finaleStart + finaleLen, () => ({ ...rest, blur: 0 }));
 
   return evalAt;
 };

@@ -70,6 +70,67 @@ const SCENES = [
       ],
     },
   },
+  {
+    // The diagram language: a request pill, panels with rows, a state change
+    // on a later word, links with flowing packets.
+    scene_id: 'cine_cache',
+    narration:
+      'When you open a profile, your request goes to the server. The server checks the cache first. The first time, the cache misses, so the database does the slow work, and the answer is put in the cache on the way back. The next request is instant.',
+    slot: {
+      content_type: 'cinematic',
+      heading: 'Why the second request is instant',
+      elements: [
+        { id: 'req', kind: 'pill', icon: 'users', text: 'GET /john', status: 'FREE', tone: 'accent', place: 'left', depth: 'mid', word: 'request', camera: 'push' },
+        { id: 'server', kind: 'panel', icon: 'server', title: 'Server', subtitle: 'your code', rows: [{ label: 'Needs', value: 'Follower count' }], note: 'checks cache first', place: 'center', depth: 'near', word: 'server', camera: 'push' },
+        {
+          id: 'cache', kind: 'panel', icon: 'zap', title: 'Cache', status: 'Miss', tone: 'bad',
+          rows: [{ label: 'session:john', value: '—' }, { label: '@john', value: 'empty', tone: 'bad' }],
+          place: 'right', depth: 'mid', word: 'cache', camera: 'angle',
+          then: [{ word: 'put', status: 'Set', tone: 'accent', rows: [{ label: 'session:john', value: '—' }, { label: '@john', value: '2,041,388', tone: 'accent' }] }],
+        },
+        { id: 'db', kind: 'panel', icon: 'database', title: 'Database', subtitle: 'slow', status: '240 ms', tone: 'bad', skeleton: 3, place: 'bottom_right', depth: 'far', word: 'database', camera: 'push' },
+      ],
+      links: [
+        { from: 'req', to: 'server', flow: true },
+        { from: 'server', to: 'cache', flow: true },
+        { from: 'cache', to: 'db', label: 'on a miss', tone: 'muted' },
+      ],
+    },
+  },
+  {
+    scene_id: 'cine_balancer',
+    narration:
+      'Everyone hits the same server, and it is drowning at ninety percent. So you put a load balancer in front. It picks one of three servers for every request, and the load spreads out evenly.',
+    slot: {
+      content_type: 'cinematic',
+      heading: 'What a load balancer does',
+      elements: [
+        { id: 'crowd', kind: 'crowd', text: 'Everyone', lit: 0.85, place: 'left', depth: 'far', word: 'everyone', camera: 'push' },
+        {
+          id: 's1', kind: 'panel', icon: 'server', title: 'Server 1', status: '90%', tone: 'bad', bars: [{ label: 'Load', value: 0.9, tone: 'bad' }],
+          place: 'top_right', depth: 'mid', word: 'drowning', camera: 'push',
+          then: [{ word: 'evenly', status: '34%', tone: 'accent', bars: [{ label: 'Load', value: 0.34, tone: 'accent' }] }],
+        },
+        { id: 'lb', kind: 'panel', icon: 'layers', title: 'Balancer', note: 'picks one', place: 'center', depth: 'near', word: 'balancer', camera: 'angle' },
+        {
+          id: 's2', kind: 'panel', icon: 'server', title: 'Server 2', status: '5%', tone: 'muted', bars: [{ label: 'Load', value: 0.05, tone: 'muted' }],
+          place: 'right', depth: 'mid', word: 'three', camera: 'rack',
+          then: [{ word: 'evenly', status: '33%', tone: 'accent', bars: [{ label: 'Load', value: 0.33, tone: 'accent' }] }],
+        },
+        {
+          id: 's3', kind: 'panel', icon: 'server', title: 'Server 3', status: '5%', tone: 'muted', bars: [{ label: 'Load', value: 0.05, tone: 'muted' }],
+          place: 'bottom_right', depth: 'mid', word: 'servers', camera: 'rack',
+          then: [{ word: 'evenly', status: '33%', tone: 'accent', bars: [{ label: 'Load', value: 0.33, tone: 'accent' }] }],
+        },
+      ],
+      links: [
+        { from: 'crowd', to: 'lb', flow: true },
+        { from: 'lb', to: 's1', flow: true },
+        { from: 'lb', to: 's2', flow: true },
+        { from: 'lb', to: 's3', flow: true },
+      ],
+    },
+  },
 ];
 
 (async () => {
@@ -139,7 +200,7 @@ const SCENES = [
 
   const logs = new Set<string>();
   const onBrowserLog = (log: { text: string }) => {
-    if (log.text.includes('[cinematic]')) logs.add(log.text);
+    if (log.text.includes('[cinematic]') || process.env.CINE_ALL_LOGS) logs.add(log.type + ': ' + log.text);
   };
 
   const frames = flag('frames')

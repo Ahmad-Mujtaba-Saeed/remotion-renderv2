@@ -198,7 +198,7 @@ export const CustomCard: React.FC<{ scene: Scene }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', padding: '4%', boxSizing: 'border-box' }}>
-      <style>{baseCss + (slot.css ?? '') + '\n' + revealCss.join('\n')}</style>
+      <style>{baseCss + (slot.css ?? '') + '\n' + revealCss}</style>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
         {(kicker || heading) && (

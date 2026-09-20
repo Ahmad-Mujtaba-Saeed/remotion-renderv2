@@ -448,9 +448,69 @@ export interface VennSet {
  * says. `place` is a cell on a 3x3 grid (row + column); the renderer shares
  * each row's width between the parts in it, so parts can never overlap.
  */
+export type CinematicTone = 'plain' | 'accent' | 'bad' | 'muted';
+export interface CinematicRow {
+  label: string;
+  value: string;
+  tone?: CinematicTone;
+}
+export interface CinematicBar {
+  label: string;
+  /** 0..1 */
+  value: number;
+  tone?: CinematicTone;
+}
+/** A change to a part later in the beat, landing on its own cue. */
+export interface CinematicPatch {
+  word?: string;
+  at?: number;
+  status?: string;
+  tone?: CinematicTone;
+  rows?: CinematicRow[];
+  bars?: CinematicBar[];
+  lit?: number;
+  note?: string;
+  text?: string;
+}
+/** A connection drawn between two parts once both have landed. */
+export interface CinematicLink {
+  from: string;
+  to: string;
+  label?: string;
+  style?: 'curve' | 'elbow' | 'straight';
+  tone?: CinematicTone;
+  /** Packets travelling along it. */
+  flow?: boolean;
+}
+
 export interface CinematicElement {
   id: string;
-  kind: 'text' | 'stat' | 'formula' | 'icon' | 'html';
+  kind: 'text' | 'stat' | 'formula' | 'icon' | 'visual' | 'html' | 'panel' | 'browser' | 'crowd' | 'pill';
+  // visual: the piece DRAWN for this script by the image model
+  // (fal-ai/fast-lightning-sdxl, background cut out). `prompt` is what the
+  // staging pass asked for, `image_path` what the generator stored, and
+  // `image_url` what the render payload turned that into. The words around it
+  // (title, status, note) are typeset natively — the model cannot letter.
+  prompt?: string;
+  image_path?: string;
+  image_url?: string;
+  // panel / browser / pill: the diagram language — a dark panel with an icon,
+  // a mono title, a status, and ONE body (rows | bars | lines | skeleton).
+  title?: string;
+  subtitle?: string;
+  status?: string;
+  tone?: CinematicTone;
+  rows?: CinematicRow[];
+  bars?: CinematicBar[];
+  lines?: string[];
+  skeleton?: number;
+  note?: string;
+  /** browser: the address bar; button: a primary button label. */
+  url?: string;
+  button?: string;
+  /** crowd: share of dots lit (0..1). */
+  lit?: number;
+  then?: CinematicPatch[];
   /** text: the words; stat: the figure ("72%"); icon: its label. */
   text?: string;
   /** A muted second line under text/stat/formula/icon. */
@@ -506,6 +566,7 @@ export interface Slot {
   // `css` above styles any `html` element (already scoped server-side).
   brief?: string;
   elements?: CinematicElement[];
+  links?: CinematicLink[];
   // versus (versus_card slot_versus)
   left?: VersusSide;
   right?: VersusSide;
