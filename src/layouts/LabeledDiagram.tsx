@@ -148,7 +148,7 @@ export const LabeledDiagram: React.FC<{ scene: Scene }> = ({ scene }) => {
               boxSizing: 'border-box',
             }}
           >
-            {slot.asset_request?.description || 'Diagram'}
+            {(slot.asset_request?.description ?? '').split(/[,.;]/)[0].trim().slice(0, 64) || 'Diagram'}
           </div>
         )}
         {callouts.length ? (

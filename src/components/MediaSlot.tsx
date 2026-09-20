@@ -65,6 +65,20 @@ const useBoxAspect = (): [React.RefObject<HTMLDivElement>, number | null] => {
   return [ref, aspect];
 };
 
+/**
+ * The reserved-slot box says what the picture WOULD be. The description is the
+ * image prompt, which is now a written shot rather than a label, so print the
+ * first clause of it: a paragraph set in uppercase mono fills the frame and
+ * reads as an error.
+ */
+const shotLabel = (description?: string): string => {
+  const text = (description ?? '').trim();
+  if (text === '') return 'Image';
+  const head = text.split(/[,.;]/)[0].trim() || text;
+
+  return head.length > 64 ? head.slice(0, 61).trimEnd() + '…' : head;
+};
+
 export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   const theme = useTheme();
   const u = useScaleUnit();
@@ -134,7 +148,7 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
           ...framelessWrap,
         }, { kind: 'media' })}
       >
-        {slot.asset_request?.description || 'Image'}
+        {shotLabel(slot.asset_request?.description)}
       </div>
     );
   }
