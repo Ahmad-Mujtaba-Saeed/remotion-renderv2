@@ -4,6 +4,7 @@ import { CanvasItem, Scene } from '../types';
 import { SceneLayout } from '../components/SceneRouter';
 import { SceneClockProvider, SceneClockWindow } from './SceneClock';
 import { RegionStyleProvider } from './RegionStyle';
+import { useDepth, depthGain } from '../motion/depthStage';
 import { SceneMetaProvider } from '../components/SceneMeta';
 import { useTheme } from '../theme';
 
@@ -51,6 +52,7 @@ export const SceneRegion: React.FC<{
 }> = ({ item, scene, index = 0, count = 1, focus, lod, alpha = 1, enter = 1, shift, clock }) => {
   const { width: designW } = useVideoConfig();
   const theme = useTheme();
+  const depth = useDepth();
 
   // Content is designed at the viewport's width with the height that keeps
   // the region's own aspect, then scaled uniformly into place.
@@ -105,14 +107,19 @@ export const SceneRegion: React.FC<{
         </div>
       </div>
 
-      {/* Out-of-focus dim as an overlay wash (NOT a filter — see above). */}
+      {/* Out-of-focus dim as an overlay wash (NOT a filter — see above).
+          This IS the journey's depth of field: inside the camera-scaled world
+          a real blur softens the text, so the rack happens in luminance
+          instead. It deepens with the depth setting (motion/depthStage) so
+          one control governs the feel in every mode; at `off` it is the 0.32
+          wash it has always been. */}
       {focus < 0.98 ? (
         <div
           style={{
             position: 'absolute',
             inset: 0,
             background: theme.bg_from,
-            opacity: 0.32 * (1 - focus),
+            opacity: (0.32 + 0.16 * depthGain(depth.intensity)) * (1 - focus),
             pointerEvents: 'none',
           }}
         />

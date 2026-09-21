@@ -1,5 +1,6 @@
 import React from 'react';
 import { useVideoConfig, spring, interpolate } from 'remotion';
+import { useDepthRows } from '../motion/depthStage';
 import { Slot, TextStyleVariant } from '../types';
 import { useTheme, useDisplayFont, useSkin, BODY_FONT, MONO_FONT, hairline } from '../theme';
 import { surfaceStyle } from './Surface';
@@ -60,6 +61,9 @@ export const TextBlock: React.FC<{
    */
   columnFrac?: number;
 }> = ({ slot, transparent, compact, columnFrac = 0.86 }) => {
+  // Rows arrive out of depth and resolve exactly where they landed before
+  // (motion/depthStage). At `motion_depth: off` this is the identity.
+  const depthRow = useDepthRows();
   const theme = useTheme();
   const displayFont = useDisplayFont();
   const { fps, width: frameW } = useVideoConfig();
@@ -299,7 +303,7 @@ export const TextBlock: React.FC<{
                     fontSize: 30 * u,
                     fontWeight: 600,
                     opacity: enter,
-                    transform: `translateY(${interpolate(enter, [0, 1], [14 * u, 0])}px)`,
+                    ...depthRow(enter, `translateY(${interpolate(enter, [0, 1], [14 * u, 0])}px)`),
                   })}
                 >
                   <span style={{ width: 8 * u, height: 8 * u, background: theme.accent, flexShrink: 0 }} />
@@ -338,7 +342,7 @@ export const TextBlock: React.FC<{
               lineHeight: 1.32,
               padding: `${26 * u}px 0`,
               opacity: enter * (1 - 0.55 * dim),
-              transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
+              ...depthRow(enter, `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`),
             })}
           >
             <div
@@ -415,7 +419,7 @@ export const TextBlock: React.FC<{
               fontWeight: 600,
               opacity: enter * (1 - 0.55 * dim),
               color: dim > 0.35 && !recoloured(i) ? theme.muted : undefined,
-              transform: `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`,
+              ...depthRow(enter, `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`),
             })}
           >
             <div

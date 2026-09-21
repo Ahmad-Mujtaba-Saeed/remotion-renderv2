@@ -59,50 +59,28 @@ import { f30 } from '../motion/choreo';
 import { useMotionStyle } from '../motion/styles';
 import { useIsGhost } from '../motion/ghost';
 import { ElementEditsProvider, useEdit } from './Editable';
-
-/** A gentle scale+fade entrance so each scene's content settles in — paced
-    by the motion style's base duration (§2.5), so a `classic` video breathes
-    into every scene while `swiss` snaps. */
-const Entrance: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const motion = useMotionStyle();
-  const r = motion.baseF / 13;
-  const p = easeOutQuint(clamp01(frame / f30(fps, Math.round(18 * r))));
-  return (
-    <AbsoluteFill
-      style={{
-        opacity: easeOutCubic(clamp01(frame / f30(fps, Math.round(12 * r)))),
-        transform: `scale(${0.986 + 0.014 * p})`,
-      }}
-    >
-      {children}
-    </AbsoluteFill>
-  );
-};
+import { DepthCamera, usePlane } from '../motion/depthStage';
 
 /**
- * Midpoint re-frame for slides (copilot.md §2.8, Law 6: never frozen): any
- * scene held longer than 8 seconds gets a whole-frame push (1.00 → 1.035)
- * over its back half — the slides twin of the canvas camera's re-frame. The
- * envelope completes by 85% of the scene so the outgoing transition never
- * starts from a moving frame. Transform only.
+ * The scene's camera (§2.5 + the Flute rig, motion/depthStage).
+ *
+ * This used to be two flat wrappers: a `scale(0.986 → 1)` entrance and, for a
+ * long hold, a `scale(1 → 1.035)` mid-push. Both are now one perspective
+ * camera: the card ARRIVES out of the depth of the frame and the hold is a
+ * real dolly, so the layers inside it (ambient, media, body, accents) part
+ * against each other instead of zooming as one flat picture.
+ *
+ * `motion_depth: off` renders exactly the old two wrappers, frame for frame.
  */
-const MidholdPush: React.FC<{ seconds: number; children: React.ReactNode }> = ({
-  seconds,
+const SceneCamera: React.FC<{ scene: Scene; index: number; children: React.ReactNode }> = ({
+  scene,
+  index,
   children,
-}) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const total = Math.max(1, Math.round(seconds * fps));
-  const p =
-    seconds > 8 ? easeInOutSine(clamp01((frame - total * 0.55) / (total * 0.3))) : 0;
-  return (
-    <AbsoluteFill style={p > 0 ? { transform: `scale(${1 + 0.035 * p})` } : undefined}>
-      {children}
-    </AbsoluteFill>
-  );
-};
+}) => (
+  <DepthCamera seconds={scene.duration_seconds} relation={scene.relation} index={index}>
+    {children}
+  </DepthCamera>
+);
 
 /**
  * Routes a scene to its layout component. Exported for reuse by the canvas
@@ -122,6 +100,16 @@ export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => (
 const EditableCard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const edit = useEdit();
   return <AbsoluteFill {...edit('card', {}, { kind: 'card' })}>{children}</AbsoluteFill>;
+};
+
+/**
+ * The backdrop sits furthest from the lens. Perspective-compensated, so at
+ * rest it covers exactly the frame it always did — it only parts from the card
+ * while the camera is moving.
+ */
+const AmbientPlane: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const plane = usePlane('ambient');
+  return <AbsoluteFill style={plane}>{children}</AbsoluteFill>;
 };
 
 const LayoutSwitch: React.FC<{ scene: Scene }> = ({ scene }) => {
@@ -249,12 +237,12 @@ export const SceneRouter: React.FC<{
         {scene.narration_audio_url && !ghost ? (
           <Audio src={scene.narration_audio_url} volume={1.3} />
         ) : null}
-        <MidholdPush seconds={scene.duration_seconds}>
-          <AmbientBackground imageUrl={scene.ambient_image_url} mood={scene.mood} />
-          <Entrance>
-            <SceneLayout scene={scene} />
-          </Entrance>
-        </MidholdPush>
+        <SceneCamera scene={scene} index={index}>
+          <AmbientPlane>
+            <AmbientBackground imageUrl={scene.ambient_image_url} mood={scene.mood} />
+          </AmbientPlane>
+          <SceneLayout scene={scene} />
+        </SceneCamera>
         {/* Narration-synced punchline (slides mode: the Sequence clock IS the
             narration clock, so no scene-window re-basing is needed). */}
         {scene.punchline ? <PunchLine scene={scene} /> : null}

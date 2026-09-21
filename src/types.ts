@@ -1061,6 +1061,8 @@ export interface ShotList {
   /** Motion style preset (§2.5): crisp | classic | bounce | elegant | swiss.
       Resolved by Laravel ('auto' never ships). Missing = crisp. */
   motion_style?: string | null;
+  /** Depth rig intensity (motion/depthStage): off | subtle | full. */
+  motion_depth?: string | null;
   /** Surface skin (§11.2): flat | outline | print. Missing = flat. */
   skin?: string | null;
   /** Math-board surface skin: slate (the video theme, default) | chalk

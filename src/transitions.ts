@@ -4,6 +4,7 @@ import { wipe } from '@remotion/transitions/wipe';
 import type { TransitionPresentation } from '@remotion/transitions';
 import { Theme, TransitionType } from './types';
 import { zoomThrough } from './presentations/zoomThrough';
+import { depthFade, dollyThrough } from './presentations/depthCuts';
 import { zoomOutIn } from './presentations/zoomOutIn';
 import { whipPan } from './presentations/whipPan';
 import { maskWipeCircle } from './presentations/maskWipeCircle';
@@ -54,7 +55,9 @@ export const presentationFor = (
     case 'wipe_up':
       return wipe({ direction: 'from-bottom' });
     case 'zoom_through':
-      return zoomThrough();
+      // The punch-in cut, on the rig (motion/depthStage). At `motion_depth:
+      // off` this IS zoomThrough, frame for frame.
+      return dollyThrough();
     case 'zoom_out_in':
       return zoomOutIn();
     case 'whip_pan':
@@ -77,6 +80,8 @@ export const presentationFor = (
       return matchDissolve();
     case 'fade':
     default:
-      return fade();
+      // The commonest cut in the product: in depth rather than on one flat
+      // plane, and exactly the old cross-fade when the rig is off.
+      return depthFade();
   }
 };

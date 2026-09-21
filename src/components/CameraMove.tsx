@@ -1,11 +1,21 @@
 import React from 'react';
 import { useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { CameraMove as CameraMoveType } from '../types';
+import { BASE_PERSPECTIVE } from '../flute/cinematicRig';
+import { useDepth, depthGain } from '../motion/depthStage';
 
 /**
  * Wraps a media element and applies a slow, continuous camera move across the
  * full duration of the current Sequence so nothing is ever a dead static frame.
  * The slight base over-scale (>=1.04) hides edges introduced by panning.
+ *
+ * With the depth rig on (motion/depthStage) the zoom moves become real
+ * DOLLIES: the picture rides its own short perspective track, so a push-in
+ * gains the parallax of a lens moving toward a subject rather than a
+ * rectangle being scaled. The pans lean a degree into their direction for the
+ * same reason. Everything is derived from the move the storyboard already
+ * chose — no move is invented here, and `motion_depth: off` restores the
+ * exact 2D transforms.
  */
 export const CameraMove: React.FC<{
   move?: CameraMoveType;
@@ -17,15 +27,64 @@ export const CameraMove: React.FC<{
     extrapolateRight: 'clamp',
   });
 
-  const transform = transformFor(move, p);
+  const gain = depthGain(useDepth().intensity);
+  const dolly = gain > 0 ? dollyFor(move, p, gain) : null;
 
   return (
-    <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-      <div style={{ width: '100%', height: '100%', transform, transformOrigin: 'center center' }}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        perspective: dolly ? `${BASE_PERSPECTIVE}px` : undefined,
+        perspectiveOrigin: dolly ? '50% 50%' : undefined,
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          transform: dolly ?? transformFor(move, p),
+          transformOrigin: 'center center',
+        }}
+      >
         {children}
       </div>
     </div>
   );
+};
+
+/**
+ * The same move as a track in z.
+ *
+ * A scale of s and a dolly to z = P(1 - 1/s) frame identically at the centre;
+ * the difference is at the edges, where the dolly gives the perspective shift
+ * a real lens would. The base over-scale that hides pan edges is kept as a
+ * scale, because it is a crop, not a move.
+ */
+const dollyFor = (move: CameraMoveType, p: number, gain: number): string | null => {
+  const zFor = (scale: number) => BASE_PERSPECTIVE * (1 - 1 / scale);
+  const lean = (deg: number) => (deg * gain).toFixed(2);
+
+  switch (move) {
+    case 'slow_zoom_in':
+      return `translateZ(${zFor(lerp(1.04, 1.16, p)).toFixed(1)}px)`;
+    case 'slow_zoom_out':
+      return `translateZ(${zFor(lerp(1.16, 1.04, p)).toFixed(1)}px)`;
+    case 'push_in':
+      return `translateZ(${zFor(lerp(1.05, 1.32, p)).toFixed(1)}px)`;
+    case 'pull_out':
+      return `translateZ(${zFor(lerp(1.32, 1.05, p)).toFixed(1)}px)`;
+    case 'pan_left':
+      return `scale(1.14) translateX(${lerp(4, -4, p)}%) rotateY(${lean(lerp(-1.2, 1.2, p))}deg)`;
+    case 'pan_right':
+      return `scale(1.14) translateX(${lerp(-4, 4, p)}%) rotateY(${lean(lerp(1.2, -1.2, p))}deg)`;
+    default:
+      // ken_burns, the pans up/down and static keep their authored transform:
+      // a vertical drift gains nothing from a lens, and static must stay
+      // static.
+      return null;
+  }
 };
 
 const lerp = (a: number, b: number, p: number) => a + (b - a) * p;

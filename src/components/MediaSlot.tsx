@@ -10,6 +10,7 @@ import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { SPRINGS } from '../motion/springs';
 import { clamp01, easeOutCubic } from '../motion/easing';
 import { f30 } from '../motion/choreo';
+import { usePlane } from '../motion/depthStage';
 import { CalloutLayer } from './CalloutLayer';
 
 /**
@@ -80,6 +81,7 @@ const shotLabel = (description?: string): string => {
 };
 
 export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
+  const mediaPlane = usePlane('media');
   const theme = useTheme();
   const u = useScaleUnit();
   const region = useRegionStyle();
@@ -255,7 +257,15 @@ export const MediaSlot: React.FC<{ slot: Slot }> = ({ slot }) => {
   return (
     <div
       ref={boxRef}
-      {...edit(mediaId, { width: '100%', height: '100%', position: 'relative', ...framelessWrap, ...entrance }, { kind: 'media' })}
+      {...edit(
+        mediaId,
+        // The picture sits BEHIND the words on its own plane, so a camera move
+        // parts the two instead of scaling them as one flat frame
+        // (motion/depthStage). Perspective-compensated: at rest it covers
+        // exactly the box it always did.
+        { width: '100%', height: '100%', position: 'relative', ...framelessWrap, ...entrance, ...mediaPlane },
+        { kind: 'media' }
+      )}
     >
       {containBackdrop}
       {/* Panning letterboxed media around looks broken — contained assets get

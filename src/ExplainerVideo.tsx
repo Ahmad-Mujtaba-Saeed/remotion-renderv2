@@ -18,6 +18,7 @@ import {
 import { normalizeChapters } from './chapters';
 import { ThemeProvider, SkinProvider, useTheme, hairline, skinTheme } from './theme';
 import { MotionStyleProvider } from './motion/styles';
+import { DepthProvider } from './motion/depthStage';
 import { MotionBlurProvider } from './motion/ghost';
 import { DEFAULT_THEME } from './types';
 import { presentationFor } from './transitions';
@@ -261,6 +262,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
         <SkinProvider skin={shotList?.skin}>
         <BackdropProvider enabled={backdropOn}>
         <MotionStyleProvider style={shotList?.motion_style}>
+        <DepthProvider intensity={shotList?.motion_depth}>
         <MotionBlurProvider enabled={motionBlurOn}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: bTheme.bg_from }}>
@@ -271,6 +273,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
           </AbsoluteFill>
         </SfxProvider>
         </MotionBlurProvider>
+        </DepthProvider>
         </MotionStyleProvider>
         </BackdropProvider>
         </SkinProvider>
@@ -284,6 +287,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
         <SkinProvider skin={shotList?.skin}>
         <BackdropProvider enabled={backdropOn}>
         <MotionStyleProvider style={shotList?.motion_style}>
+        <DepthProvider intensity={shotList?.motion_depth}>
         <MotionBlurProvider enabled={motionBlurOn}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
@@ -300,6 +304,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
           </AbsoluteFill>
         </SfxProvider>
         </MotionBlurProvider>
+        </DepthProvider>
         </MotionStyleProvider>
         </BackdropProvider>
         </SkinProvider>
@@ -343,6 +348,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
         <SkinProvider skin={shotList?.skin}>
         <BackdropProvider enabled={backdropOn}>
         <MotionStyleProvider style={shotList?.motion_style}>
+        <DepthProvider intensity={shotList?.motion_depth}>
         <MotionBlurProvider enabled={motionBlurOn}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
@@ -412,6 +418,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
           </AbsoluteFill>
         </SfxProvider>
         </MotionBlurProvider>
+        </DepthProvider>
         </MotionStyleProvider>
         </BackdropProvider>
         </SkinProvider>
@@ -424,6 +431,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
       <SkinProvider skin={shotList?.skin}>
         <BackdropProvider enabled={backdropOn}>
       <MotionStyleProvider style={shotList?.motion_style}>
+        <DepthProvider intensity={shotList?.motion_depth}>
         <MotionBlurProvider enabled={motionBlurOn}>
       <SfxProvider config={shotList?.sfx}>
         <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
@@ -434,6 +442,7 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
         </AbsoluteFill>
       </SfxProvider>
       </MotionBlurProvider>
+        </DepthProvider>
         </MotionStyleProvider>
       </BackdropProvider>
         </SkinProvider>
