@@ -33,6 +33,16 @@ OPENAI_EXPLAINER_MODEL=gpt-4o-mini
 - `POST /render` → `{ project_id, output_path (absolute), fps, width, height, shot_list }`
   renders and returns `{ success, output_path }`.
 
+### Long videos render in chunks
+Explainers longer than one piece (at most `RENDER_CHUNK_SECONDS`, default `300`,
+floor `10`) are rendered as consecutive pieces in `<output>.chunks/`, each shrunk to fit half
+the free space on the temp drive (~4 MB per 1080p frame), then joined with
+Remotion's `combineChunks()` (lossless video concat + seamless AAC seams). Only
+one piece's frames sit in the temp dir at a time, so disk use no longer grows
+with video length. A failed render keeps finished pieces and the retry reuses
+them as long as the storyboard is unchanged; the folder is deleted on success.
+Smoke test: `RENDER_CHUNK_SECONDS=10 npx tsx scripts/chunk-check.ts sample.json out/x.mp4`.
+
 ## Develop the visuals
 ```bash
 npm run studio      # opens Remotion Studio with the Explainer composition

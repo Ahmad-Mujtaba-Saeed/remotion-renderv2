@@ -1,7 +1,9 @@
 import path from 'path';
+import os from 'os';
 import * as fsSync from 'fs';
+import { createHash } from 'crypto';
 import { bundle } from '@remotion/bundler';
-import { selectComposition, renderMedia, renderStill } from '@remotion/renderer';
+import { selectComposition, renderMedia, renderStill, combineChunks } from '@remotion/renderer';
 import type { ShotList } from './types';
 import type { ThumbnailProps } from './ThumbnailComp';
 import { SFX_NAMES } from './sfx';
@@ -153,13 +155,80 @@ export const renderExplainer = async (req: RenderRequest): Promise<string> => {
     inputProps,
   });
 
+  const total = composition.durationInFrames;
+  const chunkFrames = planChunkFrames(fps, width, height);
+  if (total > chunkFrames) {
+    await renderExplainerInChunks({ serveUrl, composition, inputProps, fps, chunkFrames, req });
+    return req.outputPath;
+  }
+
   await renderMedia({
+    ...explainerRenderOptions(serveUrl, composition, inputProps),
+    outputLocation: req.outputPath,
+    onProgress: ({ progress }) => req.onProgress?.(progress),
+  });
+
+  return req.outputPath;
+};
+
+/**
+ * Longest stretch rendered in one renderMedia() call. When Remotion decides the
+ * host is short on RAM it turns parallel encoding off and parks EVERY frame as
+ * a PNG in the temp dir before stitching (~2-4 MB each at 1080p), so a
+ * 10-minute video wanted tens of GB free. Past this length the video is
+ * rendered in pieces whose frames are freed before the next piece starts.
+ * RENDER_CHUNK_SECONDS caps a piece (default 300s, floor 10s).
+ */
+const chunkSeconds = (): number => {
+  const raw = Number(process.env.RENDER_CHUNK_SECONDS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 300;
+};
+
+/**
+ * Frames per piece: the RENDER_CHUNK_SECONDS cap, shrunk to what the temp
+ * drive can actually hold RIGHT NOW. A fixed 5 minutes is 9,000 PNGs, ~36 GB
+ * at 1080p, and project 211 died with ENOSPC on a drive with 21 GB free — the
+ * same length that "worked" when the disk was emptier. Budget: half the free
+ * space at ~2 bytes/pixel per frame (flat-design PNGs measure well under the
+ * 4 bytes/pixel worst case), rounded down to whole 10s so small swings in free
+ * space don't change the plan. Throws a readable error when not even 10s fits.
+ */
+const planChunkFrames = (fps: number, width: number, height: number): number => {
+  const floor = fps * 10;
+  const cap = Math.max(floor, Math.round(fps * chunkSeconds()));
+  const tmp = os.tmpdir();
+  let free: number;
+  try {
+    const s = fsSync.statfsSync(tmp);
+    free = s.bavail * s.bsize;
+  } catch {
+    return cap; // Can't measure: keep the configured cap.
+  }
+  const perFrame = width * height * 2;
+  const fits = Math.floor((free * 0.5) / perFrame / floor) * floor;
+  const gb = (free / 1e9).toFixed(1);
+  if (fits < floor) {
+    throw new Error(
+      `Not enough free disk to render: ${gb} GB free in ${tmp}, ` +
+        `need ~${((floor * perFrame * 2) / 1e9).toFixed(1)} GB for even a 10s piece. Free up space and retry.`,
+    );
+  }
+  const frames = Math.min(cap, fits);
+  console.log(`[render] ${gb} GB free in temp -> pieces of up to ${(frames / fps).toFixed(0)}s`);
+  return frames;
+};
+
+/** The renderMedia() options a whole render and every chunk share. */
+const explainerRenderOptions = (
+  serveUrl: string,
+  composition: Awaited<ReturnType<typeof selectComposition>>,
+  inputProps: Record<string, unknown>,
+) =>
+  ({
     serveUrl,
     composition,
     codec: 'h264',
-    outputLocation: req.outputPath,
     inputProps,
-    onProgress: ({ progress }) => req.onProgress?.(progress),
     // A failed asset fetch (a missing music bed, a 404 image) is only ever
     // reported inside the browser — without this it is thrown away and the
     // render "succeeds" silently.
@@ -179,9 +248,107 @@ export const renderExplainer = async (req: RenderRequest): Promise<string> => {
     crf: 16,
     x264Preset: 'slow',
     colorSpace: 'bt709',
+  }) as const;
+
+/**
+ * Render a long explainer as consecutive frame ranges, then join them.
+ *
+ * Each chunk is a video-only MPEG-TS plus its audio as a separate AAC file cut with
+ * forSeamlessAacConcatenation, which is exactly what Remotion Lambda does: the
+ * h264 streams concatenate losslessly and the AAC pieces join without the
+ * priming-sample click a naive concat leaves at every seam. combineChunks()
+ * does both joins and the final mux.
+ *
+ * Chunks live beside the output in `<name>.chunks/` with a `.done` marker each,
+ * keyed by a hash of the props and the piece length: when chunk 3 of 4 dies,
+ * the retry keeps the two finished chunks instead of re-rendering them. Any edit to the storyboard
+ * changes the hash and starts clean. The folder is deleted on success.
+ */
+const renderExplainerInChunks = async ({
+  serveUrl,
+  composition,
+  inputProps,
+  fps,
+  chunkFrames,
+  req,
+}: {
+  serveUrl: string;
+  composition: Awaited<ReturnType<typeof selectComposition>>;
+  inputProps: Record<string, unknown>;
+  fps: number;
+  chunkFrames: number;
+  req: RenderRequest;
+}): Promise<void> => {
+  const total = composition.durationInFrames;
+  const count = Math.ceil(total / chunkFrames);
+  // Absolute: combineChunks() runs ffmpeg with a concat list in the temp dir,
+  // which resolves relative entries against ITSELF, and a cwd of its own.
+  const output = path.resolve(req.outputPath);
+  const dir = `${output}.chunks`;
+  const hash = createHash('sha1').update(JSON.stringify({ inputProps, chunkFrames })).digest('hex');
+  const stampPath = path.join(dir, 'props.sha1');
+
+  const stale = !fsSync.existsSync(stampPath) || fsSync.readFileSync(stampPath, 'utf8') !== hash;
+  if (stale) {
+    fsSync.rmSync(dir, { recursive: true, force: true });
+    fsSync.mkdirSync(dir, { recursive: true });
+    fsSync.writeFileSync(stampPath, hash);
+  }
+
+  console.log(`[render] ${total} frames in ${count} chunk(s) of ${chunkFrames}`);
+
+  const videoFiles: string[] = [];
+  const audioFiles: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const start = i * chunkFrames;
+    const end = Math.min(total, start + chunkFrames) - 1;
+    const video = path.join(dir, `chunk-${i}.ts`);
+    const audio = path.join(dir, `chunk-${i}.aac`);
+    const done = path.join(dir, `chunk-${i}.done`);
+    videoFiles.push(video);
+    audioFiles.push(audio);
+
+    if (fsSync.existsSync(done) && fsSync.existsSync(video) && fsSync.existsSync(audio)) {
+      console.log(`[render] chunk ${i + 1}/${count} reused`);
+      req.onProgress?.(((i + 1) / count) * 0.97);
+      continue;
+    }
+
+    await renderMedia({
+      ...explainerRenderOptions(serveUrl, composition, inputProps),
+      // MPEG-TS, not MP4: combineChunks() joins the video with ffmpeg's byte-level
+      // `concat:` protocol, which silently keeps only the first chunk of MP4s.
+      // (TS never parallel-encodes, so a chunk's frames always hit the temp
+      // dir — bounded by the chunk length, which is the point.)
+      codec: 'h264-ts',
+      outputLocation: video,
+      frameRange: [start, end],
+      separateAudioTo: audio,
+      audioCodec: 'aac',
+      forSeamlessAacConcatenation: true,
+      // Every chunk needs an audio file for the join, even a silent stretch.
+      enforceAudioTrack: true,
+      overwrite: true,
+      onProgress: ({ progress }) => req.onProgress?.(((i + progress) / count) * 0.97),
+    });
+    fsSync.writeFileSync(done, '');
+    console.log(`[render] chunk ${i + 1}/${count} done (frames ${start}-${end})`);
+  }
+
+  await combineChunks({
+    outputLocation: output,
+    videoFiles,
+    audioFiles,
+    codec: 'h264',
+    audioCodec: 'aac',
+    fps,
+    framesPerChunk: chunkFrames,
+    preferLossless: false,
+    compositionDurationInFrames: total,
+    onProgress: ({ totalProgress }) => req.onProgress?.(0.97 + totalProgress * 0.03),
   });
 
-  return req.outputPath;
+  fsSync.rmSync(dir, { recursive: true, force: true });
 };
 
 /**

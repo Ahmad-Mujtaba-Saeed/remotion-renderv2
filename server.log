@@ -1,123 +1,413 @@
+
+> remotion-render@0.1.0 start
+> tsx src/server.ts
+
 remotion-render listening on http://localhost:3020
-[short] project=196 clip=1 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\196\output_1.mp4
-[short] project=196 clip=1 0%
-[short] project=196 clip=1 25%
-[short] project=196 clip=1 50%
-[short] project=196 clip=1 75%
-[short] project=196 clip=1 100%
-[short] project=196 clip=1 done in 205.2s
-[short] project=196 clip=2 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\196\output_2.mp4
-[short] project=196 clip=2 0%
-[short] project=196 clip=2 25%
-[short] project=196 clip=2 50%
-[short] project=196 clip=2 75%
-[short] project=196 clip=2 100%
-[short] project=196 clip=2 done in 166.5s
-[short] project=196 clip=3 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\196\output_3.mp4
-[short] project=196 clip=3 0%
-[short] project=196 clip=3 25%
-[short] project=196 clip=3 50%
-[short] project=196 clip=3 75%
-[short] project=196 clip=3 100%
-[short] project=196 clip=3 done in 120.6s
-[short] project=196 clip=4 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\196\output_4.mp4
-[short] project=196 clip=4 0%
-[short] project=196 clip=4 25%
-[short] project=196 clip=4 50%
-[short] project=196 clip=4 75%
-[short] project=196 clip=4 100%
-[short] project=196 clip=4 done in 214.5s
-[short] project=196 clip=5 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\196\output_5.mp4
-[short] project=196 clip=5 0%
-[short] project=196 clip=5 25%
-[short] project=196 clip=5 50%
-[short] project=196 clip=5 75%
-[short] project=196 clip=5 100%
-[short] project=196 clip=5 done in 342s
-[short] project=196 clip=6 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\196\output_6.mp4
-[short] project=196 clip=6 0%
-[short] project=196 clip=6 25%
-[short] project=196 clip=6 50%
-[short] project=196 clip=6 75%
-[short] project=196 clip=6 100%
-[short] project=196 clip=6 done in 99.5s
-[short] project=196 clip=7 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\196\output_7.mp4
-[short] project=196 clip=7 0%
-[short] project=196 clip=7 25%
-[short] project=196 clip=7 50%
-[short] project=196 clip=7 75%
-[short] project=196 clip=7 100%
-[short] project=196 clip=7 done in 225.1s
-[short] project=198 clip=1 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\198\output_1.mp4
-[short] project=198 clip=1 0%
-[short] project=198 clip=1 25%
-[short] project=198 clip=1 50%
-[short] project=198 clip=1 100%
-[short] project=198 clip=1 done in 41.1s
-[short] project=198 clip=2 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\198\output_2.mp4
-[short] project=198 clip=2 0%
-[short][browser:error] Error occurred in video JSHandle@object
-[Tab 0, node_modules/remotion/dist/esm/index.mjs:12225] Error occurred in video { code: 3, message: "PipelineStatus::PIPELINE_ERROR_DISCONNECTED: video decode error!" }
-[short] failed: SymbolicateableError [MediaPlaybackError]: The browser threw an error while playing the video http://localhost:3020/storage/projects/198/tmp/main_clip_2.mp4: Code 3 - PipelineStatus::PIPELINE_ERROR_DISCONNECTED: video decode error!. See https://remotion.dev/docs/media-playback-error for help. Pass an onError() prop to handle the error.
-    at HTMLVideoElement.errorHandler (http://localhost:3001/bundle.js:38245:15) {
-  stackFrame: [
-    {
-      columnNumber: 14,
-      fileName: 'http://localhost:3001/bundle.js',
-      functionName: 'errorHandler',
-      lineNumber: 38244
-    }
-  ],
-  delayRenderCall: null,
-  frame: 371,
-  chunk: null
-}
-[short] project=198 clip=3 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\198\output_3.mp4
-[short] project=198 clip=3 0%
-[short] project=198 clip=3 25%
-[short] project=198 clip=3 50%
-[short] project=198 clip=3 75%
-[short] project=198 clip=3 100%
-[short] project=198 clip=3 done in 224.3s
-[short] project=198 clip=4 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\198\output_4.mp4
-[short] project=198 clip=4 0%
-[short] project=198 clip=4 25%
-[short] project=198 clip=4 50%
-[short] project=198 clip=4 75%
-[short] project=198 clip=4 100%
-[short] project=198 clip=4 done in 277.1s
-[short] project=198 clip=5 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\198\output_5.mp4
-[short] project=198 clip=5 0%
-[short] project=198 clip=5 25%
-[short] project=198 clip=5 50%
-[short] project=198 clip=5 75%
-[short] project=198 clip=5 100%
-[short] project=198 clip=5 done in 201.1s
-[short] project=198 clip=6 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\198\output_6.mp4
-[short] project=198 clip=6 0%
-[short] project=198 clip=6 25%
-[short] project=198 clip=6 50%
-[short] project=198 clip=6 75%
-[short] project=198 clip=6 100%
-[short] project=198 clip=6 done in 185.9s
-[short] project=198 clip=7 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\198\output_7.mp4
-[short] project=198 clip=7 0%
-[short] project=198 clip=7 25%
-[short] project=198 clip=7 50%
-[short] project=198 clip=7 75%
-[short] project=198 clip=7 100%
-[short] project=198 clip=7 done in 184.3s
-[short] project=198 clip=8 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\198\output_8.mp4
-[short] project=198 clip=8 0%
-[short] project=198 clip=8 25%
-[short] project=198 clip=8 50%
-[short] project=198 clip=8 75%
-[short] project=198 clip=8 100%
-[short] project=198 clip=8 done in 172.6s
-[short] project=198 clip=9 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\198\output_9.mp4
-[short] project=198 clip=9 0%
-[short] project=198 clip=9 25%
-[short] project=198 clip=9 50%
-[short] project=198 clip=9 75%
-[short] project=198 clip=9 100%
-[short] project=198 clip=9 done in 270.8s
+[render] project=211 scenes=102 -> E:\laragon\www\socailVideoMaker\viralforgebackend\storage\app\public\projects\outputs\output_211_1790667888.mp4
+[render] 21.6 GB free in temp -> pieces of up to 40s
+[render] 50676 frames in 22 chunk(s) of 2400
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] project=211 0%
+[render] chunk 1/22 done (frames 0-2399)
+[render] chunk 2/22 done (frames 2400-4799)
+[render] chunk 3/22 done (frames 4800-7199)
+[31mUnable to close browser[39m [31mError: Failed to launch the browser process![39m
+[31mTroubleshooting: https://remotion.dev/docs/troubleshooting/browser-launch[39m
+[render] failed: Error: Failed to launch the browser process!
+Troubleshooting: https://remotion.dev/docs/troubleshooting/browser-launch
+    at Socket.onClose (E:\laragon\www\socailVideoMaker\remotion-render\node_modules\@remotion\renderer\dist\browser\BrowserRunner.js:269:20)
+    at Socket.emit (node:events:530:35)
+    at Pipe.<anonymous> (node:net:351:12)
