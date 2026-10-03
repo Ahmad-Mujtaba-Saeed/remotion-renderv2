@@ -187,7 +187,7 @@ export const AmbientBackground: React.FC<{ imageUrl?: string; grid?: boolean; mo
                 // luminance-flip convention as hairline()/inkOn()/Vignette.
                 filter: isLightTheme(theme)
                   ? 'blur(26px) brightness(1.12) saturate(0.75)'
-                  : 'blur(26px) brightness(0.4) saturate(0.9)',
+                  : 'blur(26px) brightness(0.55) saturate(0.35)',
                 transform: `scale(${lerp(1.12, 1.2, p)})`,
               }}
             />
@@ -196,9 +196,12 @@ export const AmbientBackground: React.FC<{ imageUrl?: string; grid?: boolean; mo
               at high opacity so the ambient reads as a faint watermark and the
               dark ink keeps full contrast; a dark scheme keeps the plain
               vignette it always had. */}
-          {isLightTheme(theme) ? (
-            <AbsoluteFill style={{ background: withAlpha(theme.bg_from, 0.74) }} />
-          ) : null}
+          {/* Both schemes now lay their own field over the photo. On a dark
+              scheme the plain darkened photo kept its own warm cast, so every
+              text card on a slate video sat on a muddy brown blur (project
+              211); a 64% wash of the scheme's colour turns it into texture in
+              the palette. */}
+          <AbsoluteFill style={{ background: withAlpha(theme.bg_from, isLightTheme(theme) ? 0.74 : 0.64) }} />
           <Vignette />
         </>
       ) : null}

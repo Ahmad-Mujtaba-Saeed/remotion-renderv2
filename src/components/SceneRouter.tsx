@@ -33,6 +33,7 @@ import { MythFact } from '../layouts/MythFact';
 import { FormulaAnatomy } from '../layouts/FormulaAnatomy';
 import { CycleDiagram } from '../layouts/CycleDiagram';
 import { SpectrumCard } from '../layouts/SpectrumCard';
+import { InterfaceMorph } from '../layouts/InterfaceMorph';
 import { QuadrantMap } from '../layouts/QuadrantMap';
 import { ProportionFlow } from '../layouts/ProportionFlow';
 import { ScaleComparison } from '../layouts/ScaleComparison';
@@ -178,6 +179,8 @@ const LayoutSwitch: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <CycleDiagram scene={scene} />;
     case 'spectrum_card':
       return <SpectrumCard scene={scene} />;
+    case 'interface_morph':
+      return <InterfaceMorph scene={scene} />;
     case 'quadrant_map':
       return <QuadrantMap scene={scene} />;
     case 'proportion_flow':

@@ -34,6 +34,14 @@ export interface BeatOptions {
    * one thought, not three) caps the spacing here.
    */
   maxGap?: number;
+  /**
+   * The items' own words. When given, each item lands where the narrator
+   * actually SAYS it (content match, see `alignTexts`) and the word-share
+   * split is only the fallback for items the voice never names. Without this
+   * a list whose first point takes two thirds of the sentence showed point
+   * two a full clause early — the "a little out of sync" on project 211.
+   */
+  texts?: string[];
 }
 
 /**
@@ -51,7 +59,7 @@ export const beatFrames = (
   words: NarrationWord[] | undefined,
   count: number,
   fps: number,
-  { first, last, minGap, maxGap }: BeatOptions
+  { first, last, minGap, maxGap, texts }: BeatOptions
 ): number[] => {
   if (count <= 0) return [];
 
@@ -69,7 +77,11 @@ export const beatFrames = (
   const list = words ?? [];
   if (list.length < count || count < 2) return even();
 
+  const aligned = texts && texts.length === count ? alignTexts(list, texts) : null;
   const raw = Array.from({ length: count }, (_, i) => {
+    const at = aligned?.[i];
+    // Lead the spoken word by ~0.2s, the way an editor cuts a hair early.
+    if (at != null) return Math.round(Math.max(0, list[at].start - 0.2) * fps);
     const w = list[Math.floor((i * list.length) / count)];
     return Math.round((w?.start ?? 0) * fps);
   });
@@ -143,4 +155,62 @@ export const activeBeat = (landAt: number[], frame: number): number => {
     if (frame >= landAt[i]) active = i;
   }
   return active;
+};
+
+const STOP = new Set(
+  ('the and that this with from they them their there then than what when where which while have has had were was are ' +
+   'been being into onto over under about your you our its for not but can just only also more most very some such ' +
+   'each other these those does did doing done make makes made like even still much many who whom whose will would ' +
+   'could should one two three first second study studies research researchers people').split(' ')
+);
+
+/** Content words of a card row, stemmed: what the voice would have to say. */
+const keyWords = (text: string): string[] =>
+  text
+    .toLowerCase()
+    .split(/[^a-z0-9'-]+/)
+    .map((w) => w.replace(/'s$/, ''))
+    .filter((w) => w.length >= 4 && !STOP.has(w))
+    .map(stem);
+
+/**
+ * Where in the narration each item is spoken: the index of the first word of
+ * the best-matching run, or null when the voice never says it.
+ *
+ * Items are matched IN ORDER (a list is read top to bottom), so the search for
+ * item i starts after item i−1's hit. The score of a start position is how
+ * many of the item's key words appear in the next ~14 spoken words; ties go
+ * to the earliest. One shared key word is enough when the item has only one
+ * or two, two are required otherwise, so a common word like "brain" cannot
+ * drag a row to the wrong clause.
+ */
+export const alignTexts = (words: NarrationWord[], texts: string[]): (number | null)[] => {
+  const spoken = words.map((w) => stem(norm(w.word)));
+  const out: (number | null)[] = [];
+  let from = 0;
+  for (const text of texts) {
+    const keys = [...new Set(keyWords(text))];
+    if (keys.length === 0) { out.push(null); continue; }
+    const need = keys.length <= 2 ? 1 : 2;
+    let best = -1;
+    let bestScore = 0;
+    for (let i = from; i < spoken.length; i++) {
+      if (!keys.some((k) => spoken[i].startsWith(k) || (k.startsWith(spoken[i]) && spoken[i].length >= 4))) continue;
+      const window = spoken.slice(Math.max(from, i - 3), i + 14);
+      const score = keys.filter((k) => window.some((w) => w.startsWith(k) || (k.startsWith(w) && w.length >= 4))).length;
+      if (score > bestScore) { bestScore = score; best = i; }
+      if (bestScore === keys.length) break;
+    }
+    if (best < 0 || bestScore < need) { out.push(null); continue; }
+    // Back up to the start of the clause the hit sits in (≤3 words), so the
+    // row appears as the phrase begins rather than on its third word.
+    let at = best;
+    for (let j = best - 1; j >= Math.max(from, best - 3); j--) {
+      if (/[.,;:!?]$/.test(words[j].word)) break;
+      at = j;
+    }
+    out.push(at);
+    from = best + 1;
+  }
+  return out;
 };

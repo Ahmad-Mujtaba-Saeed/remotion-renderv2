@@ -25,7 +25,14 @@ export const FullBleedWithSidePanel: React.FC<{ scene: Scene }> = ({ scene }) =>
   // The image is the scene — the panel is a caption on it, never a co-star.
   // Hard cap well under half the frame so no upload ever disappears behind
   // its own explanation.
-  const widthPct = Math.max(24, Math.min(38, panel?.width_pct ?? 33));
+  // 36 by default: at 33 the text column was ~420px, too narrow for a heading
+  // and three reasons without every line wrapping.
+  const widthPct = Math.max(28, Math.min(40, panel?.width_pct ?? 36));
+  // The panel's width is a share of the PADDED row (90% of the frame); the
+  // surface pads 7% a side and the text block another 7% — hand the solver
+  // the real line length.
+  const boxFrac = ((portrait ? 86 : widthPct) / 100) * 0.9 * 0.86 * 0.86;
+  const boxHeightFrac = portrait ? 0.5 : 0.9 * 0.86;
 
   const enter = spring({ frame, fps, config: { damping: 200 }, durationInFrames: Math.round(fps * 0.6) });
   const offset = interpolate(enter, [0, 1], [portrait ? 60 : dock === 'left' ? -60 : 60, 0]);
@@ -49,11 +56,12 @@ export const FullBleedWithSidePanel: React.FC<{ scene: Scene }> = ({ scene }) =>
         <div
           style={{
             width: portrait ? '86%' : `${widthPct}%`,
+            maxHeight: '100%',
             opacity: enter,
             transform: portrait ? `translateY(${offset}px)` : `translateX(${offset}px)`,
           }}
         >
-          <PanelContent slot={panel} glass columnFrac={(portrait ? 86 : widthPct) / 100 * 0.86} />
+          <PanelContent slot={panel} glass columnFrac={boxFrac} heightFrac={boxHeightFrac} />
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

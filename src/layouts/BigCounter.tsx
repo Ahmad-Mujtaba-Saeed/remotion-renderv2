@@ -9,6 +9,7 @@ import { clamp01, easeOutExpo, easeOutQuint } from '../motion/easing';
 import { f30 } from '../motion/choreo';
 import { useCardReveal } from '../motion/cardReveal';
 import { parseCountable, CountableToken } from '../motion/CountUp';
+import { fitText } from '../typography';
 import { SfxCue } from '../sfx';
 import { useEdit } from '../components/Editable';
 
@@ -33,6 +34,11 @@ const readCounter = (slot: Slot): { token: CountableToken | null; raw: string; u
   const heading = (slot.heading ?? '').trim();
   const m = /^(.*?)(\s*\S*\d[\d,\.]*\S*)(.*)$/.exec(heading);
   const token = parseCountable((m?.[2] ?? heading).trim());
+  const lead = (m?.[1] ?? '').trim();
+  // No countable token (a figure under 2 does not roll) or a leading word
+  // ("Under 1 second"): the heading is drawn whole, so its unit must not be
+  // drawn AGAIN beside it — project 211 printed "Under 1 second second".
+  if (!token || lead !== '') return { token: null, raw: heading, unit: '' };
   const unit = (m?.[3] ?? '').trim();
   return { token, raw: heading, unit };
 };
@@ -69,6 +75,7 @@ export const BigCounter: React.FC<{ scene: Scene }> = ({ scene }) => {
   if (!slot) return null;
 
   const { token, raw, unit } = readCounter(slot);
+  const { width: frameW } = useVideoConfig();
   const kicker = (meta.style?.kicker ?? slot.label ?? '').trim();
   const support = (slot.caption ?? (slot.bullets ?? [])[0] ?? '').trim();
   const values = slot.content_type === 'chart' ? (slot.values ?? []) : [];
@@ -138,7 +145,11 @@ export const BigCounter: React.FC<{ scene: Scene }> = ({ scene }) => {
             style={{
               fontFamily: displayFont,
               fontWeight: 800,
-              fontSize: 240 * u,
+              // A rolling figure is short; a whole-heading figure ("0.36
+              // seconds") is fitted to one line instead of breaking in two.
+              fontSize: token
+                ? 240 * u
+                : fitText(raw, { width: frameW * 0.82, max: 220 * u, min: 96 * u, maxLines: 1, font: displayFont, weight: 800, kinetic: false }),
               lineHeight: 1,
               letterSpacing: -4 * u,
               color: theme.text,

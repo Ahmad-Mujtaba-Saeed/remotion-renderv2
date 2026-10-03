@@ -13,7 +13,7 @@ import { useScaleUnit } from '../responsive';
 import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
 import { useRegionStyle } from '../canvas/RegionStyle';
 import { useSceneMeta } from './SceneMeta';
-import { fitText, fitGroup } from '../typography';
+import { fitText, fitGroup, lineCount } from '../typography';
 import { editId, useEdit, useSlotKey } from './Editable';
 
 /** Deterministic per-scene variation seed (scene windows differ per scene). */
@@ -60,13 +60,15 @@ export const TextBlock: React.FC<{
    * the frame is always the right basis.
    */
   columnFrac?: number;
-}> = ({ slot, transparent, compact, columnFrac = 0.86 }) => {
+  /** Share of the frame's HEIGHT the block's box gets (for the height budget). */
+  heightFrac?: number;
+}> = ({ slot, transparent, compact, columnFrac = 0.86, heightFrac = 0.86 }) => {
   // Rows arrive out of depth and resolve exactly where they landed before
   // (motion/depthStage). At `motion_depth: off` this is the identity.
   const depthRow = useDepthRows();
   const theme = useTheme();
   const displayFont = useDisplayFont();
-  const { fps, width: frameW } = useVideoConfig();
+  const { fps, width: frameW, height: frameH } = useVideoConfig();
   const { frame, durationInFrames } = useSceneClock();
   const win = useSceneWindow();
   const u = useScaleUnit();
@@ -108,6 +110,7 @@ export const TextBlock: React.FC<{
     first: startAt,
     last: endAt,
     minGap: f30(fps, 10),
+    texts: bullets,
   });
 
   // ---- Look -----------------------------------------------------------------
@@ -135,6 +138,85 @@ export const TextBlock: React.FC<{
       return [words.reduce((a, b) => (b.length > a.length ? b : a))];
     })();
 
+  /*
+   * Type is SOLVED, not chosen: fitText measures the real face and returns
+   * the biggest size that fits the line budget.
+   *
+   * `columnFrac` is the TEXT column, this block's own padding already taken
+   * off by the caller (every layout's number has it baked in). The side panel
+   * used to pass its outer box, which put 70px headings into ~420px of line:
+   * four-line headings and a panel taller than the frame (project 211).
+   */
+  const padFrac = bare ? 0.07 : 0.08;
+  const column = frameW * columnFrac;
+  /*
+   * DENSE: a column under ~620px (a docked side panel, a split half on a
+   * narrow frame) cannot carry the full-width rhythm — 34px numerals, a 108px
+   * gutter and 26px row padding eat a third of it. Same design, smaller
+   * metrics, and the heading may take a third line instead of shrinking to a
+   * size that no longer reads as a heading.
+   */
+  const dense = column < 620 * u;
+  const m = dense
+    ? { gutter: 60 * u, numeral: 24 * u, numeralW: 40 * u, gap: 16 * u, rowPad: 15 * u, headMax: 54, headMin: 32, headLines: 3, bMax: 32, bMin: 21, kicker: 17 * u, kickerGap: 16 * u, headGap: 24 * u }
+    : { gutter: 108 * u, numeral: 34 * u, numeralW: 78 * u, gap: 30 * u, rowPad: 26 * u, headMax: centered ? 100 : 70, headMin: centered ? 46 : 38, headLines: centered ? 3 : 2, bMax: 44, bMin: 24, kicker: 21 * u, kickerGap: 26 * u, headGap: (centered ? 44 : 40) * u };
+  const headingFit = {
+    width: column,
+    max: m.headMax * u,
+    min: m.headMin * u,
+    maxLines: m.headLines,
+    font: displayFont,
+    weight: 900,
+    letterSpacing: -1 * u,
+  };
+  let headingSize = fitText(headingText, headingFit) / u;
+
+  /*
+   * Bullets take ONE size for the whole list — a list whose rows each pick
+   * their own size reads as a ransom note — solved from the longest row. The
+   * numeral column and its gap come off the width first, and a long list gets
+   * a tighter ceiling because it also has to fit VERTICALLY.
+   */
+  const rows = bullets.length;
+  const bulletFit = {
+    width: column - m.gutter,
+    max: (dense ? m.bMax : rows > 4 ? 36 : rows > 3 ? 40 : 44) * u,
+    min: m.bMin * u,
+    maxLines: dense ? 3 : rows > 3 ? 1 : 2,
+    font: BODY_FONT,
+    weight: 400,
+    kinetic: false,
+  };
+  let bulletSize = fitGroup(bullets, bulletFit);
+  const statementBulletSize = fitGroup(bullets, {
+    width: column * 0.92,
+    max: 38 * u,
+    min: 24 * u,
+    maxLines: 2,
+    font: BODY_FONT,
+    weight: 400,
+  });
+
+  /*
+   * HEIGHT BUDGET. Width fitting alone let a long heading plus three wrapped
+   * rows stand taller than the frame. Estimate the stack with the solver's own
+   * wrap and, when it overflows the box this block owns, scale heading and
+   * rows down together (never below 80% of their floors).
+   */
+  const budget = frameH * heightFrac * (1 - 2 * padFrac);
+  let rowPad = m.rowPad;
+  for (let pass = 0; pass < 8 && !centered; pass++) {
+    const hLines = headingText ? lineCount(headingText, headingSize * u, headingFit) : 0;
+    const est =
+      m.kicker * 1.3 + m.kickerGap +
+      hLines * headingSize * u * 1.04 + (headingText ? m.headGap : 0) +
+      bullets.reduce((sum, b) => sum + lineCount(b, bulletSize, bulletFit) * bulletSize * 1.32 + 2 * rowPad, 0);
+    if (est <= budget) break;
+    headingSize = Math.max(m.headMin * 0.8, headingSize * 0.93);
+    bulletSize = Math.max(m.bMin * 0.8 * u, bulletSize * 0.93);
+    rowPad = Math.max(8 * u, rowPad * 0.85);
+  }
+
   // ---- Shared pieces --------------------------------------------------------
 
   const rule = (alpha = 0.14): string => hairline(theme, alpha);
@@ -146,11 +228,11 @@ export const TextBlock: React.FC<{
         display: 'flex',
         alignItems: 'center',
         gap: 14 * u,
-        marginBottom: 26 * u,
+        marginBottom: m.kickerGap,
         opacity: headingIn,
         justifyContent: centered ? 'center' : 'flex-start',
         fontFamily: MONO_FONT,
-        fontSize: 21 * u,
+        fontSize: m.kicker,
         fontWeight: 600,
         letterSpacing: 4 * u,
         textTransform: 'uppercase',
@@ -162,49 +244,6 @@ export const TextBlock: React.FC<{
     </div>
   );
 
-  /*
-   * Type is SOLVED, not chosen. The old ladder (82 vs 100 for centred, a flat
-   * 70 otherwise) never looked at the column, and since the scale unit is
-   * min(w,h)/1080 a portrait frame put the same pixels into half the width —
-   * a 55-character heading landed as three lines and pushed the bullets off
-   * the stage. fitText measures the real face and returns the biggest size
-   * that fits the line budget.
-   */
-  const column = frameW * columnFrac;
-  const headingSize =
-    fitText(headingText, {
-      width: column,
-      max: (centered ? 100 : 70) * u,
-      min: (centered ? 46 : 38) * u,
-      maxLines: centered ? 3 : 2,
-      font: displayFont,
-      weight: 900,
-      letterSpacing: -1 * u,
-    }) / u;
-
-  /*
-   * Bullets take ONE size for the whole list — a list whose rows each pick
-   * their own size reads as a ransom note — solved from the longest row. The
-   * numeral column and its gap come off the width first, and a long list gets
-   * a tighter ceiling because it also has to fit VERTICALLY.
-   */
-  const rows = bullets.length;
-  const bulletSize = fitGroup(bullets, {
-    width: column - 108 * u,
-    max: (rows > 4 ? 36 : rows > 3 ? 40 : 44) * u,
-    min: 24 * u,
-    maxLines: rows > 3 ? 1 : 2,
-    font: BODY_FONT,
-    weight: 400,
-  });
-  const statementBulletSize = fitGroup(bullets, {
-    width: column * 0.92,
-    max: 38 * u,
-    min: 24 * u,
-    maxLines: 2,
-    font: BODY_FONT,
-    weight: 600,
-  });
   const headingNode = headingText ? (
     <div
       style={{
@@ -217,7 +256,7 @@ export const TextBlock: React.FC<{
       <h1
         {...edit(idOf('heading'), {
           fontSize: headingSize * u,
-          margin: `0 0 ${(centered ? 44 : 40) * u}px 0`,
+          margin: `0 0 ${m.headGap}px 0`,
           fontWeight: 900,
           lineHeight: 1.04,
           letterSpacing: -1 * u,
@@ -337,11 +376,11 @@ export const TextBlock: React.FC<{
               position: 'relative',
               display: 'flex',
               alignItems: 'baseline',
-              gap: 30 * u,
+              gap: m.gap,
               fontSize: bulletSize,
               lineHeight: 1.32,
-              padding: `${26 * u}px 0`,
-              opacity: enter * (1 - 0.55 * dim),
+              padding: `${rowPad}px 0`,
+              opacity: enter * (1 - 0.3 * dim),
               ...depthRow(enter, `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`),
             })}
           >
@@ -368,9 +407,9 @@ export const TextBlock: React.FC<{
             <div
               style={{
                 position: 'absolute',
-                left: -18 * u,
-                top: 14 * u,
-                bottom: 14 * u,
+                left: (dense ? -10 : -18) * u,
+                top: rowPad * 0.55,
+                bottom: rowPad * 0.55,
                 width: 4 * u,
                 background: theme.accent,
                 transformOrigin: 'center',
@@ -380,9 +419,9 @@ export const TextBlock: React.FC<{
             />
             <span
               style={{
-                minWidth: 78 * u,
+                minWidth: m.numeralW,
                 flexShrink: 0,
-                fontSize: 34 * u,
+                fontSize: m.numeral,
                 fontWeight: 700,
                 fontFamily: MONO_FONT,
                 fontVariantNumeric: 'tabular-nums',
@@ -417,7 +456,7 @@ export const TextBlock: React.FC<{
               fontSize: statementBulletSize,
               lineHeight: 1.3,
               fontWeight: 600,
-              opacity: enter * (1 - 0.55 * dim),
+              opacity: enter * (1 - 0.3 * dim),
               color: dim > 0.35 && !recoloured(i) ? theme.muted : undefined,
               ...depthRow(enter, `translateY(${interpolate(enter, [0, 1], [16 * u, 0])}px)`),
             })}

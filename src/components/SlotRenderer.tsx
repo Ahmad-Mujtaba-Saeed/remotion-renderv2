@@ -6,12 +6,12 @@ import { ExplanationBox } from './ExplanationBox';
 import { VectorMotif } from './VectorMotif';
 
 /** Maps a slot's content_type to its component (standalone use). */
-export const SlotRenderer: React.FC<{ slot?: Slot; columnFrac?: number }> = ({ slot, columnFrac }) => {
+export const SlotRenderer: React.FC<{ slot?: Slot; columnFrac?: number; heightFrac?: number }> = ({ slot, columnFrac, heightFrac }) => {
   if (!slot) return <div style={{ width: '100%', height: '100%', background: 'transparent' }} />;
 
   switch (slot.content_type) {
     case 'text_block':
-      return <TextBlock slot={slot} columnFrac={columnFrac} />;
+      return <TextBlock slot={slot} columnFrac={columnFrac} heightFrac={heightFrac} />;
     case 'explanation_box':
       return <ExplanationBox slot={slot} />;
     // A drawing of the beat's subject. It goes wherever a picture goes, which

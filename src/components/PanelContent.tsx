@@ -18,7 +18,8 @@ export const PanelContent: React.FC<{
   /** Share of the frame width this panel occupies — the text solver needs the
    *  real column, and only the layout knows how wide its panel is. */
   columnFrac?: number;
-}> = ({ slot, glass, compact, columnFrac }) => {
+  heightFrac?: number;
+}> = ({ slot, glass, compact, columnFrac, heightFrac }) => {
   if (!slot) return null;
 
   if (slot.content_type === 'explanation_box') {
@@ -28,7 +29,7 @@ export const PanelContent: React.FC<{
   if (slot.content_type === 'text_block') {
     return glass ? (
       <PanelSurface style={{ padding: '7%' }}>
-        <TextBlock slot={slot} transparent compact={compact} columnFrac={columnFrac} />
+        <TextBlock slot={slot} transparent compact={compact} columnFrac={columnFrac} heightFrac={heightFrac} />
       </PanelSurface>
     ) : (
       <TextBlock slot={slot} transparent compact={compact} columnFrac={columnFrac} />

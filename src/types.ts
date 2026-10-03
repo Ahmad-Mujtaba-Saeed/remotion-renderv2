@@ -96,6 +96,8 @@ export type ContentType =
   // cinematic_card: the explanation staged in depth (Flute), designed per
   // script by CinematicSceneService and clamped by Support\CinematicScene.
   | 'cinematic'
+  // interface_morph: one shape morphing through UI states, cursor-driven.
+  | 'interface'
   // Structured Tier A card contents (copilot.md §5, M4):
   | 'versus'
   | 'chart'
@@ -350,6 +352,25 @@ export interface FormulaPart {
   label: string;
 }
 
+/** The UI states an interface_morph shape can take (a fixed vocabulary). */
+export type InterfaceKind =
+  | 'button' | 'search' | 'toggle' | 'slider' | 'tabs'
+  | 'checklist' | 'progress' | 'terminal' | 'card' | 'toast';
+
+/** One state of the morphing shape. `cue` is the spoken phrase it lands on. */
+export interface InterfaceState {
+  kind: InterfaceKind;
+  cue?: string;
+  /** The main label: button text, search query, toggle/slider label, title. */
+  text?: string;
+  /** Rows: search results, tab names, checklist rows, terminal lines, card lines, slider pole labels. */
+  items?: string[];
+  /** 0..100 — slider/progress position (only when the script gives one); toggle: >=50 means on. */
+  value?: number;
+  /** tabs: the tab chosen. */
+  active?: number;
+}
+
 /** One item on a spectrum_card axis; position is 0..1 from the left pole. */
 export interface SpectrumItem {
   label: string;
@@ -600,6 +621,8 @@ export interface Slot {
   // formula (formula_anatomy): one equation, parts labelled via leader lines
   formula?: string;
   parts?: FormulaPart[];
+  // interface (interface_morph): the states the one shape morphs through
+  states?: InterfaceState[];
   // spectrum (spectrum_card): a labelled axis with items placed along it
   axis?: { left_label?: string; right_label?: string };
   spectrum_items?: SpectrumItem[];

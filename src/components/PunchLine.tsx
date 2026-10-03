@@ -27,6 +27,9 @@ import { SfxCue } from '../sfx';
  */
 /** Punchlines draw outside the card (screen space in the canvas journey), so
     they carry their own hand-edit context. */
+const STATEMENT_CARDS = new Set(['quote_card', 'quote_portrait', 'big_counter', 'stat_spotlight', 'chapter_cover', 'term_card', 'outro_card']);
+const STAMP_OVER = new Set(['full_bleed_with_banner', 'full_bleed_with_side_panel', 'single_focus']);
+
 export const PunchLine: React.FC<{ scene: Scene }> = ({ scene }) => (
   <ElementEditsProvider scene={scene}>
     <PunchLineInner scene={scene} />
@@ -45,6 +48,11 @@ const PunchLineInner: React.FC<{ scene: Scene }> = ({ scene }) => {
   const surface = useSurfaceStyle();
 
   if (!p || !p.words?.length) return null;
+  // The card already IS the statement: a quote card's quote, a counter's
+  // figure. A punchline on top said it twice (project 211: the quote once as
+  // the card and again as a strip under it, "0.36 seconds" slammed over the
+  // 0.36 counter).
+  if (STATEMENT_CARDS.has(scene.layout_template)) return null;
 
   // Seconds since this scene's narration began. In canvas mode the narration
   // starts at the scene window (travel included); in slides mode the current
@@ -52,7 +60,12 @@ const PunchLineInner: React.FC<{ scene: Scene }> = ({ scene }) => {
   const base = win?.narrationStart ?? 0;
   const t = (frame - base) / fps;
 
-  const style: PunchlineStyle = p.style === 'plate' ? 'glass' : (p.style ?? 'glass');
+  const asked: PunchlineStyle = p.style === 'plate' ? 'glass' : (p.style ?? 'glass');
+  // The stamp is an opaque band across the MIDDLE of the frame. Over a
+  // picture that is the point; over a card with content in the middle (a
+  // split, a chart, a diagram) it hid the very thing being explained, so
+  // there it docks at the bottom like the other looks.
+  const style: PunchlineStyle = asked === 'stamp' && !STAMP_OVER.has(scene.layout_template) ? 'glass' : asked;
 
   const lead = 0.3; // the card lands a breath before the first word
   const appearAt = p.start - lead;

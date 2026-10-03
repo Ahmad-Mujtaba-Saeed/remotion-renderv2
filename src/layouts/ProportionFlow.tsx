@@ -115,7 +115,9 @@ export const ProportionFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
   const headIn = easeOutQuint(clamp01(frame / f30(fps, 12)));
 
   // ---- Geometry: heading zone budgeted FIRST, then the bars, then the list --
-  const barW = width * (portrait ? 0.84 : 0.6);
+  // 0.72, not 0.6: at 0.6 the legend's type solved to ~20px and the card read
+  // as fine print floating in the middle of the frame (project 211).
+  const barW = width * (portrait ? 0.86 : 0.72);
   // The solver is told a column width, so the heading must actually BE in one:
   // the worst-case sweep still ran a 56-character heading off the right edge
   // because the h1 had no max width to wrap against, and a size that "fits in
@@ -149,7 +151,7 @@ export const ProportionFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
       // sits to its left and the figure column to its right (iter 24's lesson —
       // tell the solver the truth about the column it actually gets).
       width: barW * 0.52,
-      max: Math.min(32 * u, rowH * (hasNotes ? 0.4 : 0.52)),
+      max: Math.min(40 * u, rowH * (hasNotes ? 0.42 : 0.55)),
       min: 17 * u,
       maxLines: 1,
       font: BODY_FONT,
@@ -448,9 +450,13 @@ export const ProportionFlow: React.FC<{ scene: Scene }> = ({ scene }) => {
                   <div style={{ fontSize: figFs, color: theme.text, whiteSpace: 'nowrap' }}>
                     {show(p.value)}
                   </div>
-                  <div style={{ fontSize: figFs * 0.82, color: theme.muted, whiteSpace: 'nowrap' }}>
-                    {pct[i]}%
-                  </div>
+                  {/* The share only when it adds something: a part already
+                      given IN percent printed "63% 63%". */}
+                  {show(p.value) !== `${pct[i]}%` && !(unit === '%' && Math.round(p.value) === pct[i]) ? (
+                    <div style={{ fontSize: figFs * 0.82, color: theme.muted, whiteSpace: 'nowrap' }}>
+                      {pct[i]}%
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );

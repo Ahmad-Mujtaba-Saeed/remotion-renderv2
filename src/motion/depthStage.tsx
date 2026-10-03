@@ -5,6 +5,7 @@ import { BASE_PERSPECTIVE } from '../flute/cinematicRig';
 import { useMotionStyle, MotionStyle } from './styles';
 import { clamp01, easeInOutSine } from './easing';
 import { f30 } from './choreo';
+import { useMotionBlurOn } from './ghost';
 
 /**
  * depthStage — the FLUTE RIG, generalised out of cinematic_card and handed to
@@ -31,7 +32,13 @@ import { f30 } from './choreo';
  * same storyboard always renders the same moves. There is no randomness in
  * this file.
  *
- * **Never inside the camera-scaled world.** A CSS filter inside the canvas
+ * **Blur follows the Motion blur switch (2026-09-29).** The user asked for
+ * "motion blur if enabled in the whole clip, like Flute": with the switch on,
+ * every arrival resolves from soft to sharp at FULL strength whatever the
+ * depth intensity, in every mode; with it off nothing here filters at all.
+ * `motion_depth` still decides how far things travel in z.
+ *
+ * **Inside the camera-scaled world only while moving.** A CSS filter inside the canvas
  * journey's world transform makes Chromium reuse a mid-flight raster and the
  * text lands soft. So blur is a CAPABILITY, not an assumption: the journey
  * provides `blur: false` and gets the same choreography in transforms alone,
@@ -74,6 +81,12 @@ export const DepthProvider: React.FC<{
 };
 
 export const useDepth = (): DepthContext => useContext(Ctx);
+
+/**
+ * Arrival blur scale while Motion blur is on. Flute's reveals start around
+ * 8-10px at 1080p; the base radii below (4.5-5) times this land there.
+ */
+const ARRIVAL_BLUR = 1.9;
 
 /** How much of the full rig an intensity asks for (0 = nothing at all). */
 export const depthGain = (intensity: DepthIntensity): number =>
@@ -229,6 +242,7 @@ export const DepthCamera: React.FC<{
   const { fps, height } = useVideoConfig();
   const motion = useMotionStyle();
   const { intensity, blur: mayBlur } = useDepth();
+  const blurOn = useMotionBlurOn() && mayBlur;
   const gain = depthGain(intensity);
 
   // The flat fallback: the entrance and mid-hold push this used to be.
@@ -237,6 +251,8 @@ export const DepthCamera: React.FC<{
     const p = clamp01(frame / f30(fps, Math.round(18 * r)));
     const total = Math.max(1, Math.round(seconds * fps));
     const push = seconds > 8 ? easeInOutSine(clamp01((frame - total * 0.55) / (total * 0.3))) : 0;
+    // With Motion blur on the scene arrives out of focus like a Flute shot.
+    const soft = blurOn ? Math.round(9 * (1 - p) * 100) / 100 : 0;
     return (
       <div
         style={{
@@ -244,6 +260,7 @@ export const DepthCamera: React.FC<{
           inset: 0,
           opacity: clamp01(frame / f30(fps, Math.round(12 * r))),
           transform: `scale(${(0.986 + 0.014 * p) * (1 + 0.035 * push)})`,
+          filter: soft > 0.05 ? `blur(${soft}px)` : undefined,
         }}
       >
         {children}
@@ -254,7 +271,9 @@ export const DepthCamera: React.FC<{
   const pose = poseAt(frame, fps, seconds, shotFor(relation, index), motion, gain);
   // The lens scales with the frame so a 720p render frames identically.
   const P = BASE_PERSPECTIVE * (height / 1080);
-  const soft = mayBlur ? Math.round(pose.blur * 100) / 100 : 0;
+  // pose.blur already carries the depth gain; with Motion blur on the focus
+  // pull plays at full strength (a 'subtle' depth only shortens the travel).
+  const soft = blurOn ? Math.round((pose.blur / Math.max(gain, 0.01)) * 100) / 100 : 0;
 
   return (
     <div style={{ position: 'absolute', inset: 0, perspective: `${P}px`, perspectiveOrigin: '50% 50%' }}>
@@ -290,16 +309,17 @@ export const useDepthArrival = (
   options: { z?: number; blur?: number } = {}
 ): React.CSSProperties => {
   const { intensity, blur: mayBlur } = useDepth();
+  const blurOn = useMotionBlurOn() && mayBlur;
   const gain = depthGain(intensity);
-  if (gain === 0) return {};
+  if (gain === 0 && !blurOn) return {};
 
   const t = 1 - clamp01(enter);
   if (t <= 0.001) return {};
   const z = (options.z ?? -150) * gain * t;
-  const soft = mayBlur ? (options.blur ?? 5) * gain * t : 0;
+  const soft = blurOn ? (options.blur ?? 5) * ARRIVAL_BLUR * t : 0;
 
   return {
-    transform: `translateZ(${z.toFixed(1)}px)`,
+    transform: gain > 0 ? `translateZ(${z.toFixed(1)}px)` : undefined,
     filter: soft > 0.05 ? `blur(${soft.toFixed(2)}px)` : undefined,
   };
 };
@@ -316,18 +336,20 @@ export const useDepthRows = (
   options: { z?: number; blur?: number } = {}
 ): ((enter: number, transform?: string) => React.CSSProperties) => {
   const { intensity, blur: mayBlur } = useDepth();
+  const blurOn = useMotionBlurOn() && mayBlur;
   const gain = depthGain(intensity);
 
   return (enter: number, transform?: string) => {
-    if (gain === 0) return transform ? { transform } : {};
+    if (gain === 0 && !blurOn) return transform ? { transform } : {};
     const t = 1 - clamp01(enter);
     if (t <= 0.001) return transform ? { transform } : {};
     const z = (options.z ?? -150) * gain * t;
-    const soft = mayBlur ? (options.blur ?? 4.5) * gain * t : 0;
-    const move = `translateZ(${z.toFixed(1)}px)`;
+    const soft = blurOn ? (options.blur ?? 4.5) * ARRIVAL_BLUR * t : 0;
+    const move = gain > 0 ? `translateZ(${z.toFixed(1)}px)` : '';
+    const merged = [transform, move].filter(Boolean).join(' ');
 
     return {
-      transform: transform ? `${transform} ${move}` : move,
+      transform: merged || undefined,
       filter: soft > 0.05 ? `blur(${soft.toFixed(2)}px)` : undefined,
     };
   };

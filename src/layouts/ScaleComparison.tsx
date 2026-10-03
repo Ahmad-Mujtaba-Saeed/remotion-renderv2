@@ -86,7 +86,11 @@ export const ScaleComparison: React.FC<{ scene: Scene }> = ({ scene }) => {
     { first: reveal.first, step: reveal.step }
   );
 
-  const showValue = (v: number): string => `${groupNumber(v)}${unit ? ` ${unit}` : ''}`;
+  // A multiplier unit reads as one: "8×", never "8 times" beside "1 times".
+  const multiplier = /^(x|×|times?)$/i.test(unit);
+  const singular = (v: number): string => (v === 1 && /s$/i.test(unit) && unit.length > 3 ? unit.slice(0, -1) : unit);
+  const showValue = (v: number): string =>
+    multiplier ? `${groupNumber(v)}×` : `${groupNumber(v)}${unit ? ` ${singular(v)}` : ''}`;
   const showRatio = (r: number): string => `${groupNumber(r)}x smaller`;
 
   // ---- Geometry -------------------------------------------------------------

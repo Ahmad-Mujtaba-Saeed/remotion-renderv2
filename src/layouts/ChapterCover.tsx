@@ -11,11 +11,14 @@ import { useEdit } from '../components/Editable';
 
 /** The cover's chapter ordinal, from its id ("scene_cover_3") or label. */
 const chapterNumber = (scene: Scene): number => {
-  const fromId = /_(\d+)$/.exec(scene.scene_id ?? '');
-  if (fromId) return parseInt(fromId[1], 10);
+  // The LABEL is what the viewer reads ("Chapter 1"), so it wins. Cover ids
+  // count the intro as chapter 1 (scene_cover_2 is the first cover), and
+  // reading the id first drew a "02" watermark behind "CHAPTER 1".
   const slot = Object.values(scene.slots)[0];
   const fromLabel = /(\d+)/.exec(slot?.label ?? '');
-  return fromLabel ? parseInt(fromLabel[1], 10) : 1;
+  if (fromLabel) return parseInt(fromLabel[1], 10);
+  const fromId = /_(\d+)$/.exec(scene.scene_id ?? '');
+  return fromId ? parseInt(fromId[1], 10) : 1;
 };
 
 /**

@@ -1,3 +1,4 @@
+import { beatFrames } from '../motion/narrationBeats';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig, spring } from 'remotion';
 import { Scene, TimelineNode } from '../types';
@@ -71,11 +72,13 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
    * its longest word ("Compound / interest / quietly / beat" for a four-word
    * label). The sweep made that visible on all six nodes at once.
    */
-  const labelW = portrait ? width * 0.56 : 360 * u;
+  const labelW = portrait ? width * 0.56 : 390 * u;
   const labelFs = fitGroup(nodes.map((n) => (n.label ?? '').trim()), {
     width: labelW,
-    max: 30 * u,
-    min: 20 * u,
+    // 38, not 30: at 30 a three-node timeline read as fine print in the
+    // middle of an empty frame (project 211).
+    max: 38 * u,
+    min: 22 * u,
     maxLines: 2,
     font: BODY_FONT,
     weight: 600,
@@ -84,8 +87,15 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   // Node i pops at its slot in the scene's active stretch.
   const startAt = f30(fps, 16);
   const endAt = Math.round(durationInFrames * 0.8);
-  const step = Math.max(f30(fps, 12), Math.floor((endAt - startAt) / nodes.length));
-  const nodeAt = (i: number): number => startAt + i * step;
+  // Nodes land when the narrator reaches them (date or label spoken), else
+  // on the even spread this card always used.
+  const landAt = beatFrames(scene.narration_words ?? undefined, nodes.length, fps, {
+    first: startAt,
+    last: endAt,
+    minGap: f30(fps, 12),
+    texts: nodes.map((n) => `${n.date ?? ''} ${n.label ?? ''}`.trim()),
+  });
+  const nodeAt = (i: number): number => landAt[i] ?? startAt;
 
   // The rail leads: it draws just ahead of the newest node.
   const railP = easeInOutSine(
@@ -103,7 +113,7 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   const availAxis = portrait ? Math.max(240 * u, height * 0.93 - headBand) : width;
   const seg = portrait
     ? Math.max(150 * u, Math.min(300 * u, (availAxis * 0.86) / Math.max(1, nodes.length - 1)))
-    : 420 * u;
+    : 460 * u;
   let activeF = 0;
   for (let i = 0; i < nodes.length; i++) {
     if (frame >= nodeAt(i)) {
@@ -164,7 +174,7 @@ export const TimelineCard: React.FC<{ scene: Scene }> = ({ scene }) => {
           <div
             style={{
               fontFamily: MONO_FONT,
-              fontSize: 26 * u,
+              fontSize: 30 * u,
               fontWeight: 700,
               letterSpacing: 3 * u,
               textTransform: 'uppercase',

@@ -297,12 +297,13 @@ export const CanvasJourney: React.FC<{
   // Everything that lives INSIDE the camera transform, built once as an element
   // tree and reused by every shutter sample: the ghosts must show the same
   // content at the same instant, differing only in where the camera was.
-  // Inside the camera-scaled world the rig may MOVE but never FILTER: a CSS
-  // filter here makes Chromium reuse a mid-flight raster and the text lands
-  // soft (the reason cinematic cards are screen-space takeovers). The
-  // takeovers below are screen space and keep the full rig.
+  // Inside the camera-scaled world a PERSISTENT filter makes Chromium reuse a
+  // mid-flight raster and the text lands soft. Arrival blur is transient —
+  // every arrival resolves to exactly no filter — so with Motion blur on the
+  // world gets the same soft-to-sharp arrivals as slides (2026-09-29, user
+  // ask); scripts/blur-rest-check.ts proves settled frames are byte-sharp.
   const worldInner = (
-    <DepthProvider blur={false}>
+    <DepthProvider blur={motionBlur}>
         {/* Dot grid pinned to the world: the one texture in the design, and the
             only thing that tells the eye the camera is moving across a surface
             rather than cutting between scenes. Barely there on purpose. */}

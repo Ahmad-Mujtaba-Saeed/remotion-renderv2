@@ -29,11 +29,19 @@ export const QuoteCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   if (!slot) return null;
 
   // explanation_box carries the quote in body; text_block in heading.
-  const sourceQuote = (slot.body || slot.heading || '').trim();
+  // The card draws its own quotation marks; the model often wraps the text in
+  // straight quotes too, which printed as ”"Arousal …" (project 211).
+  const sourceQuote = (slot.body || slot.heading || '')
+    .trim()
+    .replace(/^["'“”‘’«»]+\s*/, '')
+    .replace(/\s*["'“”‘’«»]+$/, '')
+    .trim();
   const quote = edit.text('quote', sourceQuote);
   const attribution = edit.text(
     'attribution',
-    (meta.style?.kicker || slot.heading === sourceQuote ? meta.style?.kicker : slot.heading) || ''
+    (meta.style?.kicker || (slot.body ? slot.heading : '') ||
+      // The composer's contract puts the speaker in bullets: ["— Name"].
+      (slot.bullets?.[0] ?? '').replace(/^[\s—–-]+/, '')) || ''
   );
   const highlight = meta.style?.highlight ?? [];
 

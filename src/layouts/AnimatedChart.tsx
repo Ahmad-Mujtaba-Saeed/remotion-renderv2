@@ -14,6 +14,16 @@ import { SfxCue } from '../sfx';
 import { useEdit } from '../components/Editable';
 
 /** A value label that counts up as its mark lands (tabular — never shifts). */
+/**
+ * A symbol unit hugs its number ("45%", "$3", "9x"); a WORD unit takes a
+ * space ("0.9 seconds", not "0.9seconds" as project 211 printed it).
+ */
+export const unitSuffix = (unit: string): string => {
+  const u = (unit ?? '').trim();
+  if (u === '') return '';
+  return /^[A-Za-z]{2,}/.test(u) ? ` ${u}` : u;
+};
+
 const RollingValue: React.FC<{
   value: number;
   unit: string;
@@ -25,7 +35,7 @@ const RollingValue: React.FC<{
   return (
     <span style={{ fontVariantNumeric: 'tabular-nums', ...style }}>
       {token ? rollText(token, Math.max(0, frame), fps) : String(value)}
-      {unit}
+      {unitSuffix(unit)}
     </span>
   );
 };
@@ -156,8 +166,11 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
                     bottom: 8 * u,
                     textAlign: 'center',
                     fontFamily: MONO_FONT,
-                    fontSize: 24 * u,
-                    letterSpacing: 1.5 * u,
+                    // Long labels take two lines at a smaller size instead of
+                    // running into the neighbouring bar's label.
+                    fontSize: (labels[i].length > 14 ? 19 : 24) * u,
+                    lineHeight: 1.25,
+                    letterSpacing: (labels[i].length > 14 ? 0.6 : 1.5) * u,
                     textTransform: 'uppercase',
                     color: isHot ? theme.text : theme.muted,
                     opacity: baseP,
@@ -237,11 +250,17 @@ export const AnimatedChart: React.FC<{ scene: Scene }> = ({ scene }) => {
           style={{
             position: 'absolute',
             right: 0,
-            top: py(endV) * u - 64 * u,
+            // Lifted clear of the stroke onto its own chip: the old spot sat
+            // ON the line whenever the series fell into its last point.
+            top: py(endV) * u - 96 * u,
+            padding: `${6 * u}px ${16 * u}px`,
+            background: theme.panel,
+            border: `1px solid ${theme.accent}`,
             fontFamily: displayFont,
             fontWeight: 800,
-            fontSize: 44 * u,
+            fontSize: 40 * u,
             color: theme.accent,
+            whiteSpace: 'nowrap',
             opacity: dotIn,
           }}
         >

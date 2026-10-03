@@ -55,7 +55,7 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
   );
   const statFs = fitGroup(
     [...((versus?.left?.stats ?? []) as string[]), ...((versus?.right?.stats ?? []) as string[])],
-    { width: width * 0.4, max: 32 * u, min: 20 * u, maxLines: 1, font: BODY_FONT, weight: 600, kinetic: false }
+    { width: width * 0.4, max: 42 * u, min: 22 * u, maxLines: 1, font: BODY_FONT, weight: 600, kinetic: false }
   );
 
   const seamP = easeOutQuint(clamp01(frame / f30(fps, 10)));
@@ -203,7 +203,11 @@ export const VersusCard: React.FC<{ scene: Scene }> = ({ scene }) => {
         {statsL.length || statsR.length ? (
           <div
             style={{
-              flex: 1,
+              // The band is sized by its rows: one caption per side under a
+              // 1:1 band left half the frame empty (project 211), so the
+              // pictures keep the room a short list does not need.
+              flex: Math.max(statsL.length, statsR.length) <= 1 ? 0.34 : Math.max(statsL.length, statsR.length) === 2 ? 0.62 : 1,
+              alignItems: 'center',
               display: 'flex',
               justifyContent: 'center',
               gap: 60 * u,

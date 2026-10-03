@@ -6,6 +6,8 @@ import { useTheme, inkOn } from '../theme';
 import { clamp01, easeOutCubic, easeOutQuint } from '../motion/easing';
 import { exitProgress, f30 } from '../motion/choreo';
 import { useMotionStyle } from '../motion/styles';
+import { useMotionBlurOn } from '../motion/ghost';
+import { useDepth } from '../motion/depthStage';
 import { parseCountable, rollText } from '../motion/CountUp';
 import { SfxCue } from '../sfx';
 
@@ -55,6 +57,8 @@ export const KineticText: React.FC<{
   const meta = useSceneMeta();
   const win = useSceneWindow();
   const motion = useMotionStyle();
+  const depthCtx = useDepth();
+  const blurWords = useMotionBlurOn() && depthCtx.blur;
   const words = (text || '').split(' ').filter(Boolean);
   const step = stagger ?? f30(fps, motion.staggerF);
   const dur = f30(fps, motion.baseF);
@@ -140,6 +144,10 @@ export const KineticText: React.FC<{
         if (exitP > 0) {
           transforms.push(`translateY(${-exitP * 0.35}em)`);
         }
+        // Motion blur (Flute-style): a word travelling in or out is soft in
+        // proportion to how far it still has to go, and exactly sharp at rest.
+        const travel = Math.max(1 - clamp01(e), exitP);
+        const wordBlur = blurWords && travel > 0.02 ? Math.min(8, 9 * travel) : 0;
 
         return (
           <span
@@ -149,6 +157,7 @@ export const KineticText: React.FC<{
               marginRight: '0.28em',
               position: 'relative',
               opacity: fade * (1 - exitP),
+              ...(wordBlur > 0.05 ? { filter: `blur(${wordBlur.toFixed(2)}px)` } : null),
               ...(transforms.length ? { transform: transforms.join(' ') } : null),
               ...(clipPath ? { clipPath } : null),
               ...(letterSpacing ? { letterSpacing } : null),

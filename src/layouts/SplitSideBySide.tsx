@@ -33,8 +33,11 @@ export const SplitSideBySide: React.FC<{ scene: Scene }> = ({ scene }) => {
         alignItems: 'stretch',
       }}
     >
+      {/* The text column: the half (its emphasis share of the 92% padded
+          row) less the text block's own 8% a side. 0.42 overstated it by a
+          seventh and a long heading clipped at "everything el". */}
       <Half grow={leftPct}>
-        <SlotRenderer slot={left} columnFrac={portrait ? 0.86 : 0.42} />
+        <SlotRenderer slot={left} columnFrac={portrait ? 0.92 * 0.84 : 0.9 * (leftPct / 100) * 0.84} heightFrac={portrait ? 0.9 * (leftPct / 100) : 0.92} />
       </Half>
       <div
         style={{
@@ -45,7 +48,7 @@ export const SplitSideBySide: React.FC<{ scene: Scene }> = ({ scene }) => {
         }}
       />
       <Half grow={100 - leftPct}>
-        <SlotRenderer slot={right} columnFrac={portrait ? 0.86 : 0.42} />
+        <SlotRenderer slot={right} columnFrac={portrait ? 0.92 * 0.84 : 0.9 * ((100 - leftPct) / 100) * 0.84} heightFrac={portrait ? 0.9 * ((100 - leftPct) / 100) : 0.92} />
       </Half>
     </AbsoluteFill>
   );
