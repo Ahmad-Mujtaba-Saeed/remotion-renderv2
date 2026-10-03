@@ -33,6 +33,8 @@ export interface ThumbnailProps {
   /** Math videos: the problem itself, typeset, instead of a picture. */
   equation?: string | null;
   font_pack?: string | null;
+  /** The video's unique-look type trio, so the thumbnail is set like the video. */
+  fonts?: { display?: string | null; body?: string | null; mono?: string | null } | null;
   width?: number;
   height?: number;
 }
@@ -79,6 +81,7 @@ export const ThumbnailComp: React.FC<ThumbnailProps> = ({
   hero_cutout = false,
   equation,
   font_pack,
+  fonts,
   width = 1280,
   height = 720,
 }) => {
@@ -491,7 +494,7 @@ export const ThumbnailComp: React.FC<ThumbnailProps> = ({
   return (
     <ThemeProvider theme={t}>
       <AbsoluteFill style={{ overflow: 'hidden' }}>
-        <FontLoader pack={font_pack ?? undefined} />
+        <FontLoader pack={font_pack ?? undefined} fonts={fonts} />
 
         {/* Ground: a real gradient, not a flat fill — the depth reads even at
             210px wide, and it gives the stroke something to sit against. */}

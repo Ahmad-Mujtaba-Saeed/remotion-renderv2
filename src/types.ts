@@ -1072,7 +1072,14 @@ export interface ShotList {
       flat colour field, keyed per scene mood. Laravel defaults it ON for new
       renders; the renderer only obeys an explicit true, so payloads from
       before the field existed render byte-identically. */
-  backdrop?: { enabled?: boolean } | null;
+  backdrop?: {
+    enabled?: boolean;
+    /** Unique look: the texture each mood group wears (grid | dots | hatch | rules | plus). */
+    kinds?: { order?: string; drive?: string; buoyant?: string } | null;
+    /** Unique look: texture cell scale (0.8–1.35) and drift direction (±1). */
+    scale?: number | null;
+    drift?: number | null;
+  } | null;
   /** Camera motion blur (§2.10): stacked shutter samples of the canvas world
       on fast flights, so a hop that crosses half the frame in one frame smears
       instead of strobing. Defaults ON — an explicit `false` restores the
@@ -1081,6 +1088,12 @@ export interface ShotList {
   /** Active font pack name ('editorial' | 'classic' | 'tech'); resolved by
       Laravel ('auto' never reaches the renderer). Missing = editorial. */
   font_pack?: string | null;
+  /** Unique look (Laravel StyleRecipe): a display/body/mono trio from the font
+      library that replaces the pack's faces. Null = the pack. */
+  fonts?: { display?: string | null; body?: string | null; mono?: string | null } | null;
+  /** Unique look: the re-tuning of `motion_style` (tempo, stagger, ease,
+      overshoot, entrance, highlight, exit). Null = the preset as-is. */
+  motion_tuning?: import('./motion/styles').MotionTuning | null;
   /** Motion style preset (§2.5): crisp | classic | bounce | elegant | swiss.
       Resolved by Laravel ('auto' never ships). Missing = crisp. */
   motion_style?: string | null;

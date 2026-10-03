@@ -1,8 +1,9 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import {
   easeInOutQuint,
   easeInOutSine,
   easeOutBack,
+  easeOutCubic,
   easeOutExpo,
   easeOutQuint,
 } from './easing';
@@ -69,15 +70,69 @@ export const MOTION_STYLES: Record<MotionStyleName, MotionStyle> = {
 export const normalizeMotionStyle = (name?: string | null): MotionStyle =>
   MOTION_STYLES[(name ?? '') as MotionStyleName] ?? MOTION_STYLES.crisp;
 
+/**
+ * The unique look's re-tuning of one preset (Laravel's StyleRecipe `motion`):
+ * "the same editor, a different hand". The preset's NAME is kept, so every
+ * style-keyed table (cardReveal springs and rise, sustain amplitude) still
+ * reads the editor it was tuned from; only the numbers, the curve, the
+ * entrance shape and the accent mark move. Everything is clamped — a bad
+ * payload degrades to the preset, never to a broken timing.
+ */
+export interface MotionTuning {
+  base?: string | null;
+  /** Multiplies the preset's entrance duration (0.84–1.2 from Laravel). */
+  tempo?: number | null;
+  /** Added to the preset's sibling stagger, frames @30fps. */
+  stagger?: number | null;
+  ease?: string | null;
+  overshoot?: number | null;
+  entrance?: string | null;
+  highlight?: string | null;
+  exit_ratio?: number | null;
+}
+
+const TUNED_EASES: Record<string, (t: number) => number> = {
+  expo_out: easeOutExpo,
+  quint_out: easeOutQuint,
+  cubic_out: easeOutCubic,
+  sine_in_out: easeInOutSine,
+  quint_in_out: easeInOutQuint,
+};
+
+const ENTRANCES: EntranceName[] = ['rise_mask', 'fade_settle', 'pop_rise', 'tracking_in', 'column_snap'];
+
+const clampN = (v: unknown, lo: number, hi: number, fallback: number): number =>
+  typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : fallback;
+
+export const tuneMotionStyle = (base: MotionStyle, t?: MotionTuning | null): MotionStyle => {
+  if (!t) return base;
+  const overshoot = clampN(t.overshoot, 0, 0.1, base.overshoot);
+  const ease =
+    t.ease === 'spring_pop'
+      ? backFor(Math.max(overshoot, 0.04))
+      : (t.ease && TUNED_EASES[t.ease]) || base.ease;
+  const entrance = ENTRANCES.includes(t.entrance as EntranceName) ? (t.entrance as EntranceName) : base.entrance;
+  return {
+    ...base,
+    baseF: Math.round(clampN(base.baseF * clampN(t.tempo, 0.7, 1.4, 1), 6, 32, base.baseF)),
+    staggerF: Math.round(clampN(base.staggerF + clampN(t.stagger, -3, 3, 0), 1, 9, base.staggerF)),
+    ease,
+    overshoot,
+    entrance,
+    exitRatio: clampN(t.exit_ratio, 0.35, 0.85, base.exitRatio),
+    highlight: t.highlight === 'sweep' || t.highlight === 'underline' ? t.highlight : base.highlight,
+  };
+};
+
 const MotionStyleContext = createContext<MotionStyle>(MOTION_STYLES.crisp);
 
-export const MotionStyleProvider: React.FC<{ style?: string | null; children: React.ReactNode }> = ({
-  style,
-  children,
-}) => (
-  <MotionStyleContext.Provider value={normalizeMotionStyle(style)}>
-    {children}
-  </MotionStyleContext.Provider>
-);
+export const MotionStyleProvider: React.FC<{
+  style?: string | null;
+  tuning?: MotionTuning | null;
+  children: React.ReactNode;
+}> = ({ style, tuning, children }) => {
+  const value = useMemo(() => tuneMotionStyle(normalizeMotionStyle(style), tuning), [style, tuning]);
+  return <MotionStyleContext.Provider value={value}>{children}</MotionStyleContext.Provider>;
+};
 
 export const useMotionStyle = (): MotionStyle => useContext(MotionStyleContext);

@@ -91,15 +91,111 @@ const PACKS: Record<FontPackName, FontFace[]> = {
 export const normalizeFontPack = (pack?: string | null): FontPackName =>
   pack === 'classic' || pack === 'tech' ? pack : 'editorial';
 
-let cssInjectedFor: FontPackName | null = null;
+/**
+ * The unique look's font LIBRARY (registry `style_recipe.fonts`, v53): any
+ * display × body × mono trio Laravel draws for a project. Keys mirror the
+ * registry exactly — that block is the contract, this table is its executable
+ * twin. Variable faces declare their whole weight axis in one file; the
+ * static monos ship a regular and a bold.
+ */
+const LIB: Record<string, Array<{ file: string; weight: string }>> = {
+  // display (and some bodies)
+  'bricolage-grotesque': [{ file: 'bricolage-grotesque.woff2', weight: '600 800' }],
+  fraunces: [{ file: 'fraunces.woff2', weight: '600 800' }],
+  'space-grotesk': [{ file: 'space-grotesk.woff2', weight: '500 700' }],
+  manrope: [{ file: 'manrope.woff2', weight: '200 800' }],
+  sora: [{ file: 'sora.woff2', weight: '100 800' }],
+  outfit: [{ file: 'outfit.woff2', weight: '100 900' }],
+  'plus-jakarta-sans': [{ file: 'plus-jakarta-sans.woff2', weight: '200 800' }],
+  syne: [{ file: 'syne.woff2', weight: '400 800' }],
+  unbounded: [{ file: 'unbounded.woff2', weight: '200 900' }],
+  archivo: [{ file: 'archivo.woff2', weight: '100 900' }],
+  epilogue: [{ file: 'epilogue.woff2', weight: '100 900' }],
+  'red-hat-display': [{ file: 'red-hat-display.woff2', weight: '300 900' }],
+  lexend: [{ file: 'lexend.woff2', weight: '100 900' }],
+  'playfair-display': [{ file: 'playfair-display.woff2', weight: '400 900' }],
+  newsreader: [{ file: 'newsreader.woff2', weight: '200 800' }],
+  'big-shoulders-display': [{ file: 'big-shoulders-display.woff2', weight: '100 900' }],
+  'schibsted-grotesk': [{ file: 'schibsted-grotesk.woff2', weight: '400 900' }],
+  'familjen-grotesk': [{ file: 'familjen-grotesk.woff2', weight: '400 700' }],
+  figtree: [{ file: 'figtree.woff2', weight: '300 900' }],
+  onest: [{ file: 'onest.woff2', weight: '100 900' }],
+  'hanken-grotesk': [{ file: 'hanken-grotesk.woff2', weight: '100 900' }],
+  urbanist: [{ file: 'urbanist.woff2', weight: '100 900' }],
+  bitter: [{ file: 'bitter.woff2', weight: '100 900' }],
+  'roboto-slab': [{ file: 'roboto-slab.woff2', weight: '100 900' }],
+  'josefin-sans': [{ file: 'josefin-sans.woff2', weight: '100 700' }],
+  oswald: [{ file: 'oswald.woff2', weight: '200 700' }],
+  literata: [{ file: 'literata.woff2', weight: '200 900' }],
+  // body
+  'instrument-sans': [{ file: 'instrument-sans.woff2', weight: '400 600' }],
+  inter: [{ file: 'inter.woff2', weight: '400 600' }],
+  'dm-sans': [{ file: 'dm-sans.woff2', weight: '100 1000' }],
+  'work-sans': [{ file: 'work-sans.woff2', weight: '100 900' }],
+  'public-sans': [{ file: 'public-sans.woff2', weight: '100 900' }],
+  'source-sans-3': [{ file: 'source-sans-3.woff2', weight: '200 900' }],
+  'nunito-sans': [{ file: 'nunito-sans.woff2', weight: '200 1000' }],
+  karla: [{ file: 'karla.woff2', weight: '200 800' }],
+  'ibm-plex-sans': [{ file: 'ibm-plex-sans.woff2', weight: '100 700' }],
+  'albert-sans': [{ file: 'albert-sans.woff2', weight: '100 900' }],
+  // mono
+  'space-mono': [
+    { file: 'space-mono-regular.woff2', weight: '400' },
+    { file: 'space-mono-bold.woff2', weight: '700' },
+  ],
+  'jetbrains-mono': [
+    { file: 'jetbrains-mono-regular.woff2', weight: '400' },
+    { file: 'jetbrains-mono-bold.woff2', weight: '700' },
+  ],
+  'ibm-plex-mono': [
+    { file: 'ibm-plex-mono-regular.woff2', weight: '400' },
+    { file: 'ibm-plex-mono-bold.woff2', weight: '700' },
+  ],
+  'fira-code': [{ file: 'fira-code.woff2', weight: '300 700' }],
+  'roboto-mono': [{ file: 'roboto-mono.woff2', weight: '100 700' }],
+  'martian-mono': [{ file: 'martian-mono.woff2', weight: '100 800' }],
+  'source-code-pro': [{ file: 'source-code-pro.woff2', weight: '200 900' }],
+  'red-hat-mono': [{ file: 'red-hat-mono.woff2', weight: '300 700' }],
+  'geist-mono': [{ file: 'geist-mono.woff2', weight: '100 900' }],
+};
 
-/** Declare the faces via CSS once per pack, replacing any previous pack's
- *  declarations (one composition = one pack; preview may switch). */
-const injectFontFaceCss = (pack: FontPackName): void => {
-  if (cssInjectedFor === pack || typeof document === 'undefined') return;
-  cssInjectedFor = pack;
+/** Every library key and its files — exported for the probe that checks each file ships. */
+export const FONT_LIBRARY_FILES: Record<string, string[]> = Object.fromEntries(
+  Object.entries(LIB).map(([k, v]) => [k, v.map((f) => f.file)])
+);
+
+export interface FontTrio {
+  display?: string | null;
+  body?: string | null;
+  mono?: string | null;
+}
+
+/**
+ * The faces to declare: the unique look's trio when every key resolves, the
+ * pack otherwise (a half-known trio would mix two looks — all or nothing).
+ */
+const facesFor = (pack: FontPackName, trio?: FontTrio | null): FontFace[] => {
+  const d = trio?.display ? LIB[trio.display] : undefined;
+  const b = trio?.body ? LIB[trio.body] : undefined;
+  const m = trio?.mono ? LIB[trio.mono] : undefined;
+  if (!d || !b || !m) return PACKS[pack];
+  return [
+    ...d.map((f) => ({ family: DISPLAY_FONT_FAMILY, ...f })),
+    ...b.map((f) => ({ family: BODY_FONT_FAMILY, ...f })),
+    ...m.map((f) => ({ family: MONO_FONT_FAMILY, ...f })),
+  ];
+};
+
+let cssInjectedFor: string | null = null;
+
+/** Declare the faces via CSS once per face set, replacing any previous set's
+ *  declarations (one composition = one set; preview may switch). */
+const injectFontFaceCss = (faces: FontFace[]): void => {
+  const key = faces.map((f) => `${f.family}:${f.file}`).join('|');
+  if (cssInjectedFor === key || typeof document === 'undefined') return;
+  cssInjectedFor = key;
   try {
-    const css = PACKS[pack]
+    const css = faces
       .map(
         ({ family, file, weight }) =>
           `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};` +
@@ -124,9 +220,10 @@ const injectFontFaceCss = (pack: FontPackName): void => {
  * is created in the render lifecycle (not at module scope) so
  * `continueRender` reliably clears it.
  */
-export const FontLoader: FC<{ pack?: string | null }> = ({ pack }) => {
-  const active = normalizeFontPack(pack);
-  injectFontFaceCss(active);
+export const FontLoader: FC<{ pack?: string | null; fonts?: FontTrio | null }> = ({ pack, fonts }) => {
+  const faces = facesFor(normalizeFontPack(pack), fonts);
+  const facesKey = faces.map((f) => f.file).join('|');
+  injectFontFaceCss(faces);
 
   const [handle] = useState(() => {
     if (typeof document === 'undefined' || typeof (document as unknown as { fonts?: unknown }).fonts === 'undefined') {
@@ -148,7 +245,7 @@ export const FontLoader: FC<{ pack?: string | null }> = ({ pack }) => {
 
     const fontSet = (document as unknown as { fonts: { load: (f: string) => Promise<unknown> } }).fonts;
     Promise.all(
-      PACKS[active].map(({ family, weight }) =>
+      faces.map(({ family, weight }) =>
         fontSet.load(`${weight.split(' ')[0]} 16px '${family}'`).catch((err) => {
           console.warn(`[fonts] failed to load ${family} ${weight}:`, err);
         })
@@ -159,7 +256,9 @@ export const FontLoader: FC<{ pack?: string | null }> = ({ pack }) => {
     });
 
     return () => clearTimeout(safety);
-  }, [handle, active]);
+    // `faces` is derived from the key — re-running on the key is the intent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handle, facesKey]);
 
   return null;
 };

@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { Theme } from '../types';
 import { useTheme, isLightTheme, useSkin } from '../theme';
@@ -24,32 +24,62 @@ const withAlpha = (hex: string, alpha: number): string => {
 // config; the MOOD stays a prop because only the mounter knows its scene.
 // ---------------------------------------------------------------------------
 
-const BackdropContext = createContext<boolean>(false);
+type FieldKind = 'grid' | 'dots' | 'hatch' | 'rules' | 'plus';
+type MoodGroup = 'order' | 'drive' | 'buoyant';
 
-export const BackdropProvider: React.FC<{ enabled: boolean; children: React.ReactNode }> = ({
-  enabled,
-  children,
-}) => <BackdropContext.Provider value={enabled}>{children}</BackdropContext.Provider>;
+/** The unique look's backdrop choices (Laravel StyleRecipe `backdrop`). */
+export interface BackdropLook {
+  kinds?: Partial<Record<MoodGroup, string>> | null;
+  scale?: number | null;
+  drift?: number | null;
+}
 
-export const useBackdrop = (): boolean => useContext(BackdropContext);
+interface BackdropState {
+  enabled: boolean;
+  look: BackdropLook | null;
+}
 
-type FieldKind = 'grid' | 'dots' | 'hatch';
+const BackdropContext = createContext<BackdropState>({ enabled: false, look: null });
 
-/** Mood → pattern. Order and calm read as a wide grid; drive and tension as a
- *  diagonal hatch; the one buoyant mood as a dot field. Unknown moods take the
- *  quietest pattern rather than none, so a new analyzer mood never flickers
- *  the field off. */
-export const fieldForMood = (mood?: string | null): FieldKind => {
+export const BackdropProvider: React.FC<{
+  enabled: boolean;
+  look?: BackdropLook | null;
+  children: React.ReactNode;
+}> = ({ enabled, look, children }) => {
+  const value = useMemo(() => ({ enabled, look: look ?? null }), [enabled, look]);
+  return <BackdropContext.Provider value={value}>{children}</BackdropContext.Provider>;
+};
+
+export const useBackdrop = (): boolean => useContext(BackdropContext).enabled;
+
+const useBackdropLook = (): BackdropLook | null => useContext(BackdropContext).look;
+
+const KINDS: FieldKind[] = ['grid', 'dots', 'hatch', 'rules', 'plus'];
+
+/** Mood → group. Order and calm; drive and tension; the one buoyant mood. */
+const groupForMood = (mood?: string | null): MoodGroup => {
   switch ((mood ?? 'neutral').toLowerCase()) {
     case 'dramatic':
     case 'tense':
     case 'suspense':
-      return 'hatch';
+      return 'drive';
     case 'upbeat':
-      return 'dots';
+      return 'buoyant';
     default:
-      return 'grid';
+      return 'order';
   }
+};
+
+/** Mood → pattern. Order and calm read as a wide grid; drive and tension as a
+ *  diagonal hatch; the one buoyant mood as a dot field — unless the video's
+ *  unique look chose its own texture for that group. Unknown moods take the
+ *  quietest pattern rather than none, so a new analyzer mood never flickers
+ *  the field off. */
+export const fieldForMood = (mood?: string | null, look?: BackdropLook | null): FieldKind => {
+  const group = groupForMood(mood);
+  const chosen = look?.kinds?.[group];
+  if (chosen && KINDS.includes(chosen as FieldKind)) return chosen as FieldKind;
+  return group === 'drive' ? 'hatch' : group === 'buoyant' ? 'dots' : 'grid';
 };
 
 /**
@@ -110,6 +140,7 @@ export const AmbientBackground: React.FC<{ imageUrl?: string; grid?: boolean; mo
   const theme = useTheme();
   const skin = useSkin();
   const backdropOn = useBackdrop();
+  const look = useBackdropLook();
   const frame = useCurrentFrame();
   const { durationInFrames, width, fps } = useVideoConfig();
   const p = interpolate(frame, [0, Math.max(1, durationInFrames - 1)], [0, 1], {
@@ -134,27 +165,53 @@ export const AmbientBackground: React.FC<{ imageUrl?: string; grid?: boolean; mo
   // the camera world (the "text goes blurry" class of bug).
   let moodField: React.ReactNode = null;
   if (backdropOn && !imageUrl && skin !== 'blueprint' && grid) {
-    const t = frame / fps;
-    const kind = fieldForMood(mood);
+    // A unique look may scale the texture and reverse its drift; without one
+    // both are exactly 1 and the field is the house field, pixel for pixel.
+    const k = typeof look?.scale === 'number' && Number.isFinite(look.scale) ? Math.min(1.6, Math.max(0.6, look.scale)) : 1;
+    const dir = look?.drift === -1 ? -1 : 1;
+    const t = (frame / fps) * dir;
+    const kind = fieldForMood(mood, look);
     const line = (alpha: number): string =>
       isLightTheme(theme) ? `rgba(23,18,14,${alpha})` : `rgba(255,255,255,${alpha})`;
     let style: React.CSSProperties | null = null;
     if (kind === 'grid') {
-      const c = Math.round(width * 0.06);
+      const c = Math.round(width * 0.06 * k);
       style = {
         backgroundImage: hairlineGrid(theme, 0.045),
         backgroundSize: `${c}px ${c}px, ${c}px ${c}px`,
         backgroundPosition: `${(t * 2) % c}px ${(t * 2) % c}px`,
       };
     } else if (kind === 'dots') {
-      const c = Math.round(width * 0.03);
+      const c = Math.round(width * 0.03 * k);
       style = {
         backgroundImage: `radial-gradient(${line(0.07)} 1.5px, transparent 1.5px)`,
         backgroundSize: `${c}px ${c}px`,
         backgroundPosition: `0px ${-((t * 2) % c)}px`,
       };
+    } else if (kind === 'rules') {
+      // Horizontal hairlines only — a ruled field, drifting downward.
+      const c = Math.round(width * 0.05 * k);
+      style = {
+        backgroundImage: `linear-gradient(${line(0.05)} 1px, transparent 1px)`,
+        backgroundSize: `${c}px ${c}px`,
+        backgroundPosition: `0px ${(t * 2) % c}px`,
+      };
+    } else if (kind === 'plus') {
+      // A sparse field of plus marks, one per cell: a tiny tiled SVG (a
+      // gradient cannot draw a mark smaller than its own tile).
+      const c = Math.round(width * 0.055 * k);
+      const h = c / 2;
+      const arm = Math.max(4, Math.round(c * 0.12));
+      const svg =
+        `<svg xmlns='http://www.w3.org/2000/svg' width='${c}' height='${c}'>` +
+        `<path d='M${h - arm} ${h}H${h + arm}M${h} ${h - arm}V${h + arm}' stroke='${line(0.1)}' stroke-width='1' fill='none'/></svg>`;
+      style = {
+        backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`,
+        backgroundSize: `${c}px ${c}px`,
+        backgroundPosition: `${(t * 2) % c}px ${(t * 1.2) % c}px`,
+      };
     } else {
-      const gap = Math.round(width * 0.04);
+      const gap = Math.round(width * 0.04 * k);
       style = {
         backgroundImage: `repeating-linear-gradient(45deg, ${line(0.04)} 0px, ${line(0.04)} 1px, transparent 1px, transparent ${gap}px)`,
         // Drift along the hatch axis: equal x/y advance slides the pattern

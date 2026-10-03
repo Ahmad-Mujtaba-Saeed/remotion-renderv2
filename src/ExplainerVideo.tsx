@@ -260,13 +260,13 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     return (
       <ThemeProvider theme={bTheme}>
         <SkinProvider skin={shotList?.skin}>
-        <BackdropProvider enabled={backdropOn}>
-        <MotionStyleProvider style={shotList?.motion_style}>
+        <BackdropProvider enabled={backdropOn} look={shotList?.backdrop}>
+        <MotionStyleProvider style={shotList?.motion_style} tuning={shotList?.motion_tuning}>
         <DepthProvider intensity={shotList?.motion_depth}>
         <MotionBlurProvider enabled={motionBlurOn}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: bTheme.bg_from }}>
-            <FontLoader pack={fontPack} />
+            <FontLoader pack={fontPack} fonts={shotList?.fonts} />
             {musicBed}
             <MathBoard scenes={scenes} captions={captions} boardStyle={boardStyle} />
             <GlobalOverlays logoUrl={shotList?.brand?.logo_url} />
@@ -285,13 +285,13 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     return (
       <ThemeProvider theme={theme}>
         <SkinProvider skin={shotList?.skin}>
-        <BackdropProvider enabled={backdropOn}>
-        <MotionStyleProvider style={shotList?.motion_style}>
+        <BackdropProvider enabled={backdropOn} look={shotList?.backdrop}>
+        <MotionStyleProvider style={shotList?.motion_style} tuning={shotList?.motion_tuning}>
         <DepthProvider intensity={shotList?.motion_depth}>
         <MotionBlurProvider enabled={motionBlurOn}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
-            <FontLoader pack={fontPack} />
+            <FontLoader pack={fontPack} fonts={shotList?.fonts} />
             {musicBed}
             <CanvasJourney
               scenes={scenes}
@@ -346,13 +346,13 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     return (
       <ThemeProvider theme={theme}>
         <SkinProvider skin={shotList?.skin}>
-        <BackdropProvider enabled={backdropOn}>
-        <MotionStyleProvider style={shotList?.motion_style}>
+        <BackdropProvider enabled={backdropOn} look={shotList?.backdrop}>
+        <MotionStyleProvider style={shotList?.motion_style} tuning={shotList?.motion_tuning}>
         <DepthProvider intensity={shotList?.motion_depth}>
         <MotionBlurProvider enabled={motionBlurOn}>
         <SfxProvider config={shotList?.sfx}>
           <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
-            <FontLoader pack={fontPack} />
+            <FontLoader pack={fontPack} fonts={shotList?.fonts} />
             {musicBed}
             <TransitionSeries>
               {chapters.flatMap((ch, i) => {
@@ -429,13 +429,13 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   return (
     <ThemeProvider theme={theme}>
       <SkinProvider skin={shotList?.skin}>
-        <BackdropProvider enabled={backdropOn}>
-      <MotionStyleProvider style={shotList?.motion_style}>
+        <BackdropProvider enabled={backdropOn} look={shotList?.backdrop}>
+      <MotionStyleProvider style={shotList?.motion_style} tuning={shotList?.motion_tuning}>
         <DepthProvider intensity={shotList?.motion_depth}>
         <MotionBlurProvider enabled={motionBlurOn}>
       <SfxProvider config={shotList?.sfx}>
         <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
-          <FontLoader pack={fontPack} />
+          <FontLoader pack={fontPack} fonts={shotList?.fonts} />
           {musicBed}
           <SlidesChapter scenes={scenes} fps={fps} captions={captions} />
           <GlobalOverlays logoUrl={shotList?.brand?.logo_url} chapterChip={shotList?.chapter_chip?.enabled === true} chapterWindowList={hybridWindows} />
