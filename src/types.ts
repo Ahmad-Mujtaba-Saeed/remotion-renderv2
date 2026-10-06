@@ -883,6 +883,18 @@ export interface Scene {
   /** Hand edits made on the preview stage, keyed by element id — see
       components/Editable.tsx. Unknown ids are ignored. */
   element_edits?: ElementEdits | null;
+  /** AI-written hero scene (Laravel HeroSceneService): the compiled module
+      that replaces this scene's card at render time. The card stays the
+      fallback, and is what the dashboard Player shows (hero/runtime.tsx). */
+  hero?: {
+    js: string;
+    /** Named pictures the hero may show via <Asset name>. */
+    assets?: Record<string, string>;
+    /** Captions burn into the bottom of this frame (portrait safe area). */
+    captions?: boolean;
+    /** Acceptance-test renders only: measure the hero's text (hero/audit.tsx). */
+    audit?: boolean;
+  } | null;
 }
 
 /**

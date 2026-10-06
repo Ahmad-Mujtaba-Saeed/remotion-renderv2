@@ -446,6 +446,75 @@ export const renderPreviewStill = async (req: PreviewRequest): Promise<string> =
   return req.outputPath;
 };
 
+export interface HeroTestRequest {
+  shotList: ShotList;
+  frames: number[];
+  /** Host directory the stills are written to (hero_<frame>.png). */
+  outDir: string;
+  fps?: number;
+  width?: number;
+  height?: number;
+  scale?: number;
+}
+
+export interface HeroTestResult {
+  stills: Array<{ frame: number; file: string; ms: number }>;
+  /** Anything the hero runtime reported: a load failure, a thrown render, a refused key. */
+  heroErrors: string[];
+  /** Other browser errors seen while rendering (context for a retry prompt). */
+  browserErrors: string[];
+}
+
+/**
+ * The hero scene's acceptance test (Laravel HeroSceneService): render a few
+ * frames of a one-scene shot list and report what the hero runtime said.
+ * Silent fallback to the card is the failure mode this exists to catch —
+ * runtime.tsx logs "[hero] …" whenever it gives up on the model's code.
+ */
+export const renderHeroTest = async (req: HeroTestRequest): Promise<HeroTestResult> => {
+  const fps = req.fps ?? 30;
+  const width = req.width ?? 1920;
+  const height = req.height ?? 1080;
+  const shotList: ShotList = { ...req.shotList, sfx: { ...(req.shotList.sfx ?? {}), enabled: false } };
+  const inputProps = { shotList, fps, width, height };
+  const serveUrl = await getServeUrl();
+  const composition = await selectComposition({ serveUrl, id: 'Explainer', inputProps });
+
+  const heroErrors: string[] = [];
+  const browserErrors: string[] = [];
+  const onBrowserLog = (log: { type: string; text: string }) => {
+    if (/\[hero\]|hero:/.test(log.text)) heroErrors.push(log.text);
+    else if (log.type === 'error') browserErrors.push(log.text.slice(0, 400));
+  };
+
+  fsSync.mkdirSync(req.outDir, { recursive: true });
+  const stills: HeroTestResult['stills'] = [];
+  for (const raw of req.frames) {
+    const frame = Math.max(0, Math.min(Math.round(raw), composition.durationInFrames - 1));
+    const file = path.join(req.outDir, `hero_${String(frame).padStart(4, '0')}.png`);
+    const t0 = Date.now();
+    try {
+      await renderStill({
+        serveUrl,
+        composition,
+        inputProps,
+        frame,
+        output: file,
+        imageFormat: 'png',
+        scale: req.scale ?? 0.5,
+        onBrowserLog,
+        chromiumOptions: { gl: 'angle' },
+        // A hero that cannot draw a frame in 20s is a hero we will not ship.
+        timeoutInMilliseconds: 20000,
+      });
+      stills.push({ frame, file, ms: Date.now() - t0 });
+    } catch (err: any) {
+      heroErrors.push(`frame ${frame}: render failed — ${String(err?.message ?? err).slice(0, 300)}`);
+    }
+  }
+  return { stills, heroErrors: [...new Set(heroErrors)], browserErrors: [...new Set(browserErrors)].slice(0, 10) };
+};
+
 /**
  * Render the §10.5 thumbnail still (composition `ExplainerThumbnail`) to a
  * PNG. Reuses the cached bundle, so after a video render this costs ~a second.

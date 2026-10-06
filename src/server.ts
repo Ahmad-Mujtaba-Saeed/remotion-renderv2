@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
-import { renderExplainer, renderThumbnail, renderPreviewStill, renderViralShort } from './render';
+import { renderExplainer, renderThumbnail, renderPreviewStill, renderViralShort, renderHeroTest } from './render';
+import { compileHero } from './hero/guard';
 import type { ShotList } from './types';
 import type { ThumbnailProps } from './ThumbnailComp';
 
@@ -185,6 +186,59 @@ app.post('/preview', async (req, res) => {
   } catch (err: any) {
     console.error('[preview] failed:', err);
     return res.status(500).json({ success: false, error: err?.message || 'Preview render failed' });
+  }
+});
+
+/**
+ * POST /hero/compile
+ * Body: { code } — a model-written hero scene (TSX).
+ * Returns { ok, js?, errors[], warnings[] }: the guarded, compiled module, or
+ * the reasons it was refused, phrased for the model's retry (hero/guard.ts).
+ */
+app.post('/hero/compile', (req, res) => {
+  const { code } = req.body || {};
+  try {
+    return res.json(compileHero(String(code ?? '')));
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, errors: [err?.message || 'compile crashed'], warnings: [] });
+  }
+});
+
+/**
+ * POST /hero/test
+ * Body: { shot_list, frames[], output_dir, fps?, width?, height?, scale? }
+ * Renders the given frames of a (one-scene) shot list carrying a hero and
+ * reports what the hero runtime said. Stills land in output_dir as
+ * hero_<frame>.png; paths come back in the caller's (container) form.
+ */
+app.post('/hero/test', async (req, res) => {
+  const { shot_list, frames, output_dir, fps, width, height, scale } = req.body || {};
+  if (!shot_list || !Array.isArray(frames) || !output_dir) {
+    return res.status(400).json({ success: false, error: 'shot_list, frames and output_dir are required' });
+  }
+  const hostDir = toHostPath(String(output_dir));
+  try {
+    const t0 = Date.now();
+    const result = await renderHeroTest({
+      shotList: shot_list as ShotList,
+      frames: frames.map(Number).slice(0, 10),
+      outDir: hostDir,
+      fps: Number(fps) || 30,
+      width: Number(width) || 1920,
+      height: Number(height) || 1080,
+      scale: scale ? Number(scale) : undefined,
+    });
+    const base = String(output_dir).replace(/\/+$/, '');
+    console.log(`[hero/test] ${result.stills.length} stills in ${((Date.now() - t0) / 1000).toFixed(1)}s, ${result.heroErrors.length} hero error(s)`);
+    return res.json({
+      success: true,
+      stills: result.stills.map((s) => ({ frame: s.frame, ms: s.ms, output_path: `${base}/${path.basename(s.file)}` })),
+      hero_errors: result.heroErrors,
+      browser_errors: result.browserErrors,
+    });
+  } catch (err: any) {
+    console.error('[hero/test] failed:', err);
+    return res.status(500).json({ success: false, error: err?.message || 'hero test failed' });
   }
 });
 

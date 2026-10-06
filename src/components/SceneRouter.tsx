@@ -52,6 +52,7 @@ import { GeometryDiagram } from '../layouts/GeometryDiagram';
 import { FunctionPlot } from '../layouts/FunctionPlot';
 import { ScenarioDiagram } from '../layouts/ScenarioDiagram';
 import { AmbientBackground } from './AmbientBackground';
+import { HeroScene } from '../hero/runtime';
 import { PunchLine } from './PunchLine';
 import { CaptionTrack } from './CaptionTrack';
 import { SceneMetaProvider } from './SceneMeta';
@@ -89,13 +90,18 @@ const SceneCamera: React.FC<{ scene: Scene; index: number; children: React.React
  * frames — which is why the hand-edit context and the whole-card `card` edit
  * live HERE: every host that draws a card draws it through this.
  */
-export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => (
-  <ElementEditsProvider scene={scene}>
-    <EditableCard>
-      <LayoutSwitch scene={scene} />
-    </EditableCard>
-  </ElementEditsProvider>
-);
+export const SceneLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const card = (
+    <ElementEditsProvider scene={scene}>
+      <EditableCard>
+        <LayoutSwitch scene={scene} />
+      </EditableCard>
+    </ElementEditsProvider>
+  );
+  // An AI-written hero scene replaces the card at render time; the card is
+  // its fallback (and what the Player shows) — see hero/runtime.tsx.
+  return scene.hero?.js ? <HeroScene scene={scene} fallback={card} /> : card;
+};
 
 /** The whole card as one grabbable element: move/scale/rotate/fade it all. */
 const EditableCard: React.FC<{ children: React.ReactNode }> = ({ children }) => {

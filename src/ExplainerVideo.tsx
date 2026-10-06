@@ -29,6 +29,7 @@ import { SlidesChapter } from './components/SlidesChapter';
 import { BackdropProvider } from './components/AmbientBackground';
 import { SfxProvider, SfxCue } from './sfx';
 import { FontLoader } from './fonts';
+import { registerHeroAssetOrigins } from './hero/runtime';
 
 /**
  * Screen-space chrome drawn above every scene: the hairline progress rule
@@ -185,6 +186,11 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   // Mood backdrop field (§11.5): only an explicit true turns it on, so
   // payloads from before the field existed render byte-identically.
   const backdropOn = shotList?.backdrop?.enabled === true;
+  // Hero scenes: the render page's CSP will admit only this video's own
+  // asset origins (hero/runtime.tsx) — collected once, before any hero loads.
+  useMemo(() => {
+    if (shotList?.scenes?.some((s) => s.hero?.js)) registerHeroAssetOrigins(shotList);
+  }, [shotList]);
 
   const chapters = useMemo(
     () => (mode === 'hybrid' && shotList ? normalizeChapters(shotList) : []),

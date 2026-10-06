@@ -279,7 +279,9 @@ export const CanvasJourney: React.FC<{
   // plays full-frame in SCREEN space instead: it fades in over its own
   // arrival while the world fades out, and hands back over the next arrival.
   const takeovers = scenes.map((scene, i) => {
-    if (scene.layout_template !== 'cinematic_card') return 0;
+    // Hero scenes (AI-written, hero/runtime.tsx) take over too: they may use
+    // gradients, glow and filters, none of which may live in the world.
+    if (scene.layout_template !== 'cinematic_card' && !scene.hero?.js) return 0;
     const w = camera.windows[i];
     const next = camera.windows[i + 1];
     const fadeIn = i === 0 ? 1 : smooth((frame - w.start) / Math.max(8, w.travel));
@@ -291,7 +293,7 @@ export const CanvasJourney: React.FC<{
   // Parents render beneath their nested children.
   const renderOrder = scenes
     .map((scene, i) => ({ scene, i, item: itemByScene.get(scene.scene_id) }))
-    .filter((e) => e.item && e.scene.layout_template !== 'cinematic_card')
+    .filter((e) => e.item && e.scene.layout_template !== 'cinematic_card' && !e.scene.hero?.js)
     .sort((a, b) => (a.item!.depth ?? 0) - (b.item!.depth ?? 0) || a.i - b.i);
 
   // Everything that lives INSIDE the camera transform, built once as an element
