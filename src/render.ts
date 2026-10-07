@@ -515,6 +515,53 @@ export const renderHeroTest = async (req: HeroTestRequest): Promise<HeroTestResu
   return { stills, heroErrors: [...new Set(heroErrors)], browserErrors: [...new Set(browserErrors)].slice(0, 10) };
 };
 
+export interface HeroClipRequest {
+  /** One-scene shot list carrying the hero (the same one /hero/test renders). */
+  shotList: ShotList;
+  /** Host path of the .mp4 to write. */
+  outputPath: string;
+  fps?: number;
+  width?: number;
+  height?: number;
+  scale?: number;
+}
+
+/**
+ * The hero's PREVIEW CLIP: the one-scene shot list rendered to a small silent
+ * MP4. Model-written code never runs in the dashboard, so the storyboard's
+ * Play tab plays this video in the hero's place (hero/runtime.tsx) — the
+ * dashboard only ever decodes a video file. Half scale + a cheap encode keep
+ * it to a few seconds of work and well under a megabyte.
+ */
+export const renderHeroClip = async (req: HeroClipRequest): Promise<{ frames: number }> => {
+  const fps = req.fps ?? 30;
+  const width = req.width ?? 1920;
+  const height = req.height ?? 1080;
+  const shotList: ShotList = { ...req.shotList, sfx: { ...(req.shotList.sfx ?? {}), enabled: false } };
+  const inputProps = { shotList, fps, width, height };
+  const serveUrl = await getServeUrl();
+  const composition = await selectComposition({ serveUrl, id: 'Explainer', inputProps });
+
+  fsSync.mkdirSync(path.dirname(req.outputPath), { recursive: true });
+  await renderMedia({
+    serveUrl,
+    composition,
+    codec: 'h264',
+    inputProps,
+    outputLocation: req.outputPath,
+    muted: true,
+    scale: req.scale ?? 0.5,
+    imageFormat: 'jpeg',
+    jpegQuality: 85,
+    crf: 26,
+    onBrowserLog: browserLogger('hero-clip'),
+    chromiumOptions: { gl: 'angle' },
+    concurrency: process.env.RENDER_CONCURRENCY ? parseInt(process.env.RENDER_CONCURRENCY, 10) : null,
+    timeoutInMilliseconds: 60000,
+  });
+  return { frames: composition.durationInFrames };
+};
+
 /**
  * Render the §10.5 thumbnail still (composition `ExplainerThumbnail`) to a
  * PNG. Reuses the cached bundle, so after a video render this costs ~a second.

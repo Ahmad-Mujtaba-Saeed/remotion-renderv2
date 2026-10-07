@@ -885,9 +885,14 @@ export interface Scene {
   element_edits?: ElementEdits | null;
   /** AI-written hero scene (Laravel HeroSceneService): the compiled module
       that replaces this scene's card at render time. The card stays the
-      fallback, and is what the dashboard Player shows (hero/runtime.tsx). */
+      fallback; the dashboard Player plays `preview_url` instead, or the
+      card when there is no clip yet (hero/runtime.tsx). */
   hero?: {
     js: string;
+    /** Silent MP4 of this hero rendered on the server (POST /hero/clip). */
+    preview_url?: string;
+    /** That clip's length in frames — the Player holds its last frame past it. */
+    preview_frames?: number;
     /** Named pictures the hero may show via <Asset name>. */
     assets?: Record<string, string>;
     /** Captions burn into the bottom of this frame (portrait safe area). */

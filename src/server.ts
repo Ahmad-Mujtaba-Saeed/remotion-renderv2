@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
-import { renderExplainer, renderThumbnail, renderPreviewStill, renderViralShort, renderHeroTest } from './render';
+import { renderExplainer, renderThumbnail, renderPreviewStill, renderViralShort, renderHeroTest, renderHeroClip } from './render';
 import { compileHero } from './hero/guard';
 import type { ShotList } from './types';
 import type { ThumbnailProps } from './ThumbnailComp';
@@ -239,6 +239,35 @@ app.post('/hero/test', async (req, res) => {
   } catch (err: any) {
     console.error('[hero/test] failed:', err);
     return res.status(500).json({ success: false, error: err?.message || 'hero test failed' });
+  }
+});
+
+/**
+ * POST /hero/clip
+ * Body: { shot_list, output_path, fps?, width?, height?, scale? }
+ * Renders the (one-scene) shot list to a small silent MP4 — the hero's
+ * stand-in on the dashboard Player, where hero code never runs.
+ */
+app.post('/hero/clip', async (req, res) => {
+  const { shot_list, output_path, fps, width, height, scale } = req.body || {};
+  if (!shot_list || !output_path) {
+    return res.status(400).json({ success: false, error: 'shot_list and output_path are required' });
+  }
+  try {
+    const t0 = Date.now();
+    const result = await renderHeroClip({
+      shotList: shot_list as ShotList,
+      outputPath: toHostPath(String(output_path)),
+      fps: Number(fps) || 30,
+      width: Number(width) || 1920,
+      height: Number(height) || 1080,
+      scale: scale ? Number(scale) : undefined,
+    });
+    console.log(`[hero/clip] ${result.frames} frames in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+    return res.json({ success: true, output_path, frames: result.frames });
+  } catch (err: any) {
+    console.error('[hero/clip] failed:', err);
+    return res.status(500).json({ success: false, error: err?.message || 'hero clip failed' });
   }
 });
 

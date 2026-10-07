@@ -2,7 +2,10 @@ import React from 'react';
 import {
   AbsoluteFill,
   Easing,
+  Freeze,
   Sequence,
+  Video,
+  useCurrentFrame,
   getRemotionEnvironment,
   useVideoConfig,
   interpolate,
@@ -203,8 +206,26 @@ const HeroBadge: React.FC = () => (
 );
 
 /**
- * A hero scene. `fallback` is the scene's own card: it plays in the Player,
- * and replaces the hero if its code fails to load or throws.
+ * The hero as the Player sees it: the server-rendered clip (POST /hero/clip),
+ * a plain video file. Past the clip's end (the voice came out a little longer
+ * than the scene it was made for) it holds the last frame instead of going
+ * blank.
+ */
+const HeroClip: React.FC<{ src: string; frames: number }> = ({ src, frames }) => {
+  const frame = useCurrentFrame();
+  const last = Math.max(0, frames - 1);
+  const video = <Video src={src} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
+  return (
+    <AbsoluteFill style={{ overflow: 'hidden' }}>
+      {frames > 0 && frame >= last ? <Freeze frame={last}>{video}</Freeze> : video}
+    </AbsoluteFill>
+  );
+};
+
+/**
+ * A hero scene. `fallback` is the scene's own card: it replaces the hero if
+ * its code fails to load or throws, and it is what the Player shows when the
+ * hero has no preview clip yet.
  */
 export const HeroScene: React.FC<{ scene: Scene; fallback: React.ReactNode }> = ({ scene, fallback }) => {
   const env = getRemotionEnvironment();
@@ -213,37 +234,26 @@ export const HeroScene: React.FC<{ scene: Scene; fallback: React.ReactNode }> = 
   const hero = scene.hero;
 
   if (!hero?.js) return <>{fallback}</>;
+
+  let body: React.ReactNode;
   if (!env.isRendering) {
-    return (
-      <>
-        {fallback}
-        <HeroBadge />
-      </>
-    );
+    // Hero code never runs in the dashboard: play its recorded clip instead.
+    if (!hero.preview_url) {
+      return (
+        <>
+          {fallback}
+          <HeroBadge />
+        </>
+      );
+    }
+    body = <HeroClip src={hero.preview_url} frames={hero.preview_frames ?? 0} />;
+  } else {
+    const Comp = loadHero(hero.js);
+    if (Comp instanceof Error) return <>{fallback}</>;
+    // A fresh loop budget for this frame's render of the scene.
+    loopBudget.reset();
+    body = renderHeroBody(Comp, hero, scene, width, height, fallback);
   }
-
-  const Comp = loadHero(hero.js);
-  if (Comp instanceof Error) return <>{fallback}</>;
-  // A fresh loop budget for this frame's render of the scene.
-  loopBudget.reset();
-
-  const body = (
-    <HeroBoundary fallback={fallback}>
-      <Kit.HeroEnvProvider
-        env={{ words: scene.narration_words ?? [], assets: hero.assets ?? {}, captions: hero.captions === true }}
-      >
-        <AbsoluteFill style={{ overflow: 'hidden' }}>
-          {hero.audit ? (
-            <HeroAudit unit={Math.min(width, height) / 1080}>
-              <Comp />
-            </HeroAudit>
-          ) : (
-            <Comp />
-          )}
-        </AbsoluteFill>
-      </Kit.HeroEnvProvider>
-    </HeroBoundary>
-  );
 
   // Canvas takeovers live on the GLOBAL clock. Re-base onto the scene so a
   // <Sequence from={30}> inside the hero means 30 frames into the scene, in
@@ -264,4 +274,31 @@ export const HeroScene: React.FC<{ scene: Scene; fallback: React.ReactNode }> = 
     );
   }
   return body;
+};
+
+const renderHeroBody = (
+  Comp: React.ComponentType,
+  hero: NonNullable<Scene['hero']>,
+  scene: Scene,
+  width: number,
+  height: number,
+  fallback: React.ReactNode,
+): React.ReactNode => {
+  return (
+    <HeroBoundary fallback={fallback}>
+      <Kit.HeroEnvProvider
+        env={{ words: scene.narration_words ?? [], assets: hero.assets ?? {}, captions: hero.captions === true }}
+      >
+        <AbsoluteFill style={{ overflow: 'hidden' }}>
+          {hero.audit ? (
+            <HeroAudit unit={Math.min(width, height) / 1080}>
+              <Comp />
+            </HeroAudit>
+          ) : (
+            <Comp />
+          )}
+        </AbsoluteFill>
+      </Kit.HeroEnvProvider>
+    </HeroBoundary>
+  );
 };
