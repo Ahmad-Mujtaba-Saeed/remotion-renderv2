@@ -316,6 +316,16 @@ const heroTransformer: ts.TransformerFactory<ts.SourceFile> = (ctx) => {
   const wrapLoop = (loop: ts.IterationStatement, rebuilt: (body: ts.Statement) => ts.Statement): ts.Statement =>
     rebuilt(guardLoopBody(loop.statement));
 
+  // Every FUNCTION body ticks the same budget. Loops were the obvious way to
+  // spin a frame forever; `.map` callbacks over a huge array and plain
+  // recursion are the others — and since the MCP studio lets any signed-in
+  // user submit scene code, all three have to be bounded.
+  const tickedBody = (body: ts.ConciseBody): ts.Block => {
+    const tick = f.createExpressionStatement(f.createCallExpression(f.createIdentifier('__L'), undefined, []));
+    if (ts.isBlock(body)) return f.updateBlock(body, [tick, ...body.statements]);
+    return f.createBlock([tick, f.createReturnStatement(body)], true);
+  };
+
   const visit = (node: ts.Node): ts.Node => {
     const n = ts.visitEachChild(node, visit, ctx);
 
@@ -327,6 +337,18 @@ const heroTransformer: ts.TransformerFactory<ts.SourceFile> = (ctx) => {
           ? f.updateElementAccessChain(n as ts.ElementAccessChain, n.expression, n.questionDotToken, guarded)
           : f.updateElementAccessExpression(n, n.expression, guarded);
       }
+    }
+    if (ts.isArrowFunction(n)) {
+      return f.updateArrowFunction(n, n.modifiers, n.typeParameters, n.parameters, n.type, n.equalsGreaterThanToken, tickedBody(n.body));
+    }
+    if (ts.isFunctionExpression(n) && n.body) {
+      return f.updateFunctionExpression(n, n.modifiers, n.asteriskToken, n.name, n.typeParameters, n.parameters, n.type, tickedBody(n.body));
+    }
+    if (ts.isFunctionDeclaration(n) && n.body) {
+      return f.updateFunctionDeclaration(n, n.modifiers, n.asteriskToken, n.name, n.typeParameters, n.parameters, n.type, tickedBody(n.body));
+    }
+    if (ts.isMethodDeclaration(n) && n.body) {
+      return f.updateMethodDeclaration(n, n.modifiers, n.asteriskToken, n.name, n.questionToken, n.typeParameters, n.parameters, n.type, tickedBody(n.body));
     }
     if (ts.isWhileStatement(n)) return wrapLoop(n, (b) => f.updateWhileStatement(n, n.expression, b));
     if (ts.isDoStatement(n)) return wrapLoop(n, (b) => f.updateDoStatement(n, b, n.expression));

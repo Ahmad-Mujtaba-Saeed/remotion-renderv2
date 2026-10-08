@@ -63,6 +63,9 @@ export const HERO_MODULES: Record<string, string[]> = {
     'DrawPath',
     'Counter',
     'Asset',
+    // Flute-style depth stage (camera, planes, focus pull).
+    'Depth',
+    'Layer',
   ],
 };
 

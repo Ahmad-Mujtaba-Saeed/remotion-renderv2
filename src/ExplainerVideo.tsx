@@ -11,6 +11,7 @@ import {
   totalCanvasFrames,
   totalDurationInFrames,
   totalHybridFrames,
+  totalFramesFor,
   chapterFrames,
   chapterWindows,
   NarrationWindow,
@@ -30,6 +31,7 @@ import { BackdropProvider } from './components/AmbientBackground';
 import { SfxProvider, SfxCue } from './sfx';
 import { FontLoader } from './fonts';
 import { registerHeroAssetOrigins } from './hero/runtime';
+import { PresenterVideo, presenterSpeechWindows } from './presenter/PresenterVideo';
 
 /**
  * Screen-space chrome drawn above every scene: the hairline progress rule
@@ -204,15 +206,19 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
   // like the canvas journey — no transition overlaps to subtract.
   const boardish = mode === 'canvas_journey' || mode === 'math_board';
   const duckWindows =
-    mode === 'hybrid'
-      ? narrationWindowsHybrid(chapters, fps)
-      : narrationWindows(scenes, fps, boardish ? 'canvas' : 'slides');
+    mode === 'presenter'
+      ? presenterSpeechWindows(shotList, fps)
+      : mode === 'hybrid'
+        ? narrationWindowsHybrid(chapters, fps)
+        : narrationWindows(scenes, fps, boardish ? 'canvas' : 'slides');
   const total =
-    mode === 'hybrid'
-      ? totalHybridFrames(chapters, fps)
-      : boardish
-        ? totalCanvasFrames(scenes, fps)
-        : totalDurationInFrames(scenes, fps);
+    mode === 'presenter'
+      ? totalFramesFor(shotList, fps)
+      : mode === 'hybrid'
+        ? totalHybridFrames(chapters, fps)
+        : boardish
+          ? totalCanvasFrames(scenes, fps)
+          : totalDurationInFrames(scenes, fps);
 
   // The outro card carries no narration — the bed swells there so the video
   // resolves musically instead of just stopping (its window is always the
@@ -250,6 +256,33 @@ export const ExplainerVideo: React.FC<ExplainerProps> = ({ shotList, fps }) => {
     music?.url && musicVolume ? (
       <Audio src={music.url} volume={musicVolume} loop loopVolumeCurveBehavior="extend" />
     ) : null;
+
+  if (mode === 'presenter') {
+    // MCP presenter mode: the user's own recording is the spine; graphics
+    // scenes are windows of it (presenter/PresenterVideo.tsx).
+    return (
+      <ThemeProvider theme={theme}>
+        <SkinProvider skin={shotList?.skin}>
+        <BackdropProvider enabled={backdropOn} look={shotList?.backdrop}>
+        <MotionStyleProvider style={shotList?.motion_style} tuning={shotList?.motion_tuning}>
+        <DepthProvider intensity={shotList?.motion_depth}>
+        <MotionBlurProvider enabled={motionBlurOn}>
+        <SfxProvider config={shotList?.sfx}>
+          <AbsoluteFill style={{ background: theme.bg_from ?? '#0f172a' }}>
+            <FontLoader pack={fontPack} fonts={shotList?.fonts} />
+            {musicBed}
+            <PresenterVideo shotList={shotList} captions={captions} />
+            <GlobalOverlays logoUrl={shotList?.brand?.logo_url} />
+          </AbsoluteFill>
+        </SfxProvider>
+        </MotionBlurProvider>
+        </DepthProvider>
+        </MotionStyleProvider>
+        </BackdropProvider>
+        </SkinProvider>
+      </ThemeProvider>
+    );
+  }
 
   if (mode === 'math_board') {
     // A separate paradigm for worked-math videos (copilot.md math board): the

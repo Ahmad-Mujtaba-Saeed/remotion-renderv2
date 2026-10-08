@@ -81,9 +81,34 @@ const kitShim = {
   DrawPath: Kit.DrawPath,
   Counter: Kit.Counter,
   Asset: Kit.Asset,
+  Depth: Kit.Depth,
+  Layer: Kit.Layer,
 };
 
 const MODULES: Record<string, unknown> = { remotion: remotionShim, react: reactShim, 'hero-kit': kitShim };
+
+/**
+ * The `Array` a scene sees: the real one, except that it refuses to MAKE an
+ * absurdly long array (`Array.from({ length: 1e9 })`, `new Array(1e9)`) —
+ * the allocation bomb the per-frame tick budget cannot see, because no scene
+ * code runs while the engine fills it. Literals, methods and isArray behave
+ * exactly as normal.
+ */
+const HERO_MAX_ARRAY = 200_000;
+const tooLong = (n: unknown): boolean => typeof n === 'number' && n > HERO_MAX_ARRAY;
+const SafeArray = function (this: unknown, ...args: unknown[]) {
+  if (args.length === 1 && tooLong(args[0])) throw new Error(`hero: arrays are limited to ${HERO_MAX_ARRAY} items`);
+  return (Array as unknown as (...a: unknown[]) => unknown[])(...args);
+} as unknown as ArrayConstructor;
+Object.assign(SafeArray, {
+  isArray: Array.isArray,
+  of: Array.of,
+  from: (src: unknown, ...rest: unknown[]) => {
+    const len = src && typeof src === 'object' ? (src as { length?: unknown }).length : undefined;
+    if (tooLong(len)) throw new Error(`hero: arrays are limited to ${HERO_MAX_ARRAY} items`);
+    return (Array.from as (...a: unknown[]) => unknown[])(src, ...rest);
+  },
+});
 
 // ---- content security policy -----------------------------------------------
 
@@ -158,8 +183,8 @@ export const loadHero = (js: string): React.ComponentType | Error => {
       return MODULES[name];
     };
     // eslint-disable-next-line no-new-func
-    const factory = new Function('exports', 'require', '__h', '__F', '__k', '__L', `"use strict";\n${js}`);
-    factory(exportsObj, requireShim, safeH, React.Fragment, heroSafeKey, loopBudget.tick);
+    const factory = new Function('exports', 'require', '__h', '__F', '__k', '__L', 'Array', `"use strict";\n${js}`);
+    factory(exportsObj, requireShim, safeH, React.Fragment, heroSafeKey, loopBudget.tick, SafeArray);
     const comp = exportsObj.default;
     result = typeof comp === 'function' ? (comp as React.ComponentType) : new Error('hero: the module has no default export');
   } catch (e) {

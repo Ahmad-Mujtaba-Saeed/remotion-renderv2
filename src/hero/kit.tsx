@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo } from 'react';
-import { Img, spring, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Img, spring, useVideoConfig } from 'remotion';
 import { NarrationWord } from '../types';
 import { useTheme, inkOn, DISPLAY_FONT, BODY_FONT, MONO_FONT } from '../theme';
 import { useSceneClock, useSceneWindow } from '../canvas/SceneClock';
@@ -37,6 +37,28 @@ export interface HeroEnv {
 }
 
 const HeroEnvContext = createContext<HeroEnv>({ words: [], assets: {}, captions: false });
+
+/**
+ * Where a scene may draw (MCP presenter mode). Outside presenter mode there
+ * is no provider and the scene owns the whole frame.
+ */
+export interface HeroStage {
+  /** The region this scene's graphics should fill (px, frame space). */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** True when the scene is drawn OVER the presenter's full-frame footage. */
+  overlay: boolean;
+  /** The presenter's window on screen during this scene, when visible beside the graphics. */
+  presenter: null | { layout: string; box: { x: number; y: number; width: number; height: number } };
+}
+
+const HeroStageContext = createContext<HeroStage | null>(null);
+
+export const HeroStageProvider: React.FC<{ stage: HeroStage; children: React.ReactNode }> = ({ stage, children }) => (
+  <HeroStageContext.Provider value={stage}>{children}</HeroStageContext.Provider>
+);
 
 export const HeroEnvProvider: React.FC<{ env: HeroEnv; children: React.ReactNode }> = ({ env, children }) => (
   <HeroEnvContext.Provider value={env}>{children}</HeroEnvContext.Provider>
@@ -78,6 +100,14 @@ export interface HeroInfo {
   words: Array<{ word: string; start: number; end: number }>;
   /** Frame the narrator says `phrase` (its first word), else `fallback` × duration. */
   cue: (phrase: string, fallback?: number) => number;
+  /** Seconds to frames at this video's fps (60 or 30): time everything in seconds. */
+  s: (seconds: number) => number;
+  /** The region to draw in (the whole frame, except beside a presenter in a split). */
+  stage: { x: number; y: number; width: number; height: number };
+  /** True when drawn over the presenter's full-frame footage: keep the background transparent. */
+  overlay: boolean;
+  /** The presenter's window on screen this scene (pip / split), or null. Keep key content clear of it. */
+  presenter: HeroStage['presenter'];
 }
 
 export const useHero = (): HeroInfo => {
@@ -85,6 +115,7 @@ export const useHero = (): HeroInfo => {
   const { fps, width, height, durationInFrames } = useHeroConfig();
   const theme = useTheme();
   const env = useContext(HeroEnvContext);
+  const stageCtx = useContext(HeroStageContext);
   const offset = useNarrationOffset();
 
   return useMemo(() => {
@@ -100,6 +131,10 @@ export const useHero = (): HeroInfo => {
       return at !== null ? at + offset : Math.round(clamp01(fallback) * durationInFrames);
     };
     const pad = Math.round(64 * u);
+    const stage = stageCtx
+      ? { x: stageCtx.x, y: stageCtx.y, width: stageCtx.width, height: stageCtx.height }
+      : { x: 0, y: 0, width, height };
+    const captionBottom = env.captions && portrait ? Math.round(height * 0.2) : pad;
     return {
       frame,
       fps,
@@ -119,17 +154,23 @@ export const useHero = (): HeroInfo => {
         onAccent: inkOn(theme.accent),
       },
       font: { display: DISPLAY_FONT, body: BODY_FONT, mono: MONO_FONT },
+      // Insets from the FRAME edges that keep content inside the stage
+      // (a presenter split pushes one side in) and clear of captions.
       safe: {
-        top: pad,
-        right: pad,
-        bottom: env.captions && portrait ? Math.round(height * 0.2) : pad,
-        left: pad,
+        top: stage.y + pad,
+        right: width - (stage.x + stage.width) + pad,
+        bottom: Math.max(height - (stage.y + stage.height) + pad, captionBottom),
+        left: stage.x + pad,
       },
       words,
       cue,
+      s: (seconds: number) => Math.round(seconds * fps),
+      stage,
+      overlay: stageCtx?.overlay ?? false,
+      presenter: stageCtx?.presenter ?? null,
     };
     // `frame` changes every render; the rest is stable per scene.
-  }, [frame, fps, width, height, durationInFrames, theme, env, offset]);
+  }, [frame, fps, width, height, durationInFrames, theme, env, offset, stageCtx]);
 };
 
 /** Hook form of `useHero().cue`. */
@@ -295,4 +336,76 @@ export const Asset: React.FC<{ name: string; style?: React.CSSProperties }> = ({
   const src = env.assets[name];
   if (!src) return null;
   return <Img src={src} style={{ objectFit: 'contain', ...style }} />;
+};
+
+// ---- depth: Flute-style camera, planes and focus --------------------------
+
+interface DepthCam {
+  x: number;
+  y: number;
+  z: number;
+  rotateX: number;
+  rotateY: number;
+}
+
+const DepthCtx = createContext<{ P: number; focus: number; aperture: number; u: number } | null>(null);
+
+/**
+ * A 3D stage (the depth rig behind our flow card, after Flute): put content
+ * on <Layer z={...}> planes and move ONE camera through them. Every plane is
+ * perspective-compensated, so with the camera at rest each layer looks
+ * exactly as you laid it out; move the camera and the planes part against
+ * each other (parallax). `focus` is the z that stays sharp; with an
+ * `aperture` above 0 the other planes blur by their distance from it - a
+ * focus pull is just animating `focus`. Units are 1080p pixels (times u).
+ */
+export const Depth: React.FC<{
+  camera?: Partial<DepthCam>;
+  perspective?: number;
+  focus?: number;
+  aperture?: number;
+  children?: React.ReactNode;
+}> = ({ camera, perspective = 1400, focus = 0, aperture = 0, children }) => {
+  const { width, height } = useVideoConfig();
+  const u = Math.min(width, height) / 1080;
+  const P = Math.max(200, perspective) * u;
+  const cam: DepthCam = { x: 0, y: 0, z: 0, rotateX: 0, rotateY: 0, ...(camera ?? {}) };
+  const n = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+  return (
+    <AbsoluteFill style={{ perspective: P, perspectiveOrigin: '50% 50%', overflow: 'hidden' }}>
+      <AbsoluteFill
+        style={{
+          transformStyle: 'preserve-3d',
+          transform: `translate3d(${-n(cam.x) * u}px, ${-n(cam.y) * u}px, ${n(cam.z) * u}px) rotateX(${n(cam.rotateX)}deg) rotateY(${n(cam.rotateY)}deg)`,
+        }}
+      >
+        <DepthCtx.Provider value={{ P, focus: n(focus), aperture: Math.max(0, n(aperture)), u }}>{children}</DepthCtx.Provider>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+/** One plane of a <Depth> stage (frame-sized). z above 0 is nearer the viewer. */
+export const Layer: React.FC<{ z?: number; style?: React.CSSProperties; children?: React.ReactNode }> = ({ z = 0, style, children }) => {
+  const ctx = useContext(DepthCtx);
+  if (!ctx) return <AbsoluteFill style={style}>{children}</AbsoluteFill>;
+  const zz = Number.isFinite(z) ? z : 0;
+  const zp = zz * ctx.u;
+  if (zp >= ctx.P * 0.92) return null; // at or behind the lens
+  const comp = (ctx.P - zp) / ctx.P;
+  const dist = Math.abs(zz - ctx.focus);
+  // Blur grows with distance from the focal plane and is exactly zero on it
+  // (settled frames stay byte-sharp), capped so nothing smears.
+  const blur = dist < 2 || ctx.aperture <= 0 ? 0 : Math.min(30 * ctx.u, ctx.aperture * dist * 0.03 * ctx.u);
+  return (
+    <AbsoluteFill
+      style={{
+        ...style,
+        transform: `translateZ(${zp}px) scale(${comp})`,
+        filter: blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : undefined,
+      }}
+    >
+      {children}
+    </AbsoluteFill>
+  );
 };

@@ -1,0 +1,36 @@
+[Tab 0, node_modules/react-dom/cjs/react-dom.production.min.js:187] RangeError: Maximum call stack size exceeded
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:10:5)
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:11:12)
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:11:12)
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:11:12)
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:11:12)
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:11:12)
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:11:12)
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:11:12)
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:11:12)
+    at deep (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:11:12)
+[Tab 0, src/hero/runtime.tsx:203] [hero] runtime error: Maximum call stack size exceeded
+[Tab 0, node_modules/react-dom/cjs/react-dom.production.min.js:187] Error: hero: arrays are limited to 200000 items
+    at SafeArray.from (http://localhost:3000/bundle.js:25907:29)
+    at Scene (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:12:22)
+    at Nh (http://localhost:3000/bundle.js:30282:137)
+    at Vk (http://localhost:3000/bundle.js:30411:337)
+    at Uk (http://localhost:3000/bundle.js:30401:389)
+    at Tk (http://localhost:3000/bundle.js:30401:320)
+    at Ik (http://localhost:3000/bundle.js:30401:180)
+    at Nk (http://localhost:3000/bundle.js:30392:88)
+    at Gk (http://localhost:3000/bundle.js:30389:429)
+    at J (http://localhost:3000/bundle.js:30599:203)
+[Tab 0, src/hero/runtime.tsx:203] [hero] runtime error: hero: arrays are limited to 200000 items
+[Tab 0, node_modules/react-dom/cjs/react-dom.production.min.js:187] Error: hero: loop budget exceeded
+    at tick (http://localhost:3000/bundle.js:25829:44)
+    at eval (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:16:35)
+    at Array.forEach (<anonymous>)
+    at eval (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:16:19)
+    at Array.forEach (<anonymous>)
+    at Scene (eval at loadHero (http://localhost:3000/bundle.js:25965:21), <anonymous>:14:8)
+    at Nh (http://localhost:3000/bundle.js:30282:137)
+    at Vk (http://localhost:3000/bundle.js:30411:337)
+    at Uk (http://localhost:3000/bundle.js:30401:389)
+    at Tk (http://localhost:3000/bundle.js:30401:320)
+[Tab 0, src/hero/runtime.tsx:203] [hero] runtime error: hero: loop budget exceeded

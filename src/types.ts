@@ -900,6 +900,15 @@ export interface Scene {
     /** Acceptance-test renders only: measure the hero's text (hero/audit.tsx). */
     audit?: boolean;
   } | null;
+  /** Presenter mode: where the footage sits during this scene. */
+  presenter_layout?: PresenterLayout;
+  pip_corner?: 'bottom_right' | 'bottom_left' | 'top_right' | 'top_left';
+  pip_shape?: 'rounded' | 'circle';
+  split_side?: 'left' | 'right';
+  /** Presenter mode: false = no graphics this scene (the footage alone). */
+  graphics?: boolean;
+  /** Presenter mode: where this scene starts in the recording (seconds). */
+  start_seconds?: number;
 }
 
 /**
@@ -957,7 +966,33 @@ export interface Music {
 // Mirrors the PHP CanvasPlanValidator output — that validator is the contract.
 // ---------------------------------------------------------------------------
 
-export type CompositionMode = 'canvas_journey' | 'slides' | 'hybrid' | 'math_board';
+export type CompositionMode = 'canvas_journey' | 'slides' | 'hybrid' | 'math_board' | 'presenter';
+
+/** Where the presenter's own footage sits during one scene (MCP presenter mode). */
+export type PresenterLayout = 'full' | 'pip' | 'split' | 'hidden';
+
+/**
+ * Presenter mode (videos built over MCP): the user's talking-head recording
+ * is the spine of the video. Scenes are windows of it laid end to end; each
+ * says where the footage sits (full frame / corner window / one side /
+ * hidden) and the window animates between those places at every cut.
+ */
+export interface PresenterTrack {
+  video_url: string | null;
+  /** The whole recording's voice. Null in previews (stills need no sound). */
+  audio_url?: string | null;
+  /** Seconds of recording. */
+  duration: number;
+  width: number;
+  height: number;
+  /** Where frame 0 of this shot list sits in the recording (previews start mid-way). */
+  offset_seconds?: number;
+  /**
+   * The recording pre-extracted as a JPEG strip (f_000001.jpg …). Drawn one
+   * <Img> per frame — no video decoder, so nothing to run out of memory.
+   */
+  frames?: { url_prefix: string; count: number; fps: number } | null;
+}
 
 export type HoldMove = 'breathe' | 'push_in' | 'drift' | 'orbit' | 'rise' | 'sway' | 'settle_back';
 
@@ -1135,6 +1170,8 @@ export interface ShotList {
   canvas?: CanvasPlan | null;
   /** The Composition Director's chapter plan (hybrid mode). */
   chapters?: ChapterPlan | null;
+  /** Presenter mode (MCP): the user's recording. */
+  presenter?: PresenterTrack | null;
   scenes: Scene[];
 }
 

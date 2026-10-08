@@ -218,6 +218,20 @@ const planChunkFrames = (fps: number, width: number, height: number): number => 
   return frames;
 };
 
+/**
+ * Presenter videos (MCP) read a long recording through <OffthreadVideo>.
+ * Remotion sizes that frame cache from the memory free when the render
+ * starts; on a busy host (measured: 0.5 GB free of 7.5) it came out so small
+ * that frames were evicted before use — "No frame found at position". A
+ * fixed cache keeps it working; PRESENTER_VIDEO_CACHE_MB overrides.
+ */
+const videoCacheFor = (inputProps: Record<string, unknown>): { offthreadVideoCacheSizeInBytes?: number } => {
+  const shot = (inputProps as { shotList?: { composition_mode?: string } }).shotList;
+  if (shot?.composition_mode !== 'presenter') return {};
+  const mb = Number(process.env.PRESENTER_VIDEO_CACHE_MB) || 1024;
+  return { offthreadVideoCacheSizeInBytes: mb * 1024 * 1024 };
+};
+
 /** The renderMedia() options a whole render and every chunk share. */
 const explainerRenderOptions = (
   serveUrl: string,
@@ -248,6 +262,7 @@ const explainerRenderOptions = (
     crf: 16,
     x264Preset: 'slow',
     colorSpace: 'bt709',
+    ...videoCacheFor(inputProps),
   }) as const;
 
 /**
@@ -506,6 +521,7 @@ export const renderHeroTest = async (req: HeroTestRequest): Promise<HeroTestResu
         chromiumOptions: { gl: 'angle' },
         // A hero that cannot draw a frame in 20s is a hero we will not ship.
         timeoutInMilliseconds: 20000,
+        ...videoCacheFor(inputProps),
       });
       stills.push({ frame, file, ms: Date.now() - t0 });
     } catch (err: any) {

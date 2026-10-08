@@ -171,9 +171,34 @@ export const narrationWindowsHybrid = (
  * dashboard's in-browser player, above all — asks the SAME function rather
  * than reimplementing the mode rules and drifting.
  */
+/**
+ * Presenter mode (MCP): every scene is a window of the user's recording, so
+ * its frames come from ABSOLUTE times — rounding each scene's length on its
+ * own would let the graphics drift off the voice over a 15-minute video.
+ * Scenes without a start time are laid end to end.
+ */
+export const presenterWindows = (shotList: ShotList, fps: number): Array<{ start: number; frames: number }> => {
+  const offset = shotList.presenter?.offset_seconds ?? 0;
+  let cursor = 0;
+  return (shotList.scenes ?? []).map((scene) => {
+    const startS = scene.start_seconds ?? null;
+    const a = startS === null ? cursor : Math.max(0, Math.round((startS - offset) * fps));
+    const b = startS === null
+      ? a + sceneFrames(scene, fps)
+      : Math.round((startS + (scene.duration_seconds || 0) - offset) * fps);
+    cursor = Math.max(a + 1, b);
+    return { start: a, frames: Math.max(1, b - a) };
+  });
+};
+
 export const totalFramesFor = (shotList: ShotList, fps: number): number => {
   const mode = resolveCompositionMode(shotList);
   const scenes = shotList.scenes ?? [];
+  if (mode === 'presenter') {
+    const windows = presenterWindows(shotList, fps);
+    const last = windows[windows.length - 1];
+    return last ? Math.max(1, last.start + last.frames) : fps;
+  }
   if (mode === 'hybrid') return totalHybridFrames(normalizeChapters(shotList), fps);
   if (mode === 'canvas_journey' || mode === 'math_board') return totalCanvasFrames(scenes, fps);
   return totalDurationInFrames(scenes, fps);
@@ -213,6 +238,8 @@ export const sceneStartFrames = (shotList: ShotList, fps: number): number[] => {
     });
     return starts;
   }
+
+  if (mode === 'presenter') return presenterWindows(shotList, fps).map((w) => w.start);
 
   const scenes = shotList.scenes ?? [];
   const overlaps = mode === 'slides';
