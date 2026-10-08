@@ -34,3 +34,21 @@
     at Uk (http://localhost:3000/bundle.js:30401:389)
     at Tk (http://localhost:3000/bundle.js:30401:320)
 [Tab 0, src/hero/runtime.tsx:203] [hero] runtime error: hero: loop budget exceeded
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"
+[Tab 0, src/hero/audit.tsx:120] [hero] audit: overlap: the text "THE PLAN" overlaps "30 days to your first song"

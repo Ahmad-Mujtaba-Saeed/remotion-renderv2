@@ -1,3 +1,4 @@
+import './env'; // must stay first: loads .env before anything reads process.env
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
@@ -17,10 +18,34 @@ const PORT = Number(process.env.PORT || 3020);
 // (e.g. /var/www/storage/...). This Node service runs on the HOST, where that
 // path is meaningless. Storage is bind-mounted (host ./viralforgebackend/storage
 // <-> container /var/www/storage), so translate the prefix to its host location.
-// remotion-render/ is a sibling of viralforgebackend/, hence ../viralforgebackend.
+// Default: remotion-render/ is a sibling of viralforgebackend/. Resolved from
+// THIS file, not the cwd — pm2/systemd may start the process anywhere. A server
+// whose backend folder is named differently must set HOST_STORAGE_PREFIX
+// (environment or remotion-render/.env).
 const CONTAINER_STORAGE_PREFIX = (process.env.CONTAINER_STORAGE_PREFIX || '/var/www/storage').replace(/\/+$/, '');
-const HOST_STORAGE_PREFIX =
-  process.env.HOST_STORAGE_PREFIX || path.resolve(process.cwd(), '../viralforgebackend/storage');
+const HOST_STORAGE_PREFIX = path.resolve(
+  process.env.HOST_STORAGE_PREFIX || path.join(__dirname, '..', '..', 'viralforgebackend', 'storage')
+);
+const STORAGE_PUBLIC = path.join(HOST_STORAGE_PREFIX, 'app', 'public');
+const storageOk = (): boolean => fs.existsSync(STORAGE_PUBLIC);
+if (storageOk()) {
+  console.log(`[storage] ${CONTAINER_STORAGE_PREFIX} -> ${HOST_STORAGE_PREFIX}`);
+} else {
+  console.error(`[storage] ${STORAGE_PUBLIC} does not exist — set HOST_STORAGE_PREFIX to the backend's storage folder. Renders will be refused.`);
+}
+
+// Never write into a storage tree that is not the app's: with a wrong prefix the
+// renders "succeeded" into a fresh folder (mkdir -p) and the app saw nothing.
+app.use((req, res, next) => {
+  const body = req.body || {};
+  if (req.method === 'POST' && (body.output_path || body.output_dir) && !storageOk()) {
+    return res.status(500).json({
+      success: false,
+      error: `Render server storage is misconfigured: ${STORAGE_PUBLIC} does not exist. Set HOST_STORAGE_PREFIX to the backend's storage folder and restart the render server.`,
+    });
+  }
+  next();
+});
 
 function toHostPath(p: string): string {
   const normalized = String(p).replace(/\\/g, '/');
@@ -40,7 +65,7 @@ function toHostPath(p: string): string {
 // mask-image fetches) comes from the global cors() middleware above.
 app.use(
   '/storage',
-  express.static(path.join(HOST_STORAGE_PREFIX, 'app', 'public'), {
+  express.static(STORAGE_PUBLIC, {
     // no-store: headless Chrome's disk cache can't do range operations on
     // revalidated media entries (net::ERR_CACHE_OPERATION_NOT_SUPPORTED ->
     // "Format error" mid-render). Streaming every request from this local
