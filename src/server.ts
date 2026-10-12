@@ -83,11 +83,127 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'remotion-render' });
 });
 
+// ─── Background render jobs ────────────────────────────────────────────────
+// A render used to be ONE blocking HTTP request that said nothing until the
+// MP4 existed — up to hours. From the caller's side a healthy render and a
+// hung one looked identical, and if this process restarted mid-render the
+// caller found out only when its HTTP timeout ran out.
+//
+// With `async: true` in the body, /render and /render-short start the work,
+// answer at once with a job id, and the caller polls GET /jobs/:id for
+// progress. An id this process does not know means it restarted and the
+// render is gone — a definite answer, no timeout needed.
+//
+// Requests without `async` keep the old blocking behaviour, so an older
+// backend keeps working against this server.
+type RenderJob = {
+  id: string;
+  kind: 'render' | 'short';
+  project_id: unknown;
+  output_path: string;
+  signature: string;
+  status: 'running' | 'done' | 'failed';
+  progress: number;
+  error?: string;
+  render_seconds?: number;
+  started_at: number;
+  finished_at?: number;
+};
+
+const jobs = new Map<string, RenderJob>();
+const JOB_KEEP_MS = 6 * 60 * 60 * 1000;
+
+const publicJob = (job: RenderJob) => ({
+  success: true,
+  job_id: job.id,
+  status: job.status,
+  progress: job.progress,
+  error: job.error,
+  render_seconds: job.render_seconds,
+  running_seconds: Math.round(((job.finished_at ?? Date.now()) - job.started_at) / 1000),
+});
+
+function hashString(text: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(36);
+}
+
+/**
+ * Start `work` in the background, or hand back the job already rendering the
+ * same thing. A worker that died and was restarted asks for the same render
+ * again; rendering it twice at once into one file would waste the machine
+ * and race on the output, so the second request simply re-attaches.
+ */
+function startJob(
+  kind: RenderJob['kind'],
+  body: any,
+  outputPath: string,
+  work: (onProgress: (p: number) => void) => Promise<void>,
+): RenderJob {
+  const { async: _async, ...rest } = body || {};
+  const text = JSON.stringify(rest);
+  const signature = `${kind}:${text.length}:${hashString(text)}`;
+  for (const job of jobs.values()) {
+    if (job.status === 'running' && job.output_path === outputPath && job.signature === signature) {
+      console.log(`[jobs] re-attached to ${job.id} (${kind}) for ${outputPath}`);
+      return job;
+    }
+  }
+
+  // Forget settled jobs after a few hours; a caller polls every few seconds.
+  for (const [id, old] of jobs) {
+    if (old.finished_at && Date.now() - old.finished_at > JOB_KEEP_MS) jobs.delete(id);
+  }
+
+  const job: RenderJob = {
+    id: `${kind}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    kind,
+    project_id: body?.project_id,
+    output_path: outputPath,
+    signature,
+    status: 'running',
+    progress: 0,
+    started_at: Date.now(),
+  };
+  jobs.set(job.id, job);
+
+  work((p) => {
+    if (Number.isFinite(p)) job.progress = Math.max(job.progress, Math.min(1, p));
+  })
+    .then(() => {
+      job.status = 'done';
+      job.progress = 1;
+    })
+    .catch((err: any) => {
+      console.error(`[jobs] ${job.id} failed:`, err);
+      job.status = 'failed';
+      job.error = err?.message || 'Render failed';
+    })
+    .finally(() => {
+      job.finished_at = Date.now();
+      job.render_seconds = Number(((job.finished_at - job.started_at) / 1000).toFixed(1));
+    });
+
+  return job;
+}
+
+app.get('/jobs/:id', (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) {
+    return res.status(404).json({ success: false, error: 'Unknown job — the render server has restarted since it was started.' });
+  }
+  return res.json(publicJob(job));
+});
+
 /**
  * POST /render
  * Body: { project_id, output_path, fps, width, height, shot_list }
- * Renders synchronously and returns when the MP4 is written to output_path.
- * (Laravel calls this from a queued job, so a blocking request is fine.)
+ * With `async: true`: answers 202 with a job id at once; poll GET /jobs/:id.
+ * Without it: renders synchronously and returns when the MP4 is written.
  */
 app.post('/render', async (req, res) => {
   const { output_path, fps, width, height, shot_list, project_id } = req.body || {};
@@ -103,6 +219,31 @@ app.post('/render', async (req, res) => {
 
   // Translate the container path to its host equivalent before writing.
   const hostOutputPath = toHostPath(output_path);
+
+  if (req.body?.async) {
+    fs.mkdirSync(path.dirname(hostOutputPath), { recursive: true });
+    const job = startJob('render', req.body, hostOutputPath, async (onProgress) => {
+      console.log(`[render] project=${project_id} scenes=${shotList.scenes.length} -> ${hostOutputPath} (async)`);
+      let lastLogged = -1;
+      await renderExplainer({
+        shotList,
+        outputPath: hostOutputPath,
+        fps: Number(fps) || 30,
+        width: Number(width) || 1920,
+        height: Number(height) || 1080,
+        onProgress: (p) => {
+          onProgress(p);
+          const pct = Math.floor(p * 100);
+          if (pct % 20 === 0 && pct !== lastLogged) {
+            lastLogged = pct;
+            console.log(`[render] project=${project_id} ${pct}%`);
+          }
+        },
+      });
+      console.log(`[render] project=${project_id} done`);
+    });
+    return res.status(202).json({ ...publicJob(job), output_path });
+  }
 
   try {
     // Ensure the output directory exists.
@@ -145,6 +286,15 @@ app.post('/render-short', async (req, res) => {
     return res.status(400).json({ success: false, error: 'output_path and props.segments are required' });
   }
   const hostOutputPath = toHostPath(output_path);
+  if (req.body?.async) {
+    fs.mkdirSync(path.dirname(hostOutputPath), { recursive: true });
+    const job = startJob('short', req.body, hostOutputPath, async (onProgress) => {
+      console.log(`[short] project=${project_id} clip=${clip ?? '?'} -> ${hostOutputPath} (async)`);
+      await renderViralShort({ props, outputPath: hostOutputPath, onProgress });
+      console.log(`[short] project=${project_id} clip=${clip ?? '?'} done`);
+    });
+    return res.status(202).json({ ...publicJob(job), output_path });
+  }
   try {
     fs.mkdirSync(path.dirname(hostOutputPath), { recursive: true });
     console.log(`[short] project=${project_id} clip=${clip ?? '?'} -> ${hostOutputPath}`);
